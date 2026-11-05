@@ -44,7 +44,7 @@ function saveLockoutState(state: LockoutState) {
 /* ── Campus photo replaces old SVG illustration ── */
 
 export default function LoginPage({ onBackToPublic }: LoginPageProps) {
-  const { setCurrentUser, setActiveView, registeredUsers, players, addAuditLog } = useApp();
+  const { setCurrentUser, setActiveView, registeredUsers, players, officials, addAuditLog } = useApp();
 
   const [loginMode, setLoginMode] = useState<'athlete' | 'staff'>('athlete');
   const [email, setEmail] = useState('');
@@ -109,11 +109,12 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
     setIsLoading(true);
     await new Promise(r => setTimeout(r, 350));
 
-    // Look up registered user by email OR username OR player's student ID
-    const foundUser = registeredUsers.find(u => {
+    // Look up registered user by email OR username OR player's student ID OR scorekeeper official match
+    let foundUser = registeredUsers.find(u => {
       const emailMatch = u.email?.toLowerCase() === cleanInput;
       const usernameMatch = u.username?.toLowerCase() === cleanInput;
-      return emailMatch || usernameMatch;
+      const nameMatch = u.name?.toLowerCase() === cleanInput;
+      return emailMatch || usernameMatch || nameMatch;
     }) || registeredUsers.find(u => {
       if (u.role === 'player') {
         const matchedPlayer = players.find(p => p.studentId.toLowerCase() === cleanInput);
@@ -127,6 +128,23 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
       }
       return false;
     });
+
+    // If still not found in staff mode, check officials list for matching scorekeeper
+    if (!foundUser && loginMode === 'staff') {
+      const matchedOfficial = officials.find(o =>
+        o.role === 'scorekeeper' && (
+          o.name.toLowerCase() === cleanInput ||
+          o.contact?.toLowerCase() === cleanInput ||
+          (o.contact && o.contact.split('@')[0].toLowerCase() === cleanInput)
+        )
+      );
+      if (matchedOfficial) {
+        foundUser = registeredUsers.find(u =>
+          u.name.toLowerCase() === matchedOfficial.name.toLowerCase() ||
+          (matchedOfficial.contact && u.email?.toLowerCase() === matchedOfficial.contact.toLowerCase())
+        );
+      }
+    }
 
     if (!foundUser) {
       setIsLoading(false);

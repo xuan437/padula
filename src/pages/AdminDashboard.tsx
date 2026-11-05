@@ -244,7 +244,30 @@ export default function AdminDashboard() {
 
   // ── Derived Data ─────────────────────────────────────────────────────────────
   const refereesList = officials.filter(o => o.role === 'referee');
-  const scorekeepersList = officials.filter(o => o.role === 'scorekeeper');
+
+  // Combined scorekeepers list (reads both accredited officials and registered scorekeeper accounts)
+  const scorekeepersList = useMemo(() => {
+    const list = [...officials.filter(o => o.role === 'scorekeeper')];
+    registeredUsers.filter(u => u.role === 'scorer').forEach(u => {
+      const exists = list.some(o =>
+        o.name.toLowerCase() === u.name.toLowerCase() ||
+        (u.email && o.contact?.toLowerCase() === u.email.toLowerCase())
+      );
+      if (!exists) {
+        list.push({
+          id: u.id,
+          name: u.name,
+          role: 'scorekeeper',
+          sport: 'All Sports',
+          affiliation: 'Asian College Dumaguete',
+          contact: u.email,
+          licenseId: `ACC-SC-${u.id.slice(-4)}`,
+          isActive: u.isActive !== false,
+        });
+      }
+    });
+    return list;
+  }, [officials, registeredUsers]);
   const coachesList = officials.filter(o => o.role === 'coach');
   const managersList = officials.filter(o => o.role === 'manager');
   const filteredOfficials = officialFilter === 'all' ? officials : officials.filter(o => o.role === officialFilter);

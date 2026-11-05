@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
 import {
@@ -8,7 +8,7 @@ import {
   LockIcon,
   ShieldIcon,
 } from '../components/Icons';
-import type { Match } from '../types';
+import type { Match, GameOfficial } from '../types';
 
 // Offline entry
 interface OfflineEntry {
@@ -609,7 +609,7 @@ function MatchCard({ match }: { match: Match }) {
 // SCOREKEEPER DASHBOARD MAIN PAGE
 // ─────────────────────────────────────────────────────────────
 export default function ScorekeeperDashboard() {
-  const { matches, officials, currentUser, assignMatchOfficials } = useApp();
+  const { matches, officials, currentUser, assignMatchOfficials, registeredUsers } = useApp();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [selectedSportFilter, setSelectedSportFilter] = useState('all');
 
@@ -658,7 +658,28 @@ export default function ScorekeeperDashboard() {
   const activeMatches = filteredMatches.filter(m => m.status !== 'finished');
   const completedMatches = filteredMatches.filter(m => m.status === 'finished');
 
-  const availableScorekeepers = officials.filter(o => o.role === 'scorekeeper');
+  const availableScorekeepers = useMemo<GameOfficial[]>(() => {
+    const list: GameOfficial[] = [...officials.filter(o => o.role === 'scorekeeper')];
+    registeredUsers.filter(u => u.role === 'scorer').forEach(u => {
+      const exists = list.some(o =>
+        o.name.toLowerCase() === u.name.toLowerCase() ||
+        (u.email && o.contact?.toLowerCase() === u.email.toLowerCase())
+      );
+      if (!exists) {
+        list.push({
+          id: u.id,
+          name: u.name,
+          role: 'scorekeeper',
+          sport: 'All Sports',
+          affiliation: 'Asian College Dumaguete',
+          contact: u.email,
+          licenseId: `ACC-SC-${u.id.slice(-4)}`,
+          isActive: u.isActive !== false,
+        });
+      }
+    });
+    return list;
+  }, [officials, registeredUsers]);
 
   const handleSaveAssignment = (e: React.FormEvent) => {
     e.preventDefault();

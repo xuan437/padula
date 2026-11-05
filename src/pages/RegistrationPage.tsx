@@ -48,7 +48,7 @@ export default function RegistrationPage() {
   // Form states
   const [teamForm, setTeamForm] = useState({ name: '', sport: 's1', department: 'd1', division: 'div1', color: '#3b82f6' });
   const [playerForm, setPlayerForm] = useState({ name: '', studentId: '', department: 'd1', sport: 's1', jerseyNumber: '', position: '', email: '', password: 'password123', medicalCleared: true });
-  const [officialForm, setOfficialForm] = useState({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '' });
+  const [officialForm, setOfficialForm] = useState({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '', password: 'password123' });
   const [coordForm, setCoordForm] = useState({ name: '', email: '', department: 'd1', password: 'password123' });
 
   // Handle Team Submit
@@ -118,33 +118,63 @@ export default function RegistrationPage() {
   const handleOfficialSubmit = (role: 'referee' | 'scorekeeper' | 'coach' | 'manager') => (e: React.FormEvent) => {
     e.preventDefault();
     if (!officialForm.name.trim()) return;
+
+    const cleanName = officialForm.name.trim();
+    const cleanSport = officialForm.sport;
+    const cleanContact = officialForm.contact.trim().toLowerCase();
+    const cleanPassword = officialForm.password?.trim() || 'password123';
+    const license = officialForm.licenseId.trim() || `PAD-${role.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-3)}`;
+
+    // 1. Register official in officials table
     registerOfficial({
-      name: officialForm.name.trim(),
+      name: cleanName,
       role,
-      sport: officialForm.sport,
+      sport: cleanSport,
       affiliation: officialForm.affiliation.trim() || 'Asian College Board',
-      licenseId: officialForm.licenseId.trim() || `PAD-${role.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-3)}`,
-      contact: officialForm.contact.trim().toLowerCase(),
+      licenseId: license,
+      contact: cleanContact,
       isActive: true,
     });
 
-    // If official has email, create account for them
-    if (officialForm.contact.trim()) {
+    // 2. If scorekeeper, ALWAYS create a dedicated user login account!
+    if (role === 'scorekeeper') {
+      const cleanEmail = cleanContact.includes('@')
+        ? cleanContact
+        : (cleanContact ? `${cleanContact}@asiancollege.edu.ph` : `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')}@asiancollege.edu.ph`);
+      const cleanUsername = cleanContact
+        ? (cleanContact.includes('@') ? cleanContact.split('@')[0] : cleanContact)
+        : cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
       registerUser({
-        id: `u-${Date.now()}`,
-        name: officialForm.name.trim(),
-        role: role === 'scorekeeper' ? 'scorer' : 'guest',
-        username: officialForm.contact.split('@')[0],
-        email: officialForm.contact.trim().toLowerCase(),
-        password: 'password123',
-        mustChangePassword: true,
+        id: `u-sc-${Date.now()}`,
+        name: cleanName,
+        role: 'scorer',
+        username: cleanUsername,
+        email: cleanEmail,
+        password: cleanPassword,
+        avatarInitials: cleanName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
         isActive: true,
       });
+
+      setSuccessBanner(`Scorekeeper "${cleanName}" registered! Log in with: "${cleanEmail}" or "${cleanUsername}" with your password.`);
+    } else {
+      // Other officials with email
+      if (cleanContact) {
+        registerUser({
+          id: `u-${Date.now()}`,
+          name: cleanName,
+          role: 'guest',
+          username: cleanContact.split('@')[0],
+          email: cleanContact,
+          password: cleanPassword,
+          isActive: true,
+        });
+      }
+      setSuccessBanner(`${role.charAt(0).toUpperCase() + role.slice(1)} "${cleanName}" registered successfully.`);
     }
 
-    setSuccessBanner(`${role.charAt(0).toUpperCase() + role.slice(1)} "${officialForm.name}" registered successfully.`);
-    setOfficialForm({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '' });
-    setTimeout(() => setSuccessBanner(null), 4000);
+    setOfficialForm({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '', password: 'password123' });
+    setTimeout(() => setSuccessBanner(null), 6000);
   };
 
   // Handle Coordinator Submit (Director Only)
@@ -701,15 +731,32 @@ export default function RegistrationPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Contact / Institutional Email</label>
+                  <label className="form-label">
+                    {role === 'scorekeeper' ? 'Institutional Email / Login Username *' : 'Contact / Institutional Email'}
+                  </label>
                   <input
-                    type="email"
-                    placeholder="name@asiancollege.edu.ph"
+                    type={role === 'scorekeeper' ? 'text' : 'email'}
+                    required={role === 'scorekeeper'}
+                    placeholder={role === 'scorekeeper' ? 'e.g. s.chen@asiancollege.edu.ph or sam.chen' : 'name@asiancollege.edu.ph'}
                     value={officialForm.contact}
                     onChange={e => setOfficialForm(p => ({ ...p, contact: e.target.value }))}
                     className="form-input"
                   />
                 </div>
+
+                {role === 'scorekeeper' && (
+                  <div className="form-group">
+                    <label className="form-label">Login Password *</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Enter password for scorekeeper login"
+                      value={officialForm.password}
+                      onChange={e => setOfficialForm(p => ({ ...p, password: e.target.value }))}
+                      className="form-input"
+                    />
+                  </div>
+                )}
 
                 <button type="submit" className="btn btn-primary" style={{ padding: '11px 18px', fontWeight: 700 }}>
                   Register {roleLabel}

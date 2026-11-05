@@ -116,7 +116,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const [events,         setEvents]           = useState<TournamentEvent[]>(INITIAL_EVENTS);
   const [matches,        setMatches]          = useState<Match[]>(INITIAL_MATCHES);
-  const [officials,      setOfficials]        = useState<GameOfficial[]>(INITIAL_OFFICIALS);
+  const [officials,      setOfficials]        = useState<GameOfficial[]>(() => {
+    try {
+      const stored = localStorage.getItem('padula_officials');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return INITIAL_OFFICIALS;
+  });
   const [players,        setPlayers]          = useState<Player[]>(INITIAL_PLAYERS);
   const [teams,          setTeams]            = useState<Team[]>(INITIAL_TEAMS);
   const [departments,    setDepartments]      = useState<Department[]>(INITIAL_DEPARTMENTS);
@@ -395,7 +401,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser, addAuditLog]);
 
   const toggleOfficialStatus = useCallback((officialId: string, active: boolean) => {
-    setOfficials(prev => prev.map(o => o.id === officialId ? { ...o, isActive: active } : o));
+    setOfficials(prev => {
+      const updated = prev.map(o => o.id === officialId ? { ...o, isActive: active } : o);
+      try {
+        localStorage.setItem('padula_officials', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     addAuditLog('official_register', `Official ${active ? 'activated' : 'deactivated'} (ID: ${officialId})`, officialId, 'GameOfficial');
   }, [addAuditLog]);
 
@@ -416,7 +428,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     const newOfficial: GameOfficial = { ...officialData, id: uid('off') };
-    setOfficials(prev => [newOfficial, ...prev]);
+    setOfficials(prev => {
+      const updated = [newOfficial, ...prev];
+      try {
+        localStorage.setItem('padula_officials', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     addAuditLog('official_register', `Registered ${officialData.role}: ${officialData.name}`, newOfficial.id, 'GameOfficial');
 
     supabase.from('officials').insert([{
