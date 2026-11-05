@@ -204,13 +204,19 @@ function LiveMatchCard({ match, onOpen }: { match: any; onOpen: () => void }) {
 // ─── Main AdminDashboard ──────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const {
-    currentUser, matches, officials, players, teams,
+    currentUser, matches, officials, players, teams, departments,
     registeredUsers, auditLogs, announcements,
     assignMatchOfficials, setActiveView, postAnnouncement,
+    updatePlayer, addAuditLog,
   } = useApp();
 
   // Top-level tab: dashboard | officials-hub | wizard
   const [adminTab, setAdminTab] = useState<'dashboard' | 'officials-hub' | 'wizard'>('dashboard');
+
+  // Modals for Needs Attention
+  const [showMedicalModal, setShowMedicalModal] = useState(false);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [selectedReassignScorer, setSelectedReassignScorer] = useState<Record<string, string>>({});
 
   // Wizard state
   const [activeStep, setActiveStep] = useState<SetupStep>('accounts');
@@ -262,31 +268,88 @@ export default function AdminDashboard() {
 
   const progressPct = matches.length > 0 ? Math.round((finishedMatches.length / matches.length) * 100) : 0;
 
+  // ── Handlers for Attention Items ─────────────────────────────────────────────
+  const pendingPlayersList = useMemo(() => players.filter(p => !p.medicalCleared), [players]);
+  const conflictedMatches = useMemo(() => matches.filter(m => m.conflictWarning), [matches]);
+
+  const handleApproveMedical = (playerId: string) => {
+    const p = players.find(x => x.id === playerId);
+    updatePlayer(playerId, { medicalCleared: true });
+    addAuditLog('player_clear', `Approved medical clearance for athlete ${p?.name || playerId} (${p?.studentId || ''})`, playerId, 'Player');
+  };
+
+  const handleApproveAllMedical = () => {
+    pendingPlayersList.forEach(p => {
+      updatePlayer(p.id, { medicalCleared: true });
+      addAuditLog('player_clear', `Bulk approved medical clearance for athlete ${p.name} (${p.studentId})`, p.id, 'Player');
+    });
+  };
+
+  const handleResolveConflict = (matchId: string, newScorer: string) => {
+    assignMatchOfficials(matchId, { scorekeeper: newScorer });
+  };
+
   // ── Alerts ───────────────────────────────────────────────────────────────────
   const alerts = useMemo(() => {
-    const list: { icon: React.ReactNode; text: string; actionLabel: string; action: string; severity: 'warning' | 'error' | 'info' }[] = [];
+    const list: {
+      icon: React.ReactNode;
+      text: string;
+      actionLabel: string;
+      onTrigger: () => void;
+      severity: 'warning' | 'error' | 'info';
+    }[] = [];
 
     const unassignedScorer = matches.filter(m => m.status !== 'finished' && !m.scorekeeper);
     if (unassignedScorer.length > 0)
-      list.push({ icon: <ClipboardIcon size={16} />, text: `${unassignedScorer.length} match${unassignedScorer.length > 1 ? 'es' : ''} without an assigned scorer.`, actionLabel: 'Assign Now', action: 'admin', severity: 'warning' });
+      list.push({
+        icon: <ClipboardIcon size={16} />,
+        text: `${unassignedScorer.length} match${unassignedScorer.length > 1 ? 'es' : ''} without an assigned scorer.`,
+        actionLabel: 'Assign Now',
+        onTrigger: () => setAdminTab('officials-hub'),
+        severity: 'warning',
+      });
 
     const unassignedRef = matches.filter(m => m.status !== 'finished' && !m.referee);
     if (unassignedRef.length > 0)
-      list.push({ icon: <FlameIcon size={16} />, text: `${unassignedRef.length} match${unassignedRef.length > 1 ? 'es' : ''} without a referee.`, actionLabel: 'Assign Now', action: 'admin', severity: 'warning' });
+      list.push({
+        icon: <FlameIcon size={16} />,
+        text: `${unassignedRef.length} match${unassignedRef.length > 1 ? 'es' : ''} without a referee.`,
+        actionLabel: 'Assign Now',
+        onTrigger: () => setAdminTab('officials-hub'),
+        severity: 'warning',
+      });
 
     if (pendingPlayers > 0)
-      list.push({ icon: <UsersIcon size={16} />, text: `${pendingPlayers} player${pendingPlayers > 1 ? 's' : ''} pending medical clearance.`, actionLabel: 'View Players', action: 'player', severity: 'warning' });
+      list.push({
+        icon: <UsersIcon size={16} />,
+        text: `${pendingPlayers} player${pendingPlayers > 1 ? 's' : ''} pending medical clearance.`,
+        actionLabel: 'View Players',
+        onTrigger: () => setShowMedicalModal(true),
+        severity: 'warning',
+      });
 
     const smallTeams = teams.filter(t => t.players.length < 5 && t.isActive !== false);
     if (smallTeams.length > 0)
-      list.push({ icon: <AlertTriangleIcon size={16} />, text: `${smallTeams.length} team${smallTeams.length > 1 ? 's' : ''} have fewer than 5 players on roster.`, actionLabel: 'View Teams', action: 'registration', severity: 'error' });
+      list.push({
+        icon: <AlertTriangleIcon size={16} />,
+        text: `${smallTeams.length} team${smallTeams.length > 1 ? 's' : ''} have fewer than 5 players on roster.`,
+        actionLabel: 'View Teams',
+        onTrigger: () => setActiveView('registration'),
+        severity: 'error',
+      });
 
     const conflicted = matches.filter(m => m.conflictWarning);
     if (conflicted.length > 0)
-      list.push({ icon: <ClockIcon size={16} />, text: `${conflicted.length} scorer time conflict detected.`, actionLabel: 'Resolve', action: 'admin', severity: 'error' });
+      list.push({
+        icon: <ClockIcon size={16} />,
+        text: `${conflicted.length} scorer time conflict detected.`,
+        actionLabel: 'Resolve',
+        onTrigger: () => setShowConflictModal(true),
+        severity: 'error',
+      });
 
     return list;
-  }, [matches, pendingPlayers, teams]);
+  }, [matches, pendingPlayers, teams, setActiveView]);
 
   // ── Scorer: assigned matches only ────────────────────────────────────────────
   const myOfficial = useMemo(() => {
@@ -660,7 +723,7 @@ export default function AdminDashboard() {
               <SectionDivider label="Needs Attention" />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
                 {alerts.map((a, i) => (
-                  <AlertItem key={i} icon={a.icon} text={a.text} actionLabel={a.actionLabel} severity={a.severity} onAction={() => setActiveView(a.action)} />
+                  <AlertItem key={i} icon={a.icon} text={a.text} actionLabel={a.actionLabel} severity={a.severity} onAction={a.onTrigger} />
                 ))}
               </div>
             </div>
@@ -1078,6 +1141,329 @@ export default function AdminDashboard() {
             })}
           </div>
           <div className="wizard-main glass-card">{renderStep()}</div>
+        </div>
+      )}
+
+      {/* ── Medical Clearance Modal ── */}
+      {showMedicalModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '16px',
+        }}>
+          <div className="glass-card" style={{
+            width: '100%',
+            maxWidth: '620px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: '24px',
+            position: 'relative',
+            background: 'var(--bg-card)',
+          }}>
+            <button
+              type="button"
+              onClick={() => setShowMedicalModal(false)}
+              style={{
+                position: 'absolute',
+                right: '16px',
+                top: '16px',
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <UsersIcon size={22} color="var(--accent)" />
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                Medical Clearance Review
+              </h2>
+            </div>
+            <p style={{ margin: '0 0 18px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              Verify health certificates and grant official Padula 2026 intramurals tournament eligibility.
+            </p>
+
+            {pendingPlayersList.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px 16px', background: 'rgba(16,185,129,0.08)', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <CheckIcon size={32} color="#10b981" />
+                <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '8px' }}>
+                  All Athletes Cleared!
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                  There are no athletes with pending medical clearance at this time.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    {pendingPlayersList.length} Athlete{pendingPlayersList.length > 1 ? 's' : ''} Pending Clearance
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    onClick={handleApproveAllMedical}
+                    style={{ fontSize: '11px', padding: '4px 10px' }}
+                  >
+                    ✓ Approve All
+                  </button>
+                </div>
+
+                {pendingPlayersList.map(p => {
+                  const dept = departments.find(d => d.id === p.department);
+                  const team = teams.find(t => t.id === p.teamId);
+                  return (
+                    <div
+                      key={p.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: 'var(--accent-subtle)',
+                            color: 'var(--accent)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 800,
+                            fontSize: '13px',
+                          }}
+                        >
+                          {p.jerseyNumber ? `#${p.jerseyNumber}` : p.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text-primary)' }}>
+                            {p.name}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                            ID: <strong>{p.studentId}</strong> · {dept?.shortName || p.department} · {team?.name || getSportName(p.sport)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          onClick={() => handleApproveMedical(p.id)}
+                          style={{ fontSize: '11.5px', fontWeight: 700, padding: '5px 12px' }}
+                        >
+                          ✓ Approve Clearance
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => {
+                  setShowMedicalModal(false);
+                  setActiveView('player');
+                }}
+                style={{ fontSize: '12px' }}
+              >
+                Go to Full Players Roster →
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => setShowMedicalModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Resolve Scorer Conflict Modal ── */}
+      {showConflictModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '16px',
+        }}>
+          <div className="glass-card" style={{
+            width: '100%',
+            maxWidth: '600px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: '24px',
+            position: 'relative',
+            background: 'var(--bg-card)',
+          }}>
+            <button
+              type="button"
+              onClick={() => setShowConflictModal(false)}
+              style={{
+                position: 'absolute',
+                right: '16px',
+                top: '16px',
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <ClockIcon size={22} color="#ef4444" />
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                Resolve Scorer Scheduling Conflicts
+              </h2>
+            </div>
+            <p style={{ margin: '0 0 18px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              Reassign official scorekeepers or adjust assignments to eliminate concurrent duty overlaps.
+            </p>
+
+            {conflictedMatches.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px 16px', background: 'rgba(16,185,129,0.08)', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <CheckIcon size={32} color="#10b981" />
+                <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '8px' }}>
+                  All Conflicts Resolved!
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                  No overlapping official assignments detected across tournament matches.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {conflictedMatches.map(m => {
+                  const currentSelected = selectedReassignScorer[m.id] ?? '';
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        padding: '16px',
+                        borderRadius: '10px',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '14.5px', color: 'var(--text-primary)' }}>
+                            {m.teamA} vs {m.teamB}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {getSportName(m.sport)} · {m.round} · {m.venue}
+                          </div>
+                        </div>
+
+                        <span className="status-badge live" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                          Overlap Conflict
+                        </span>
+                      </div>
+
+                      <div style={{
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        borderRadius: '6px',
+                        padding: '8px 10px',
+                        fontSize: '12px',
+                        color: '#f87171',
+                      }}>
+                        ⚠️ {m.conflictWarning}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '180px' }}>
+                          <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                            Reassign To Another Certified Scorer:
+                          </label>
+                          <select
+                            className="form-input"
+                            style={{ padding: '6px 10px', fontSize: '12.5px', width: '100%' }}
+                            value={currentSelected}
+                            onChange={e => setSelectedReassignScorer(prev => ({ ...prev, [m.id]: e.target.value }))}
+                          >
+                            <option value="">-- Choose New Scorer --</option>
+                            <option value="__UNASSIGN__">Remove Scorer (Unassign)</option>
+                            {scorekeepersList.map(o => (
+                              <option key={o.id} value={o.name}>
+                                {o.name} ({o.sport || 'Certified'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          disabled={!currentSelected}
+                          onClick={() => handleResolveConflict(m.id, currentSelected === '__UNASSIGN__' ? '' : currentSelected)}
+                          style={{ alignSelf: 'flex-end', fontWeight: 700, padding: '7px 14px' }}
+                        >
+                          Resolve Conflict
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => {
+                  setShowConflictModal(false);
+                  setAdminTab('officials-hub');
+                }}
+                style={{ fontSize: '12px' }}
+              >
+                Go to Officials Hub →
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => setShowConflictModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

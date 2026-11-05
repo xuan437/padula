@@ -8,6 +8,8 @@ import {
   LockIcon,
   MailIcon,
   ShieldIcon,
+  UserIcon,
+  GlobeIcon,
 } from '../components/Icons';
 
 interface LoginPageProps {
@@ -175,7 +177,7 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
     if (foundUser.role === 'director' || foundUser.role === 'coordinator') {
       setActiveView('admin');
     } else if (foundUser.role === 'scorer') {
-      setActiveView('scorekeeper');
+      setActiveView('scorer-dashboard');
     } else if (foundUser.role === 'player') {
       setActiveView('player');
     } else {
@@ -277,9 +279,14 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
                 background: loginMode === 'athlete' ? '#dc2626' : 'transparent',
                 color: loginMode === 'athlete' ? '#fff' : 'rgba(255,255,255,0.6)',
                 transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
             >
-              🏃 Athlete Login
+              <UserIcon size={14} color={loginMode === 'athlete' ? '#fff' : 'rgba(255,255,255,0.6)'} />
+              <span>Athlete Login</span>
             </button>
             <button
               type="button"
@@ -295,9 +302,14 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
                 background: loginMode === 'staff' ? '#dc2626' : 'transparent',
                 color: loginMode === 'staff' ? '#fff' : 'rgba(255,255,255,0.6)',
                 transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
             >
-              👔 Staff & Official
+              <ShieldIcon size={14} color={loginMode === 'staff' ? '#fff' : 'rgba(255,255,255,0.6)'} />
+              <span>Staff & Official</span>
             </button>
           </div>
 
@@ -537,7 +549,7 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
                 gap: '7px',
               }}
             >
-              <ShieldIcon size={14} /> Continue as Guest Spectator
+              <GlobeIcon size={14} /> Continue as Guest Spectator
             </button>
 
           </form>

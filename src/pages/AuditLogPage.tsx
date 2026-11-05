@@ -15,6 +15,7 @@ const ACTION_COLORS: Record<AuditAction, string> = {
   event_archive:      '#94a3b8',
   team_register:      '#3b82f6',
   player_register:    '#38bdf8',
+  player_clear:       '#10b981',
   bracket_generate:   '#f97316',
   match_start:        '#f59e0b',
   score_update:       '#10b981',

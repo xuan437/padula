@@ -3,6 +3,7 @@ import { useApp } from './context/AppContext';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import ScorekeeperDashboard from './pages/ScorekeeperDashboard';
+import ScorerDashboard from './pages/ScorerDashboard';
 import PlayerDashboard from './pages/PlayerDashboard';
 import GuestPublicPage from './pages/GuestPublicPage';
 import LiveScoreboard from './pages/LiveScoreboard';
@@ -69,10 +70,11 @@ function AppContent() {
 
   const renderPage = () => {
     switch (activeView) {
-      case 'live':          return <LiveScoreboard />;
-      case 'admin':         return <AdminDashboard />;
-      case 'scorekeeper':   return <ScorekeeperDashboard />;
-      case 'player-stats':  return <PlayerStatsDashboard />;
+      case 'live':              return <LiveScoreboard />;
+      case 'admin':             return <AdminDashboard />;
+      case 'scorer-dashboard':  return <ScorerDashboard />;
+      case 'scorekeeper':       return <ScorekeeperDashboard />;
+      case 'player-stats':      return <PlayerStatsDashboard />;
       case 'player':        return <PlayerDashboard />;
       case 'registration':  return <RegistrationPage />;
       case 'event-setup':   return <EventSetupPage />;
@@ -86,7 +88,7 @@ function AppContent() {
         switch (user.role) {
           case 'director':
           case 'coordinator': return <AdminDashboard />;
-          case 'scorer':      return <ScorekeeperDashboard />;
+          case 'scorer':      return <ScorerDashboard />;
           case 'player':      return <PlayerDashboard />;
           case 'guest':
           default:            return <GuestPublicPage />;

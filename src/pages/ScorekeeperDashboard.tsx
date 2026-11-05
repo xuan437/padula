@@ -448,21 +448,6 @@ function MatchCard({ match }: { match: Match }) {
         </div>
       )}
 
-      {/* Conflict Alert Warning */}
-      {match.conflictWarning && (
-        <div style={{
-          background: '#ef444415',
-          border: '1px solid #ef444440',
-          borderRadius: '6px',
-          padding: '8px 12px',
-          fontSize: '12px',
-          color: '#ef4444',
-          fontWeight: 600,
-        }}>
-          ⚠️ {match.conflictWarning}
-        </div>
-      )}
-
       {/* Header */}
       <div className="match-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -508,6 +493,21 @@ function MatchCard({ match }: { match: Match }) {
           <span>Official Scorer: <strong>{match.scorekeeper}</strong></span>
         )}
       </div>
+
+      {/* Conflict Alert Warning — shown below header so card alignment stays consistent */}
+      {match.conflictWarning && (
+        <div style={{
+          background: '#ef444415',
+          border: '1px solid #ef444440',
+          borderRadius: '6px',
+          padding: '8px 12px',
+          fontSize: '12px',
+          color: '#ef4444',
+          fontWeight: 600,
+        }}>
+          ⚠️ {match.conflictWarning}
+        </div>
+      )}
 
       {/* Main Score Box */}
       <div className="match-score-row">

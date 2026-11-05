@@ -224,7 +224,7 @@ export interface Announcement {
 export type AuditAction =
   | 'login' | 'logout'
   | 'event_create' | 'event_update' | 'event_publish' | 'event_archive'
-  | 'team_register' | 'player_register'
+  | 'team_register' | 'player_register' | 'player_clear'
   | 'bracket_generate'
   | 'match_start' | 'score_update' | 'match_finish'
   | 'official_register' | 'official_assign'

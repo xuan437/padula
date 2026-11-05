@@ -102,7 +102,6 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Dashboard',
     icon: () => <HomeIcon size={16} />,
     roles: ['scorer'],
-    targetView: 'scorekeeper',
   },
   {
     id: 'scorekeeper',
