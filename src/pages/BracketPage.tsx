@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   MapPinIcon,
@@ -11,6 +11,7 @@ import {
   LayersIcon,
   BracketsIcon,
   TrashIcon,
+  CheckIcon,
 } from '../components/Icons';
 import TournamentTreeBracket from '../components/TournamentTreeBracket';
 import { isPlaceholder, getRoundName } from '../lib/bracket';
@@ -197,6 +198,24 @@ export default function BracketPage() {
   const [selectedVenue, setSelectedVenue] = useState<string>(() => venues[0]?.name || 'Main Arena Court 1');
   const [tab, setTab] = useState<'bracket' | 'standings' | 'schedule'>('bracket');
   const [venueError, setVenueError] = useState('');
+  const [activeDropdown, setActiveDropdown] = useState<'sport' | 'format' | 'venue' | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.sync-control-pill')) {
+        setActiveDropdown(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveDropdown(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const event = useMemo(() => {
     return events.find(e => e.id === selectedEventId && e.sport === selectedSportId)
@@ -428,78 +447,156 @@ export default function BracketPage() {
         {/* Competition Scope Selectors Toolbar */}
         <div className="sync-deck-controls-grid">
           {/* Sport Selector */}
-          <div className="sync-control-pill">
+          <div
+            className={`sync-control-pill ${activeDropdown === 'sport' ? 'is-open' : ''}`}
+            onClick={() => setActiveDropdown(prev => (prev === 'sport' ? null : 'sport'))}
+            title="Click to select sport"
+          >
             <div className="sync-control-icon">
               <TrophyIcon size={14} color="var(--accent)" />
             </div>
             <div className="sync-control-body">
-              <label className="sync-control-label">Sport / Event</label>
-              <select
-                className="sync-control-select"
-                value={currentSport}
-                onChange={e => {
-                  const sp = e.target.value;
-                  setSelectedSportId(sp);
-                  const matchingEv = events.find(ev => ev.sport === sp && !ev.archived);
-                  if (matchingEv) {
-                    setSelectedEventId(matchingEv.id);
-                    if (matchingEv.format) setSelectedFormat(matchingEv.format);
-                    if (matchingEv.venue) setSelectedVenue(matchingEv.venue);
-                  }
-                }}
-              >
-                {SPORTS_CATALOG.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({teams.filter(t => t.isActive !== false && t.sport === s.id).length} teams)
-                  </option>
-                ))}
-              </select>
+              <span className="sync-control-label">Sport / Event</span>
+              <div className="sync-control-value">
+                <span>{SPORTS_CATALOG.find(s => s.id === currentSport)?.name || sportName}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  ({activeTeams.length} teams)
+                </span>
+              </div>
             </div>
+            <div className="sync-control-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+
+            {activeDropdown === 'sport' && (
+              <div className="sync-control-dropdown-menu" onClick={e => e.stopPropagation()}>
+                {SPORTS_CATALOG.map(s => {
+                  const teamCount = teams.filter(t => t.isActive !== false && (t.sport === s.id || t.sport.toLowerCase() === s.name.toLowerCase())).length;
+                  const isSelected = s.id === currentSport;
+                  return (
+                    <div
+                      key={s.id}
+                      className={`sync-control-dropdown-item ${isSelected ? 'is-selected' : ''}`}
+                      onClick={() => {
+                        setSelectedSportId(s.id);
+                        const matchingEv = events.find(ev => ev.sport === s.id && !ev.archived);
+                        if (matchingEv) {
+                          setSelectedEventId(matchingEv.id);
+                          if (matchingEv.format) setSelectedFormat(matchingEv.format);
+                          if (matchingEv.venue) setSelectedVenue(matchingEv.venue);
+                        }
+                        setActiveDropdown(null);
+                      }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        {s.icon?.(isSelected ? 'var(--accent)' : 'var(--text-muted)', 14)}
+                        <span>{s.name}</span>
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 4 }}>
+                          {teamCount} teams
+                        </span>
+                        {isSelected && <CheckIcon size={13} color="var(--accent)" />}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Format Selector */}
           {isAdmin && (
-            <div className="sync-control-pill">
+            <div
+              className={`sync-control-pill ${activeDropdown === 'format' ? 'is-open' : ''}`}
+              onClick={() => setActiveDropdown(prev => (prev === 'format' ? null : 'format'))}
+              title="Click to select tournament format"
+            >
               <div className="sync-control-icon">
                 <LayersIcon size={14} color="#3b82f6" />
               </div>
               <div className="sync-control-body">
-                <label className="sync-control-label">Tournament Format</label>
-                <select
-                  className="sync-control-select"
-                  style={{ fontWeight: 700 }}
-                  value={selectedFormat}
-                  onChange={e => setSelectedFormat(e.target.value as 'single_elimination' | 'round_robin')}
-                  title="Choose Tournament Format"
-                >
-                  <option value="single_elimination">Single Elimination (Knockout)</option>
-                  <option value="round_robin">Round Robin (All vs All)</option>
-                </select>
+                <span className="sync-control-label">Tournament Format</span>
+                <div className="sync-control-value">
+                  <span>{selectedFormat === 'round_robin' ? 'Round Robin (All vs All)' : 'Single Elimination (Knockout)'}</span>
+                </div>
               </div>
+              <div className="sync-control-chevron">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+
+              {activeDropdown === 'format' && (
+                <div className="sync-control-dropdown-menu" onClick={e => e.stopPropagation()}>
+                  {[
+                    { id: 'single_elimination', label: 'Single Elimination (Knockout)', desc: 'Standard knockout tournament tree bracket' },
+                    { id: 'round_robin', label: 'Round Robin (All vs All)', desc: 'Every team plays all other teams in the group' },
+                  ].map(f => {
+                    const isSelected = selectedFormat === f.id;
+                    return (
+                      <div
+                        key={f.id}
+                        className={`sync-control-dropdown-item ${isSelected ? 'is-selected' : ''}`}
+                        onClick={() => {
+                          setSelectedFormat(f.id as 'single_elimination' | 'round_robin');
+                          setActiveDropdown(null);
+                        }}
+                      >
+                        <div>
+                          <div>{f.label}</div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>{f.desc}</div>
+                        </div>
+                        {isSelected && <CheckIcon size={13} color="var(--accent)" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
           {/* Venue Selector */}
           {isAdmin && (
-            <div className="sync-control-pill">
+            <div
+              className={`sync-control-pill ${activeDropdown === 'venue' ? 'is-open' : ''}`}
+              onClick={() => setActiveDropdown(prev => (prev === 'venue' ? null : 'venue'))}
+              title="Click to select venue / court"
+            >
               <div className="sync-control-icon">
                 <MapPinIcon size={14} color="#10b981" />
               </div>
               <div className="sync-control-body">
-                <label className="sync-control-label">Event Place (Venue)</label>
-                <select
-                  className="sync-control-select"
-                  value={selectedVenue}
-                  onChange={e => setSelectedVenue(e.target.value)}
-                  title="Choose Event Place (Venue)"
-                >
-                  {venues.map(v => (
-                    <option key={v.id} value={v.name}>
-                      {v.name} ({v.location})
-                    </option>
-                  ))}
-                </select>
+                <span className="sync-control-label">Event Place (Venue)</span>
+                <div className="sync-control-value">
+                  <span>{selectedVenue || venues[0]?.name || 'Main Arena Court 1'}</span>
+                </div>
               </div>
+              <div className="sync-control-chevron">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+
+              {activeDropdown === 'venue' && (
+                <div className="sync-control-dropdown-menu" onClick={e => e.stopPropagation()}>
+                  {venues.map(v => {
+                    const isSelected = (selectedVenue || venues[0]?.name) === v.name;
+                    return (
+                      <div
+                        key={v.id}
+                        className={`sync-control-dropdown-item ${isSelected ? 'is-selected' : ''}`}
+                        onClick={() => {
+                          setSelectedVenue(v.name);
+                          setActiveDropdown(null);
+                        }}
+                      >
+                        <div>
+                          <div>{v.name}</div>
+                          <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 400 }}>{v.location}</div>
+                        </div>
+                        {isSelected && <CheckIcon size={13} color="var(--accent)" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1292,7 +1292,8 @@ select.form-input option {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 20;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
@@ -1304,6 +1305,7 @@ select.form-input option {
   right: 0;
   height: 3px;
   background: linear-gradient(90deg, #ef4444 0%, #f97316 40%, #3b82f6 100%);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .sync-deck-header {
@@ -1446,18 +1448,22 @@ select.form-input option {
 }
 
 .sync-control-pill {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 12px;
+  padding: 8px 14px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
   transition: all var(--transition);
 }
 
 .sync-control-pill:hover,
-.sync-control-pill:focus-within {
+.sync-control-pill:focus-within,
+.sync-control-pill.is-open {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-subtle);
   background: var(--bg-surface);
@@ -1488,7 +1494,92 @@ select.form-input option {
   letter-spacing: 0.06em;
   color: var(--text-muted);
   text-transform: uppercase;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
+}
+
+.sync-control-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-control-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sync-control-pill:hover .sync-control-chevron,
+.sync-control-pill.is-open .sync-control-chevron {
+  color: var(--accent);
+}
+
+.sync-control-pill.is-open .sync-control-chevron {
+  transform: rotate(180deg);
+}
+
+.sync-control-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  min-width: 270px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 1000;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sync-control-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.sync-control-dropdown-item:hover {
+  background: var(--bg-elevated);
+  color: var(--accent);
+}
+
+.sync-control-dropdown-item.is-selected {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .sync-control-select {
