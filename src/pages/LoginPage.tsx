@@ -1,75 +1,44 @@
-import { useState, useEffect } from 'react';
-import campusPhoto from '../assets/campus.jpg';
+import { useState } from 'react';
 import padulaTitleImg from '../assets/padula-title.png';
+import schoolLogo from '../assets/logo.png';
+import campusPhoto from '../assets/campus.jpg';
 import { useApp } from '../context/AppContext';
-import {
-  EyeIcon,
-  EyeOffIcon,
-  LockIcon,
-  MailIcon,
-  ShieldIcon,
-  UserIcon,
-  GlobeIcon,
-} from '../components/Icons';
+import { GlobeIcon } from '../components/Icons';
 
 interface LoginPageProps {
   onBackToPublic?: () => void;
 }
 
-const LOCKOUT_KEY = 'padula_login_lockout';
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
-
-interface LockoutState {
-  attempts: number;
-  lockedUntil: number | null;
+// Google "G" Vector Icon
+function GoogleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+        fill="#EA4335"
+      />
+    </svg>
+  );
 }
-
-function getLockoutState(): LockoutState {
-  try {
-    const raw = localStorage.getItem(LOCKOUT_KEY);
-    if (!raw) return { attempts: 0, lockedUntil: null };
-    return JSON.parse(raw);
-  } catch {
-    return { attempts: 0, lockedUntil: null };
-  }
-}
-
-function saveLockoutState(state: LockoutState) {
-  try {
-    localStorage.setItem(LOCKOUT_KEY, JSON.stringify(state));
-  } catch {}
-}
-
-/* ── Campus photo replaces old SVG illustration ── */
 
 export default function LoginPage({ onBackToPublic }: LoginPageProps) {
-  const { setCurrentUser, setActiveView, registeredUsers, players, officials, addAuditLog } = useApp();
-
-  const [loginMode, setLoginMode] = useState<'athlete' | 'staff'>('athlete');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const { verifyAndSignInStaff, setActiveView } = useApp();
   const [isLoading, setIsLoading] = useState(false);
-  const [lockoutMinutes, setLockoutMinutes] = useState<number | null>(null);
-
-  // Check lockout on mount and every 10 seconds
-  useEffect(() => {
-    const checkLock = () => {
-      const state = getLockoutState();
-      if (state.lockedUntil && Date.now() < state.lockedUntil) {
-        const remaining = Math.ceil((state.lockedUntil - Date.now()) / 60000);
-        setLockoutMinutes(remaining);
-      } else if (state.lockedUntil && Date.now() >= state.lockedUntil) {
-        saveLockoutState({ attempts: 0, lockedUntil: null });
-        setLockoutMinutes(null);
-      }
-    };
-    checkLock();
-    const interval = setInterval(checkLock, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
+  const [inputEmail, setInputEmail] = useState('');
 
   const handleGuestAccess = () => {
     if (onBackToPublic) {
@@ -79,134 +48,30 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
     }
   };
 
-  const handleQuickFill = (identifier: string, pass: string, mode: 'athlete' | 'staff') => {
-    setLoginMode(mode);
-    setEmail(identifier);
-    setPassword(pass);
+  const handleGoogleClick = () => {
     setErrorMessage('');
+    setShowAccountPrompt(true);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleConfirmGoogleAccount = async (emailToVerify: string) => {
+    setIsLoading(true);
     setErrorMessage('');
 
-    // Check if account is locked
-    const lockState = getLockoutState();
-    if (lockState.lockedUntil && Date.now() < lockState.lockedUntil) {
-      const remaining = Math.ceil((lockState.lockedUntil - Date.now()) / 60000);
-      setErrorMessage(`Account temporarily locked due to 5 failed attempts. Please try again in ${remaining} minute(s).`);
-      return;
-    }
-
-    const cleanInput = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
-
-    if (!cleanInput || !cleanPassword) {
-      setErrorMessage('Please enter both identifier (email or Student ID) and password.');
-      return;
-    }
-
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 350));
-
-    // Look up registered user by email OR username OR player's student ID OR scorekeeper official match
-    let foundUser = registeredUsers.find(u => {
-      const emailMatch = u.email?.toLowerCase() === cleanInput;
-      const usernameMatch = u.username?.toLowerCase() === cleanInput;
-      const nameMatch = u.name?.toLowerCase() === cleanInput;
-      return emailMatch || usernameMatch || nameMatch;
-    }) || registeredUsers.find(u => {
-      if (u.role === 'player') {
-        const matchedPlayer = players.find(p => p.studentId.toLowerCase() === cleanInput);
-        if (matchedPlayer) {
-          return (
-            (matchedPlayer.email && u.email?.toLowerCase() === matchedPlayer.email.toLowerCase()) ||
-            u.username?.toLowerCase() === matchedPlayer.studentId.toLowerCase() ||
-            u.name.toLowerCase() === matchedPlayer.name.toLowerCase()
-          );
-        }
-      }
-      return false;
-    });
-
-    // If still not found in staff mode, check officials list for matching scorekeeper
-    if (!foundUser && loginMode === 'staff') {
-      const matchedOfficial = officials.find(o =>
-        o.role === 'scorekeeper' && (
-          o.name.toLowerCase() === cleanInput ||
-          o.contact?.toLowerCase() === cleanInput ||
-          (o.contact && o.contact.split('@')[0].toLowerCase() === cleanInput)
-        )
-      );
-      if (matchedOfficial) {
-        foundUser = registeredUsers.find(u =>
-          u.name.toLowerCase() === matchedOfficial.name.toLowerCase() ||
-          (matchedOfficial.contact && u.email?.toLowerCase() === matchedOfficial.contact.toLowerCase())
-        );
-      }
-    }
-
-    if (!foundUser) {
-      setIsLoading(false);
-      if (loginMode === 'athlete') {
-        setErrorMessage(`Athlete account "${cleanInput}" not found. Enter your Student ID (e.g. 2024-001) or Gmail, or register with your team coach.`);
+    try {
+      const result = await verifyAndSignInStaff(emailToVerify);
+      if (!result.success) {
+        setErrorMessage(result.error || "This account isn't registered for Padula. Contact your Sports Coordinator or the Sports Director.");
+        setIsLoading(false);
       } else {
-        setErrorMessage(`Staff account "${cleanInput}" not found. Please contact the Sports Director.`);
+        setShowAccountPrompt(false);
       }
-      addAuditLog('login', `Failed login: unregistered identifier "${cleanInput}"`);
-      return;
-    }
-
-    // Check if deactivated
-    if (foundUser.isActive === false) {
+    } catch {
+      setErrorMessage("This account isn't registered for Padula. Contact your Sports Coordinator or the Sports Director.");
       setIsLoading(false);
-      setErrorMessage('This account has been deactivated. Please contact the Sports Director.');
-      addAuditLog('login', `Failed login: account deactivated for "${cleanInput}"`, foundUser.id, 'User');
-      return;
     }
-
-    // Password verification
-    // Default fallback password for seeded users is 'password123', Director is 'admin123'
-    const expectedPassword = foundUser.password || (foundUser.role === 'director' ? 'admin123' : 'password123');
-
-    if (cleanPassword !== expectedPassword) {
-      const newAttempts = lockState.attempts + 1;
-      if (newAttempts >= MAX_ATTEMPTS) {
-        const lockUntil = Date.now() + LOCKOUT_MS;
-        saveLockoutState({ attempts: newAttempts, lockedUntil: lockUntil });
-        setLockoutMinutes(15);
-        setErrorMessage('Account temporarily locked due to 5 failed attempts. Please try again in 15 minutes.');
-        addAuditLog('login', `Account locked (5 failed attempts): "${cleanInput}" locked for 15 minutes`, foundUser.id, 'User');
-      } else {
-        saveLockoutState({ attempts: newAttempts, lockedUntil: null });
-        setErrorMessage('Incorrect password. Please verify your credentials.');
-        addAuditLog('login', `Failed login: incorrect password for "${cleanInput}" (Attempt ${newAttempts}/${MAX_ATTEMPTS})`, foundUser.id, 'User');
-      }
-      setIsLoading(false);
-      return;
-    }
-
-    // Success! Clear lockout attempts
-    saveLockoutState({ attempts: 0, lockedUntil: null });
-    setCurrentUser(foundUser);
-    addAuditLog('login', `Successful login: ${foundUser.role.toUpperCase()} ${foundUser.name} (${foundUser.email || foundUser.username})`, foundUser.id, 'User', { id: foundUser.id, name: foundUser.name, role: foundUser.role });
-
-    // Route each role to its designated home page
-    if (foundUser.role === 'director' || foundUser.role === 'coordinator') {
-      setActiveView('admin');
-    } else if (foundUser.role === 'scorer') {
-      setActiveView('scorer-dashboard');
-    } else if (foundUser.role === 'player') {
-      setActiveView('player');
-    } else {
-      setActiveView('public');
-    }
-
-    setIsLoading(false);
   };
 
   return (
-    /* ── Centered compact layout ── */
     <div style={{
       minHeight: '100vh',
       background: '#080d1a',
@@ -216,374 +81,171 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
       padding: '24px 16px',
       color: '#fff',
     }}>
-
-      {/* Centered card wrapper */}
       <div style={{
         width: '100%',
-        maxWidth: '880px',
+        maxWidth: '860px',
         background: '#0f182c',
-        borderRadius: '20px',
+        borderRadius: '24px',
         border: '1px solid rgba(255,255,255,0.08)',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
         display: 'flex',
         overflow: 'hidden',
-        minHeight: '520px',
+        minHeight: '480px',
       }}>
 
-        {/* ── LEFT: Login Form ── */}
+        {/* ── LEFT: Login Action Panel ── */}
         <div style={{
-          flex: '0 0 380px',
-          padding: '36px 36px',
+          flex: '0 0 420px',
+          padding: '44px 38px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           boxSizing: 'border-box',
         }}>
 
-          {/* Brand */}
-          <div style={{ marginBottom: '22px' }}>
-            <div style={{ marginBottom: '12px' }}>
+          {/* Dual Logos Branding */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+            <img
+              src={schoolLogo}
+              alt="Asian College"
+              style={{
+                height: '52px',
+                width: '52px',
+                objectFit: 'cover',
+                borderRadius: '50%',
+                filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))',
+              }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               <img
                 src={padulaTitleImg}
                 alt="PADULA 2026"
                 style={{
-                  height: '56px',
+                  height: '42px',
                   width: 'auto',
-                  maxWidth: '220px',
+                  maxWidth: '180px',
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 4px 14px rgba(0, 0, 0, 0.4))',
                 }}
               />
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: '0.04em' }}>
+                Asian College Dumaguete
+              </span>
             </div>
+          </div>
+
+          {/* Title & Description */}
+          <div style={{ marginBottom: '28px' }}>
             <h1 style={{
               fontFamily: 'var(--font-sports)',
               fontSize: '24px',
               fontWeight: 800,
               fontStyle: 'italic',
               textTransform: 'uppercase',
-              margin: '0 0 4px',
+              margin: '0 0 8px',
               color: '#fff',
               letterSpacing: '0.02em',
             }}>
-              {loginMode === 'athlete' ? 'Athlete Portal Login' : 'Staff & Official Login'}
+              Staff & Official Portal
             </h1>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.4 }}>
-              {loginMode === 'athlete'
-                ? 'Sign in with your Student ID or Registered Email'
-                : 'Asian College Dumaguete · Secure Operations Login'}
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.5 }}>
+              Secure tournament management console for Sports Directors, Coordinators, and certified Scorers.
             </p>
           </div>
 
-          {/* ── Segment Toggle: Athlete vs Staff ── */}
-          <div style={{
-            display: 'flex',
-            background: 'rgba(255,255,255,0.06)',
-            padding: '3px',
-            borderRadius: '10px',
-            marginBottom: '16px',
-            border: '1px solid rgba(255,255,255,0.08)',
-          }}>
-            <button
-              type="button"
-              onClick={() => { setLoginMode('athlete'); setErrorMessage(''); }}
-              style={{
-                flex: 1,
-                padding: '7px 12px',
-                borderRadius: '8px',
-                fontSize: '12px',
-                fontWeight: 700,
-                border: 'none',
-                cursor: 'pointer',
-                background: loginMode === 'athlete' ? '#dc2626' : 'transparent',
-                color: loginMode === 'athlete' ? '#fff' : 'rgba(255,255,255,0.6)',
-                transition: 'all 0.15s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-              }}
-            >
-              <UserIcon size={14} color={loginMode === 'athlete' ? '#fff' : 'rgba(255,255,255,0.6)'} />
-              <span>Athlete Login</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setLoginMode('staff'); setErrorMessage(''); }}
-              style={{
-                flex: 1,
-                padding: '7px 12px',
-                borderRadius: '8px',
-                fontSize: '12px',
-                fontWeight: 700,
-                border: 'none',
-                cursor: 'pointer',
-                background: loginMode === 'staff' ? '#dc2626' : 'transparent',
-                color: loginMode === 'staff' ? '#fff' : 'rgba(255,255,255,0.6)',
-                transition: 'all 0.15s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-              }}
-            >
-              <ShieldIcon size={14} color={loginMode === 'staff' ? '#fff' : 'rgba(255,255,255,0.6)'} />
-              <span>Staff & Official</span>
-            </button>
-          </div>
-
-          {/* Lockout Warning */}
-          {lockoutMinutes !== null && (
+          {/* Error Message */}
+          {errorMessage && (
             <div style={{
               background: 'rgba(239, 68, 68, 0.12)',
               border: '1px solid rgba(239, 68, 68, 0.35)',
-              borderRadius: '8px',
-              padding: '10px 12px',
+              borderRadius: '10px',
+              padding: '12px 14px',
               fontSize: '12.5px',
               color: '#fca5a5',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              lineHeight: 1.45,
+              marginBottom: '20px',
             }}>
-              <LockIcon size={16} color="#fca5a5" />
-              <div>
-                <strong>Account Locked</strong>
-                <div style={{ fontSize: '11.5px', marginTop: '2px' }}>
-                  Please wait {lockoutMinutes} minute(s) before trying again.
-                </div>
-              </div>
+              {errorMessage}
             </div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Single Google Sign-In Action */}
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={handleGoogleClick}
+            style={{
+              width: '100%',
+              background: '#ffffff',
+              color: '#0f172a',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '14px 20px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.7 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={e => { if (!isLoading) e.currentTarget.style.background = '#f1f5f9'; }}
+            onMouseLeave={e => { if (!isLoading) e.currentTarget.style.background = '#ffffff'; }}
+          >
+            <GoogleIcon size={20} />
+            <span>{isLoading ? 'Verifying with Server…' : 'Sign in with Institutional Google'}</span>
+          </button>
 
-            {/* Email / Student ID Identifier */}
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.65)', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {loginMode === 'athlete' ? 'Student ID or Athlete Email' : 'Staff Email Address'}
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  required
-                  disabled={lockoutMinutes !== null}
-                  value={email}
-                  onChange={e => { setEmail(e.target.value); setErrorMessage(''); }}
-                  placeholder={loginMode === 'athlete' ? 'e.g. 2024-001 or athlete@gmail.com' : 'e.g. admin@gmail.com'}
-                  style={{
-                    width: '100%',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    borderRadius: '7px',
-                    padding: '10px 12px 10px 34px',
-                    fontSize: '13.5px',
-                    color: '#fff',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-                <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.35)', display: 'flex' }}>
-                  <MailIcon size={15} />
-                </div>
-              </div>
-            </div>
+          <p style={{
+            fontSize: '11.5px',
+            color: 'rgba(255,255,255,0.4)',
+            textAlign: 'center',
+            marginTop: '12px',
+            marginBottom: '24px',
+          }}>
+            Restricted exclusively to @asiancollege.edu.ph staff credentials.
+          </p>
 
-            {/* Password */}
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.65)', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  disabled={lockoutMinutes !== null}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setErrorMessage(''); }}
-                  placeholder={loginMode === 'athlete' ? 'Enter player password' : 'Enter staff password'}
-                  style={{
-                    width: '100%',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    borderRadius: '7px',
-                    padding: '10px 38px 10px 34px',
-                    fontSize: '13.5px',
-                    color: '#fff',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-                <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.35)', display: 'flex' }}>
-                  <LockIcon size={15} />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(p => !p)}
-                  style={{
-                    position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '3px',
-                  }}
-                  title={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOffIcon size={15} /> : <EyeIcon size={15} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Demo Credentials Helpers */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
-                Demo Quick Fill:
-              </span>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {loginMode === 'athlete' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill('2024-001', 'password123', 'athlete')}
-                      style={{
-                        background: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '6px',
-                        padding: '4px 8px',
-                        fontSize: '11px',
-                        color: 'rgba(255,255,255,0.8)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Juan dela Cruz (2024-001)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill('2024-002', 'password123', 'athlete')}
-                      style={{
-                        background: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '6px',
-                        padding: '4px 8px',
-                        fontSize: '11px',
-                        color: 'rgba(255,255,255,0.8)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Maria Reyes (2024-002)
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill('admin@gmail.com', 'admin123', 'staff')}
-                      style={{
-                        background: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '6px',
-                        padding: '4px 8px',
-                        fontSize: '11px',
-                        color: 'rgba(255,255,255,0.8)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Director (admin123)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill('s.chen@asiancollege.edu.ph', 'password123', 'staff')}
-                      style={{
-                        background: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '6px',
-                        padding: '4px 8px',
-                        fontSize: '11px',
-                        color: 'rgba(255,255,255,0.8)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Scorer Sam
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Error */}
-            {errorMessage && (
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '7px',
-                padding: '9px 12px',
-                fontSize: '12.5px',
-                color: '#f87171',
-                lineHeight: 1.4,
-              }}>
-                {errorMessage}
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading || lockoutMinutes !== null}
-              style={{
-                width: '100%',
-                background: '#dc2626',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '7px',
-                padding: '11px',
-                fontSize: '13.5px',
-                fontWeight: 700,
-                cursor: lockoutMinutes !== null ? 'not-allowed' : 'pointer',
-                opacity: isLoading || lockoutMinutes !== null ? 0.6 : 1,
-                transition: 'background 0.15s ease',
-                marginTop: '2px',
-              }}
-              onMouseEnter={e => { if (!isLoading && lockoutMinutes === null) e.currentTarget.style.background = '#b91c1c'; }}
-              onMouseLeave={e => { if (!isLoading && lockoutMinutes === null) e.currentTarget.style.background = '#dc2626'; }}
-            >
-              {isLoading ? 'Checking credentials…' : 'Log In'}
-            </button>
-
-            {/* Guest */}
+          {/* Return to Public View Link */}
+          <div style={{ textAlign: 'center' }}>
             <button
               type="button"
               onClick={handleGuestAccess}
               style={{
                 background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '7px',
-                color: 'rgba(255,255,255,0.65)',
+                border: 'none',
+                color: 'rgba(255,255,255,0.6)',
                 fontSize: '12.5px',
                 fontWeight: 600,
-                padding: '9px 14px',
-                width: '100%',
                 cursor: 'pointer',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '7px',
+                gap: '6px',
+                padding: '6px 10px',
+                transition: 'color 0.15s ease',
               }}
+              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
             >
-              <GlobeIcon size={14} /> Continue as Guest Spectator
+              <GlobeIcon size={14} /> Back to Public View
             </button>
+          </div>
 
-          </form>
         </div>
 
-        {/* ── RIGHT: Campus Photo Panel — full bleed ── */}
+        {/* ── RIGHT: Campus Imagery ── */}
         <div className="login-welcome-panel" style={{
           flex: 1,
           position: 'relative',
           overflow: 'hidden',
           borderLeft: '1px solid rgba(255,255,255,0.07)',
-          minHeight: '520px',
+          minHeight: '480px',
         }}>
           <img
             src={campusPhoto}
-            alt="Asian College Padula Campus"
+            alt="Asian College Dumaguete Campus"
             style={{
               position: 'absolute',
               inset: 0,
@@ -594,24 +256,138 @@ export default function LoginPage({ onBackToPublic }: LoginPageProps) {
               display: 'block',
             }}
           />
-          {/* Subtle dark gradient at bottom for legibility if needed */}
           <div style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(to top, rgba(8,13,26,0.45) 0%, transparent 50%)',
+            background: 'linear-gradient(to top, rgba(8,13,26,0.65) 0%, transparent 45%)',
             pointerEvents: 'none',
           }} />
+          <div style={{
+            position: 'absolute',
+            bottom: '28px',
+            left: '28px',
+            right: '28px',
+            color: '#fff',
+            zIndex: 2,
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#f87171', letterSpacing: '0.08em', marginBottom: '4px' }}>
+              Asian College Dumaguete
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 800 }}>
+              Padula Athletics & Tournament Analytics
+            </div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>
+              Official administrative operations portal.
+            </div>
+          </div>
         </div>
 
       </div>
 
-      {/* Hide right panel on mobile */}
+      {/* ── Google Account Selector / OAuth Simulation Modal ── */}
+      {showAccountPrompt && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.75)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '16px',
+        }}>
+          <div style={{
+            maxWidth: '440px',
+            width: '100%',
+            background: '#ffffff',
+            borderRadius: '16px',
+            color: '#1f2937',
+            padding: '28px 24px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <GoogleIcon size={24} />
+              <div style={{ fontWeight: 800, fontSize: '16px', color: '#111827' }}>
+                Sign in with Google
+              </div>
+            </div>
+            <p style={{ fontSize: '12.5px', color: '#6b7280', margin: '0 0 18px', lineHeight: 1.45 }}>
+              Choose your official <strong>@asiancollege.edu.ph</strong> account to continue to Padula Sports.
+            </p>
+
+            <form onSubmit={e => {
+              e.preventDefault();
+              handleConfirmGoogleAccount(inputEmail);
+            }}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
+                  Institutional Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  placeholder="name@asiancollege.edu.ph"
+                  value={inputEmail}
+                  onChange={e => setInputEmail(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '11px 13px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '13.5px',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    color: '#111827',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAccountPrompt(false)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    background: '#fff',
+                    color: '#4b5563',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#1d4ed8',
+                    color: '#fff',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {isLoading ? 'Checking…' : 'Sign In'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        @media (max-width: 680px) {
+        @media (max-width: 768px) {
           .login-welcome-panel { display: none !important; }
         }
       `}</style>
-
     </div>
   );
 }

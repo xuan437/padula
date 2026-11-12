@@ -1,24 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import {
-  BasketballIcon, VolleyballIcon, ShuttlecockIcon, TableTennisIcon,
-  GamepadIcon, ChessIcon, TrophyIcon, MapPinIcon, PlusIcon,
+  MapPinIcon, PlusIcon,
   CheckIcon, CalendarIcon,
 } from '../components/Icons';
-import type { Sport } from '../types';
-
-// Full sport catalog with esports flag
-const SPORTS_CATALOG: (Sport & { iconComp: (c?: string) => React.ReactNode })[] = [
-  { id: 's1', name: 'Basketball',     type: 'bracket', subtitle: 'Team sport · 5v5',            icon: '🏀', iconComp: (c) => <BasketballIcon size={22} color={c} /> },
-  { id: 's2', name: 'Volleyball',     type: 'bracket', subtitle: 'Men & Women divisions',        icon: '🏐', iconComp: (c) => <VolleyballIcon  size={22} color={c} /> },
-  { id: 's3', name: 'Badminton',      type: 'bracket', subtitle: 'Singles & Doubles',            icon: '🏸', iconComp: (c) => <ShuttlecockIcon size={22} color={c} /> },
-  { id: 's4', name: 'Table Tennis',   type: 'bracket', subtitle: 'Singles & Doubles',            icon: '🏓', iconComp: (c) => <TableTennisIcon size={22} color={c} /> },
-  { id: 's5', name: 'Mobile Legends', type: 'bracket', subtitle: 'Collegiate Esports · 5v5',     icon: '🎮', iconComp: (c) => <GamepadIcon     size={22} color={c} />, isEsport: true },
-  { id: 's6', name: 'DOTA',           type: 'bracket', subtitle: 'MOBA Esports · 5v5',           icon: '🎮', iconComp: (c) => <GamepadIcon     size={22} color={c} />, isEsport: true },
-  { id: 's7', name: 'Valorant',       type: 'bracket', subtitle: 'Tactical FPS · 5v5',           icon: '🎮', iconComp: (c) => <GamepadIcon     size={22} color={c} />, isEsport: true },
-  { id: 's8', name: 'Chess',          type: 'bracket', subtitle: 'Standard & Rapid chess',       icon: '♟️', iconComp: (c) => <ChessIcon       size={22} color={c} /> },
-  { id: 's9', name: 'Cheerdance',     type: 'judged',  subtitle: 'Team routine · judged score',  icon: '📣', iconComp: (c) => <TrophyIcon      size={22} color={c} /> },
-];
+import { SPORTS_CATALOG } from '../lib/sports';
 
 type SetupTab = 'sports' | 'divisions' | 'venues' | 'departments' | 'events';
 
@@ -137,11 +123,14 @@ export default function EventSetupPage() {
           <h2 className="section-title">🏆 Sports & Esports Catalog</h2>
           <div className="sports-grid">
             {SPORTS_CATALOG.map(sport => (
-              <div key={sport.id} className={`sport-tile ${sport.type} ${sport.isEsport ? 'esport' : ''}`} style={{ cursor: 'default' }}>
-                <div className="sport-tile-icon-box">{sport.iconComp('#93c5fd')}</div>
+              <div key={sport.id} className={`sport-tile ${sport.category === 'esport' ? 'esport' : ''}`} style={{ cursor: 'default' }}>
+                <div className="sport-tile-icon-box">{sport.icon('#93c5fd', 24)}</div>
                 <span className="sport-name">{sport.name}</span>
-                <span className="sport-subtitle">{sport.subtitle}</span>
-                {sport.isEsport && (
+                <span className="sport-subtitle">{sport.rulesSummary}</span>
+                <span style={{ fontSize: '10.5px', color: 'var(--accent)', fontWeight: 700, marginTop: '4px' }}>
+                  {sport.format}
+                </span>
+                {sport.category === 'esport' && (
                   <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.05em', color: '#a78bfa', background: 'rgba(167,139,250,0.15)', padding: '2px 6px', borderRadius: '4px', marginTop: '4px' }}>
                     ESPORTS
                   </span>

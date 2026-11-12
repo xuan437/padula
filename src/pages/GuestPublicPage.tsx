@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { getSportName, getSportIcon, SPORTS_CATALOG } from '../lib/sports';
+import { isPlaceholder } from '../lib/bracket';
 import {
   TrophyIcon,
   MapPinIcon,
@@ -15,11 +16,16 @@ import {
   MoonIcon,
   SunIcon,
   GlobeIcon,
+  SparklesIcon,
+  ChevronRightIcon,
 } from '../components/Icons';
 import padulaTitleImg from '../assets/padula-title.png';
 import TournamentTreeBracket from '../components/TournamentTreeBracket';
+import AIPredictionModal from '../components/AIPredictionModal';
+import { predictMatch } from '../lib/predictionAi';
+import type { Match } from '../types';
 
-type PublicTab = 'live' | 'results' | 'standings' | 'brackets' | 'schedule' | 'tally' | 'announcements';
+type PublicTab = 'live' | 'results' | 'standings' | 'brackets' | 'schedule' | 'tally' | 'announcements' | 'predictions';
 
 // ── Real QR Code Component (Scalable SVG) ───────────────────────────────────
 function QRCodeDisplay({ url, size = 110 }: { url: string; size?: number }) {
@@ -241,14 +247,14 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
 // MAIN COMPONENT: GUEST PUBLIC RESULTS PAGE
 // ═════════════════════════════════════════════════════════════════════════════
 export default function GuestPublicPage() {
-  const { matches, announcements, departments, computeMedalTally, computeStandings, setActiveView } = useApp();
+  const { matches, teams, players, announcements, departments, computeMedalTally, computeStandings, setActiveView, currentUser } = useApp();
 
   // Read initial tab and sport filter from URL query params (for sharing)
   const [tab, setTab] = useState<PublicTab>(() => {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
       const t = p.get('tab') as PublicTab;
-      if (['live', 'results', 'standings', 'brackets', 'schedule', 'tally', 'announcements'].includes(t)) {
+      if (['live', 'results', 'standings', 'brackets', 'schedule', 'tally', 'announcements', 'predictions'].includes(t)) {
         return t;
       }
     }
@@ -269,6 +275,11 @@ export default function GuestPublicPage() {
   const [shareMatch, setShareMatch] = useState<any | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('Just now');
+  const [selectedAiMatch, setSelectedAiMatch] = useState<Match | null>(null);
+  const [simSport, setSimSport] = useState<string>('s1');
+  const [simTeamA, setSimTeamA] = useState<string>('');
+  const [simTeamB, setSimTeamB] = useState<string>('');
+  const [simResult, setSimResult] = useState<any | null>(null);
   const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
 
   // Update URL params when tab or filter changes
@@ -318,6 +329,7 @@ export default function GuestPublicPage() {
   const liveMatches = useMemo(() => {
     return matches.filter(m => {
       if (m.status !== 'live') return false;
+      if (m.isBye || isPlaceholder(m.teamA) || isPlaceholder(m.teamB)) return false;
       if (filterSport !== 'all' && m.sport !== filterSport) return false;
       if (searchTeam) {
         const q = searchTeam.toLowerCase();
@@ -331,6 +343,7 @@ export default function GuestPublicPage() {
     return matches
       .filter(m => {
         if (m.status !== 'finished') return false;
+        if (m.isBye || isPlaceholder(m.teamA) || isPlaceholder(m.teamB)) return false;
         if (filterSport !== 'all' && m.sport !== filterSport) return false;
         if (searchTeam) {
           const q = searchTeam.toLowerCase();
@@ -344,6 +357,7 @@ export default function GuestPublicPage() {
   const scheduledMatches = useMemo(() => {
     return matches.filter(m => {
       if (m.status !== 'scheduled') return false;
+      if (m.isBye || (isPlaceholder(m.teamA) && isPlaceholder(m.teamB))) return false;
       if (filterSport !== 'all' && m.sport !== filterSport) return false;
       if (searchTeam) {
         const q = searchTeam.toLowerCase();
@@ -354,7 +368,7 @@ export default function GuestPublicPage() {
   }, [matches, filterSport, searchTeam]);
 
   const nextUpcoming = useMemo(() => {
-    return matches.find(m => m.status === 'scheduled');
+    return matches.find(m => m.status === 'scheduled' && !m.isBye && !isPlaceholder(m.teamA) && !isPlaceholder(m.teamB));
   }, [matches]);
 
   const medalTally = useMemo(() => computeMedalTally(), [computeMedalTally]);
@@ -476,15 +490,27 @@ export default function GuestPublicPage() {
           </button>
 
           {/* Staff Login Link */}
-          <button
-            type="button"
-            className="btn btn-sm btn-primary"
-            onClick={() => setActiveView('login')}
-            style={{ fontWeight: 700 }}
-          >
-            <ShieldIcon size={14} />
-            <span>Staff & Athlete Login</span>
-          </button>
+          {/* Back to Dashboard (logged-in) or Staff Login (guest) */}
+          {currentUser ? (
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={() => setActiveView(currentUser.role === 'scorer' ? 'scorer-dashboard' : 'admin')}
+              style={{ fontWeight: 700 }}
+            >
+              <span>← Back to Dashboard</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={() => setActiveView('login')}
+              style={{ fontWeight: 700 }}
+            >
+              <ShieldIcon size={14} />
+              <span>Staff &amp; Athlete Login</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -583,7 +609,7 @@ export default function GuestPublicPage() {
             className="form-input"
             value={searchTeam}
             onChange={e => setSearchTeam(e.target.value)}
-            placeholder="Search teams (e.g. Padula Eagles, Red Lions)..."
+            placeholder="Search teams..."
             style={{
               paddingLeft: '34px',
               paddingRight: '12px',
@@ -625,6 +651,7 @@ export default function GuestPublicPage() {
           { id: 'standings',     label: 'Standings',     icon: <MedalIcon size={14} />, count: undefined },
           { id: 'brackets',      label: 'Brackets',      icon: <BracketsIcon size={14} />, count: undefined },
           { id: 'schedule',      label: 'Schedule',      icon: <CalendarIcon size={14} />, count: scheduledMatches.length },
+          { id: 'predictions',   label: 'Prediction AI', icon: <SparklesIcon size={14} />, count: undefined },
           { id: 'tally',         label: 'Medal Tally',   icon: <MedalIcon size={14} />, count: undefined },
           { id: 'announcements', label: 'Announcements', icon: <FileTextIcon size={14} />, count: announcements.length },
         ]).map(t => {
@@ -970,7 +997,7 @@ export default function GuestPublicPage() {
                     </span>
                   </div>
                   <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    {m.teamA} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>vs</span> {m.teamB}
+                    {isPlaceholder(m.teamA) ? 'TBD' : m.teamA} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>vs</span> {isPlaceholder(m.teamB) ? 'TBD' : m.teamB}
                   </div>
                   <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <MapPinIcon size={12} /> {m.venue}
@@ -978,6 +1005,27 @@ export default function GuestPublicPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {!isPlaceholder(m.teamA) && !isPlaceholder(m.teamB) && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => setSelectedAiMatch(m)}
+                      title="View AI Match Probability Forecast"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        color: 'var(--accent)',
+                        borderColor: 'rgba(220, 38, 38, 0.35)',
+                        padding: '4px 10px',
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        background: 'rgba(220, 38, 38, 0.06)',
+                      }}
+                    >
+                      <SparklesIcon size={13} /> AI Forecast
+                    </button>
+                  )}
                   <span className="status-badge scheduled">SCHEDULED</span>
                   <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
                     {m.scheduledTime || 'TBD'}
@@ -1092,7 +1140,197 @@ export default function GuestPublicPage() {
         </section>
       )}
 
+      {/* ═══════════════════════════════════════════════════════════════════════
+          TAB 8: PREDICTION AI
+         ═══════════════════════════════════════════════════════════════════════ */}
+      {tab === 'predictions' && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Header Card */}
+          <div className="glass-card" style={{ padding: '20px 24px', border: '1px solid rgba(220, 38, 38, 0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 8, background: 'var(--accent)', color: '#fff'
+              }}>
+                <SparklesIcon size={18} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Padula AI Match Intelligence
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Machine learning model estimating tournament win probabilities, projected scores, and key matchup factors.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Interactive Simulator Box */}
+            <div style={{
+              background: 'var(--bg-elevated)', borderRadius: 10, padding: 16,
+              border: '1px solid var(--border)', marginTop: 12
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <SparklesIcon size={14} /> Simulate Any Head-to-Head Matchup
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
+                    Sport
+                  </label>
+                  <select
+                    className="input-field"
+                    value={simSport}
+                    onChange={e => {
+                      setSimSport(e.target.value);
+                      setSimTeamA('');
+                      setSimTeamB('');
+                      setSimResult(null);
+                    }}
+                    style={{ width: '100%', padding: '6px 10px', fontSize: 12, borderRadius: 6, background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                  >
+                    {SPORTS_CATALOG.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
+                    Competitor A
+                  </label>
+                  <select
+                    className="input-field"
+                    value={simTeamA}
+                    onChange={e => setSimTeamA(e.target.value)}
+                    style={{ width: '100%', padding: '6px 10px', fontSize: 12, borderRadius: 6, background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                  >
+                    <option value="">-- Select Team A --</option>
+                    {teams.filter(t => t.sport === simSport && t.isActive !== false).map(t => (
+                      <option key={t.id} value={t.name} disabled={t.name === simTeamB}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
+                    Competitor B
+                  </label>
+                  <select
+                    className="input-field"
+                    value={simTeamB}
+                    onChange={e => setSimTeamB(e.target.value)}
+                    style={{ width: '100%', padding: '6px 10px', fontSize: 12, borderRadius: 6, background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                  >
+                    <option value="">-- Select Team B --</option>
+                    {teams.filter(t => t.sport === simSport && t.isActive !== false).map(t => (
+                      <option key={t.id} value={t.name} disabled={t.name === simTeamA}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                disabled={!simTeamA || !simTeamB || simTeamA === simTeamB}
+                onClick={() => {
+                  const pred = predictMatch(simTeamA, simTeamB, simSport, matches, teams, players);
+                  setSimResult(pred);
+                }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+              >
+                <SparklesIcon size={14} /> Forecast Matchup
+              </button>
+
+              {/* Simulation Output */}
+              {simResult && (
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{simResult.teamA}</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: simResult.winProbA >= 50 ? 'var(--accent)' : 'var(--text-secondary)', marginLeft: 8 }}>
+                        {simResult.winProbA}%
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>
+                      Projected {simResult.predictedScoreA} – {simResult.predictedScoreB}
+                    </div>
+                    <div>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: simResult.winProbB >= 50 ? '#3b82f6' : 'var(--text-secondary)', marginRight: 8 }}>
+                        {simResult.winProbB}%
+                      </span>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{simResult.teamB}</span>
+                    </div>
+                  </div>
+                  <div style={{ width: '100%', height: 8, background: 'rgba(59, 130, 246, 0.3)', borderRadius: 4, overflow: 'hidden', display: 'flex', marginBottom: 10 }}>
+                    <div style={{ width: `${simResult.winProbA}%`, background: 'var(--accent)' }} />
+                    <div style={{ width: `${simResult.winProbB}%`, background: '#3b82f6' }} />
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: '6px 0 0' }}>
+                    💡 {simResult.tacticalSummary}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Upcoming Scheduled Matches Forecast Cards */}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12, letterSpacing: '0.04em' }}>
+              Forecasts for Scheduled Matches ({scheduledMatches.length})
+            </div>
+
+            {scheduledMatches.length === 0 ? (
+              <div className="empty-state glass-card" style={{ padding: '36px', textAlign: 'center' }}>
+                No scheduled matches currently queued. Use the simulator above to forecast any matchup.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                {scheduledMatches.map(m => {
+                  const pred = predictMatch(m.teamA, m.teamB, m.sport, matches, teams, players);
+                  if (!pred) return null;
+
+                  return (
+                    <div
+                      key={m.id}
+                      className="glass-card"
+                      style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, cursor: 'pointer' }}
+                      onClick={() => setSelectedAiMatch(m)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                          {getSportName(m.sport)} · {m.round}
+                        </span>
+                        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(220,38,38,0.12)', color: 'var(--accent)', fontWeight: 700 }}>
+                          {pred.confidence}
+                        </span>
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>
+                          <span>{m.teamA} ({pred.winProbA}%)</span>
+                          <span>{m.teamB} ({pred.winProbB}%)</span>
+                        </div>
+                        <div style={{ width: '100%', height: 6, background: '#3b82f6', borderRadius: 3, overflow: 'hidden', display: 'flex' }}>
+                          <div style={{ width: `${pred.winProbA}%`, background: 'var(--accent)' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-muted)' }}>
+                        <span>Spread: <strong>{pred.predictedScoreA} – {pred.predictedScoreB}</strong></span>
+                        <span style={{ color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}>
+                          Details <ChevronRightIcon size={12} />
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ── MODALS ── */}
+      {selectedAiMatch && <AIPredictionModal match={selectedAiMatch} onClose={() => setSelectedAiMatch(null)} />}
       {showPosterModal && <QRPosterModal url={publicUrl} onClose={() => setShowPosterModal(false)} />}
       {shareMatch && <ShareMatchModal match={shareMatch} onClose={() => setShareMatch(null)} />}
     </div>

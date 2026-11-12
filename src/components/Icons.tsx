@@ -32,6 +32,9 @@ import {
   AlertTriangle,
   ArrowRight,
   Clock,
+  X,
+  Sparkles,
+  Cpu,
 } from 'lucide-react';
 
 import schoolLogo from '../assets/logo.png';
@@ -246,6 +249,67 @@ export function ChessIcon({ className = '', size = 18, color }: IconProps) {
   );
 }
 
+export function FootballIcon({ className = '', size = 18, color }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m12 7 3.5 2.5-1.5 4h-4L8.5 9.5z" />
+      <path d="M12 7V2" />
+      <path d="M15.5 9.5 20 7.5" />
+      <path d="M14 13.5 17 18" />
+      <path d="M10 13.5 7 18" />
+      <path d="M8.5 9.5 4 7.5" />
+    </svg>
+  );
+}
+
+export function SepakTakrawIcon({ className = '', size = 18, color }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M6 18c4-4 8-4 12 0" />
+      <path d="M6 6c4 4 8 4 12 0" />
+      <path d="M4 10c4 1 6 5 6 10" />
+      <path d="M20 10c-4 1-6 5-6 10" />
+      <path d="M10 4c1 4 5 6 10 6" />
+      <path d="M10 20c1-4 5-6 10-6" />
+    </svg>
+  );
+}
+
+export function FrisbeeIcon({ className = '', size = 18, color }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <ellipse cx="12" cy="12" rx="10" ry="5" />
+      <path d="M2 12c0 2 4.5 4 10 4s10-2 10-4" />
+      <ellipse cx="12" cy="11.5" rx="6" ry="2.5" />
+    </svg>
+  );
+}
+
+export function ScrabbleIcon({ className = '', size = 18, color }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M15 9a2 2 0 0 0-2-2h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-2-2" />
+      <circle cx="17.5" cy="17.5" r="1" fill={color || 'currentColor'} />
+    </svg>
+  );
+}
+
+export function CrosshairIcon({ className = '', size = 18, color }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="3" x2="12" y2="7" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+      <line x1="3" y1="12" x2="7" y2="12" />
+      <line x1="17" y1="12" x2="21" y2="12" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  );
+}
+
 // ── Auth / Form Icons — uniform 1.75px stroke ─────────────────
 export function MailIcon({ className = '', size = 18, color }: IconProps) {
   return <Mail size={size} color={color} strokeWidth={1.75} className={className} />;
@@ -275,6 +339,10 @@ export function ClockIcon({ className = '', size = 18, color }: IconProps) {
   return <Clock size={size} color={color} strokeWidth={1.75} className={className} />;
 }
 
+export function XIcon({ className = '', size = 18, color }: IconProps) {
+  return <X size={size} color={color} strokeWidth={2} className={className} />;
+}
+
 export function GoogleIcon({ className = '', size = 18 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
@@ -284,4 +352,12 @@ export function GoogleIcon({ className = '', size = 18 }: IconProps) {
       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
     </svg>
   );
+}
+
+export function SparklesIcon({ className = '', size = 18, color }: IconProps) {
+  return <Sparkles size={size} color={color} strokeWidth={1.75} className={className} />;
+}
+
+export function CpuIcon({ className = '', size = 18, color }: IconProps) {
+  return <Cpu size={size} color={color} strokeWidth={1.75} className={className} />;
 }

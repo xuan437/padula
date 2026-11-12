@@ -1,11 +1,18 @@
 import { useApp } from '../context/AppContext';
 import { getSportName, getSportIcon } from '../lib/sports';
+import { isPlaceholder } from '../lib/bracket';
 import { MapPinIcon, FlameIcon, TrophyIcon } from '../components/Icons';
 
 export default function LiveScoreboard() {
   const { matches } = useApp();
-  const liveMatches = matches.filter(m => m.status === 'live');
-  const allMatches = matches;
+  // Real live action only: remove placeholders and BYEs
+  const liveMatches = matches.filter(
+    m => m.status === 'live' && !isPlaceholder(m.teamA) && !isPlaceholder(m.teamB) && !m.isBye
+  );
+  // Real schedule and results: remove BYEs and future matches where both teams are placeholders
+  const displayMatches = matches.filter(
+    m => !m.isBye && !(isPlaceholder(m.teamA) && isPlaceholder(m.teamB))
+  );
 
   return (
     <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -108,76 +115,86 @@ export default function LiveScoreboard() {
           </div>
 
           <div style={{ minWidth: '780px' }}>
-            {allMatches.map(m => (
-              <div
-                key={m.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '160px 2.2fr 110px 140px 1.5fr 110px',
-                  padding: '14px 18px',
-                  borderBottom: '1px solid var(--border-light)',
-                  alignItems: 'center',
-                  fontSize: '13px',
-                  transition: 'background var(--transition)',
-                }}
-                className="scoreboard-table-row"
-              >
-                {/* Sport */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {getSportIcon(m.sport, 16, 'var(--accent)')}
-                  <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
-                    {getSportName(m.sport)}
-                  </strong>
-                </div>
-
-                {/* Teams */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{
-                    fontWeight: m.winner === m.teamA ? 800 : 600,
-                    color: m.winner === m.teamA ? 'var(--accent)' : 'var(--text-primary)',
-                  }}>
-                    {m.teamA}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: 700 }}>vs</span>
-                  <span style={{
-                    fontWeight: m.winner === m.teamB ? 800 : 600,
-                    color: m.winner === m.teamB ? 'var(--accent)' : 'var(--text-primary)',
-                  }}>
-                    {m.teamB}
-                  </span>
-                </div>
-
-                {/* Score */}
-                <div style={{ textAlign: 'center', fontWeight: 800, fontSize: '14px', letterSpacing: '0.05em' }}>
-                  {m.status !== 'scheduled' ? (
-                    <span style={{ color: m.status === 'live' ? 'var(--accent)' : 'var(--text-primary)' }}>
-                      {m.scoreA} – {m.scoreB}
-                    </span>
-                  ) : (
-                    <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>–</span>
-                  )}
-                </div>
-
-                {/* Round */}
-                <div style={{ color: 'var(--text-secondary)', fontSize: '12.5px' }}>
-                  {m.round}
-                </div>
-
-                {/* Venue */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
-                  <MapPinIcon size={12} color="var(--text-muted)" />
-                  <span>{m.venue}</span>
-                </div>
-
-                {/* Status */}
-                <div style={{ textAlign: 'right' }}>
-                  <span className={`status-badge ${m.status}`} style={{ fontSize: '10.5px', padding: '3px 8px' }}>
-                    {m.status === 'live' && <span className="live-dot" />}
-                    {m.status.toUpperCase()}
-                  </span>
-                </div>
+            {displayMatches.length === 0 ? (
+              <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                No tournament matches scheduled or completed yet.
               </div>
-            ))}
+            ) : (
+              displayMatches.map(m => {
+                const teamAName = isPlaceholder(m.teamA) ? 'TBD' : m.teamA;
+                const teamBName = isPlaceholder(m.teamB) ? 'TBD' : m.teamB;
+                return (
+                  <div
+                    key={m.id}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '160px 2.2fr 110px 140px 1.5fr 110px',
+                      padding: '14px 18px',
+                      borderBottom: '1px solid var(--border-light)',
+                      alignItems: 'center',
+                      fontSize: '13px',
+                      transition: 'background var(--transition)',
+                    }}
+                    className="scoreboard-table-row"
+                  >
+                    {/* Sport */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {getSportIcon(m.sport, 16, 'var(--accent)')}
+                      <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                        {getSportName(m.sport)}
+                      </strong>
+                    </div>
+
+                    {/* Teams */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        fontWeight: m.winner === m.teamA ? 800 : 600,
+                        color: m.winner === m.teamA ? 'var(--accent)' : 'var(--text-primary)',
+                      }}>
+                        {teamAName}
+                      </span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: 700 }}>vs</span>
+                      <span style={{
+                        fontWeight: m.winner === m.teamB ? 800 : 600,
+                        color: m.winner === m.teamB ? 'var(--accent)' : 'var(--text-primary)',
+                      }}>
+                        {teamBName}
+                      </span>
+                    </div>
+
+                    {/* Score */}
+                    <div style={{ textAlign: 'center', fontWeight: 800, fontSize: '14px', letterSpacing: '0.05em' }}>
+                      {m.status !== 'scheduled' ? (
+                        <span style={{ color: m.status === 'live' ? 'var(--accent)' : 'var(--text-primary)' }}>
+                          {m.scoreA} – {m.scoreB}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>–</span>
+                      )}
+                    </div>
+
+                    {/* Round */}
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '12.5px' }}>
+                      {m.round}
+                    </div>
+
+                    {/* Venue */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
+                      <MapPinIcon size={12} color="var(--text-muted)" />
+                      <span>{m.venue}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div style={{ textAlign: 'right' }}>
+                      <span className={`status-badge ${m.status}`} style={{ fontSize: '10.5px', padding: '3px 8px' }}>
+                        {m.status === 'live' && <span className="live-dot" />}
+                        {m.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </section>

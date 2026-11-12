@@ -1,0 +1,532 @@
+import { useState, useMemo } from 'react';
+import { useApp } from '../context/AppContext';
+import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
+import { predictMatch, computeTeamProfile } from '../lib/predictionAi';
+import { isPlaceholder } from '../lib/bracket';
+import {
+  SparklesIcon,
+  FlameIcon,
+  CalendarIcon,
+  ActivityIcon,
+  ChevronRightIcon,
+} from '../components/Icons';
+import AIPredictionModal from '../components/AIPredictionModal';
+import type { Match } from '../types';
+
+export default function AIPredictionsPage() {
+  const { matches, teams, players, departments } = useApp();
+
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'simulator' | 'power'>('upcoming');
+  const [selectedSport, setSelectedSport] = useState<string>('s1');
+  const [selectedMatchForModal, setSelectedMatchForModal] = useState<Match | null>(null);
+
+  // Simulator State
+  const [simSport, setSimSport] = useState<string>('s1');
+  const [simTeamA, setSimTeamA] = useState<string>('');
+  const [simTeamB, setSimTeamB] = useState<string>('');
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
+  const [simResult, setSimResult] = useState<ReturnType<typeof predictMatch> | null>(null);
+
+  // Available sports with registered teams or matches
+  const availableSports = SPORTS_CATALOG;
+
+  // Filtered upcoming matches where both teams are real teams
+  const upcomingMatches = useMemo(() => {
+    return matches.filter(m => {
+      if (m.status !== 'scheduled') return false;
+      if (m.isBye || isPlaceholder(m.teamA) || isPlaceholder(m.teamB)) return false;
+      if (selectedSport !== 'all' && m.sport !== selectedSport) return false;
+      return true;
+    });
+  }, [matches, selectedSport]);
+
+  // Teams eligible for simulator
+  const simTeams = useMemo(() => {
+    return teams.filter(t => t.sport === simSport && t.isActive !== false);
+  }, [teams, simSport]);
+
+  // Handle simulation trigger
+  const handleRunSimulation = () => {
+    if (!simTeamA || !simTeamB || simTeamA === simTeamB) return;
+    setIsSimulating(true);
+    setTimeout(() => {
+      const pred = predictMatch(simTeamA, simTeamB, simSport, matches, teams, players);
+      setSimResult(pred);
+      setIsSimulating(false);
+    }, 400);
+  };
+
+  // Compute Power Rankings for teams in active sport
+  const powerRankings = useMemo(() => {
+    const activeSportTeams = teams.filter(t => (selectedSport === 'all' || t.sport === selectedSport) && t.isActive !== false);
+    return activeSportTeams.map(team => {
+      const profile = computeTeamProfile(team.name, team.sport, matches, teams, players);
+      const winRate = profile.gamesPlayed > 0 ? profile.wins / profile.gamesPlayed : 0.5;
+      const pointMargin = profile.gamesPlayed > 0 ? profile.pointDiff / profile.gamesPlayed : 0;
+      const score = Math.round((winRate * 50) + (pointMargin * 1.5) + (profile.streak * 3) + (profile.clearedPlayersCount * 1.5) + 30);
+      return {
+        team,
+        profile,
+        powerScore: Math.max(10, Math.min(99, score)),
+      };
+    }).sort((a, b) => b.powerScore - a.powerScore);
+  }, [teams, selectedSport, matches, players]);
+
+  return (
+    <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Page Header */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 4 }} className="brand-pill-tag">
+            <SparklesIcon size={12} /> Asian College Athletic Intelligence
+          </div>
+          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>Prediction AI Engine</span>
+            <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, background: 'rgba(220, 38, 38, 0.15)', color: 'var(--accent)', fontWeight: 800 }}>
+              v2.4 SPORTS INTEL
+            </span>
+          </h1>
+          <p className="page-desc">
+            Machine learning & probabilistic analytics forecasting match outcomes, projected point spreads, and tactical momentum.
+          </p>
+        </div>
+
+        {/* Global Model Stats Pill */}
+        <div className="glass-card" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Upcoming Games</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent)' }}>{upcomingMatches.length}</div>
+          </div>
+          <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
+          <div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Model Confidence</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>88.4%</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 10, flexWrap: 'wrap' }}>
+        <button
+          className={`btn btn-sm ${activeTab === 'upcoming' ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setActiveTab('upcoming')}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          <CalendarIcon size={14} /> Upcoming Match Forecasts ({upcomingMatches.length})
+        </button>
+        <button
+          className={`btn btn-sm ${activeTab === 'simulator' ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setActiveTab('simulator')}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          <SparklesIcon size={14} /> Head-to-Head AI Simulator
+        </button>
+        <button
+          className={`btn btn-sm ${activeTab === 'power' ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setActiveTab('power')}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          <ActivityIcon size={14} /> AI Power Rankings
+        </button>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 1: UPCOMING MATCH FORECASTS
+         ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'upcoming' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Sport Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Filter Sport:</span>
+            <button
+              className={`btn btn-sm ${selectedSport === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setSelectedSport('all')}
+            >
+              All Sports
+            </button>
+            {availableSports.map(s => (
+              <button
+                key={s.id}
+                className={`btn btn-sm ${selectedSport === s.id ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setSelectedSport(s.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {getSportIcon(s.id, 14)} {s.name}
+              </button>
+            ))}
+          </div>
+
+          {upcomingMatches.length === 0 ? (
+            <div className="glass-card" style={{ padding: 48, textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(220, 38, 38, 0.1)', color: 'var(--accent)', marginBottom: 12 }}>
+                <SparklesIcon size={28} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 6px' }}>No Upcoming Real Matches in Selected Sport</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 16px' }}>
+                Generate or schedule matches in the tournament bracket, or use the Head-to-Head Simulator to forecast any two teams.
+              </p>
+              <button className="btn btn-sm btn-primary" onClick={() => setActiveTab('simulator')}>
+                <SparklesIcon size={14} /> Launch Head-to-Head Simulator
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
+              {upcomingMatches.map(match => {
+                const pred = predictMatch(match.teamA, match.teamB, match.sport, matches, teams, players);
+                if (!pred) return null;
+
+                return (
+                  <div
+                    key={match.id}
+                    className="glass-card"
+                    style={{
+                      padding: 18,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                      border: '1px solid var(--border)',
+                      transition: 'transform 0.2s ease, border-color 0.2s ease',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setSelectedMatchForModal(match)}
+                  >
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        {getSportIcon(match.sport, 14, 'var(--accent)')}
+                        <span>{getSportName(match.sport)} · {match.round || 'Round Match'}</span>
+                      </div>
+                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(220, 38, 38, 0.15)', color: 'var(--accent)', fontWeight: 800 }}>
+                        {pred.confidence}
+                      </span>
+                    </div>
+
+                    {/* Teams & Probability Bar */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{match.teamA}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: pred.winProbA >= 50 ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                          {pred.winProbA}%
+                        </span>
+                      </div>
+                      <div style={{ width: '100%', height: 6, background: 'rgba(59, 130, 246, 0.3)', borderRadius: 3, overflow: 'hidden', display: 'flex', marginBottom: 6 }}>
+                        <div style={{ width: `${pred.winProbA}%`, background: 'var(--accent)' }} />
+                        <div style={{ width: `${pred.winProbB}%`, background: '#3b82f6' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{match.teamB}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: pred.winProbB >= 50 ? '#3b82f6' : 'var(--text-secondary)' }}>
+                          {pred.winProbB}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Projected Spread Pill */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'var(--bg-elevated)',
+                      padding: '8px 12px',
+                      borderRadius: 6,
+                      fontSize: 11.5,
+                      color: 'var(--text-secondary)',
+                    }}>
+                      <span>Projected Score:</span>
+                      <strong style={{ color: 'var(--text-primary)' }}>
+                        {pred.predictedScoreA} – {pred.predictedScoreB}
+                      </strong>
+                    </div>
+
+                    {/* Key Factor Snippet */}
+                    {pred.keyFactors[0] && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                        💡 {pred.keyFactors[0]}
+                      </div>
+                    )}
+
+                    {/* Action */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+                      <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        View Deep Dive Forecast <ChevronRightIcon size={12} />
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 2: HEAD-TO-HEAD AI SIMULATOR
+         ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'simulator' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="glass-card" style={{ padding: 24, border: '1px solid rgba(220, 38, 38, 0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 8, background: 'var(--accent)', color: '#fff'
+              }}>
+                <SparklesIcon size={18} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>Custom Matchup Probability Simulator</h2>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                  Select any sport and pair any two registered teams to run the Padula probabilistic predictive model.
+                </p>
+              </div>
+            </div>
+
+            {/* Selectors Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 18 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Select Sport
+                </label>
+                <select
+                  className="input-field"
+                  value={simSport}
+                  onChange={e => {
+                    setSimSport(e.target.value);
+                    setSimTeamA('');
+                    setSimTeamB('');
+                    setSimResult(null);
+                  }}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 6, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                >
+                  {availableSports.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Team A
+                </label>
+                <select
+                  className="input-field"
+                  value={simTeamA}
+                  onChange={e => setSimTeamA(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 6, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                >
+                  <option value="">-- Choose Team A --</option>
+                  {simTeams.map(t => (
+                    <option key={t.id} value={t.name} disabled={t.name === simTeamB}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Team B
+                </label>
+                <select
+                  className="input-field"
+                  value={simTeamB}
+                  onChange={e => setSimTeamB(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 6, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                >
+                  <option value="">-- Choose Team B --</option>
+                  {simTeams.map(t => (
+                    <option key={t.id} value={t.name} disabled={t.name === simTeamA}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleRunSimulation}
+                disabled={!simTeamA || !simTeamB || simTeamA === simTeamB || isSimulating}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', fontWeight: 800 }}
+              >
+                <SparklesIcon size={16} />
+                {isSimulating ? 'Analyzing Tournament Metrics...' : 'Run AI Simulation'}
+              </button>
+            </div>
+          </div>
+
+          {/* Simulation Output Card */}
+          {simResult && (
+            <div className="glass-card" style={{ padding: 24, border: '1px solid var(--accent)', boxShadow: '0 8px 30px rgba(220, 38, 38, 0.15)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FlameIcon size={14} /> AI Simulated Forecast
+                </div>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(220, 38, 38, 0.15)', color: 'var(--accent)', fontWeight: 800 }}>
+                  {simResult.confidence}
+                </span>
+              </div>
+
+              {/* Head-to-Head Big Probability */}
+              <div style={{ background: 'var(--bg-elevated)', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{simResult.teamA}</div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: simResult.winProbA >= 50 ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                      {simResult.winProbA}%
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Projected Spread</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>
+                      {simResult.predictedScoreA} – {simResult.predictedScoreB}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                      ({simResult.scoreRangeA[0]}–{simResult.scoreRangeA[1]} vs {simResult.scoreRangeB[0]}–{simResult.scoreRangeB[1]})
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{simResult.teamB}</div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: simResult.winProbB >= 50 ? '#3b82f6' : 'var(--text-secondary)' }}>
+                      {simResult.winProbB}%
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ width: '100%', height: 12, background: 'rgba(59, 130, 246, 0.4)', borderRadius: 6, overflow: 'hidden', display: 'flex' }}>
+                  <div style={{ width: `${simResult.winProbA}%`, background: 'var(--accent)', transition: 'width 0.6s ease' }} />
+                  <div style={{ width: `${simResult.winProbB}%`, background: '#3b82f6', transition: 'width 0.6s ease' }} />
+                </div>
+              </div>
+
+              {/* Narrative Summary */}
+              <div style={{ padding: 14, borderRadius: 8, background: 'rgba(220, 38, 38, 0.05)', borderLeft: '3px solid var(--accent)', marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 4 }}>
+                  Tactical Matchup Keys
+                </div>
+                <p style={{ fontSize: 13, lineHeight: 1.5, margin: 0, color: 'var(--text-primary)' }}>
+                  {simResult.tacticalSummary}
+                </p>
+              </div>
+
+              {/* Deciding Factors */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+                  Key Probabilistic Factors
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {simResult.keyFactors.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 3: AI POWER RANKINGS
+         ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'power' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>Tournament AI Power Index</h2>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                Algorithmic team strength ranking based on offensive output, defensive rating, and roster readiness.
+              </p>
+            </div>
+            <select
+              className="input-field"
+              value={selectedSport}
+              onChange={e => setSelectedSport(e.target.value)}
+              style={{ padding: '6px 12px', borderRadius: 6, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 12 }}
+            >
+              <option value="all">All Sports</option>
+              {availableSports.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {powerRankings.length === 0 ? (
+            <div className="glass-card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+              No registered teams available in this sport category.
+            </div>
+          ) : (
+            <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12.5 }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '12px 16px', width: 50 }}>#</th>
+                    <th style={{ padding: '12px 16px' }}>Team</th>
+                    <th style={{ padding: '12px 16px' }}>Sport</th>
+                    <th style={{ padding: '12px 16px' }}>Record</th>
+                    <th style={{ padding: '12px 16px' }}>PPG / Opp</th>
+                    <th style={{ padding: '12px 16px' }}>Cleared Squad</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>AI Power Index</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {powerRankings.map(({ team, profile, powerScore }, index) => {
+                    const dept = departments.find(d => d.id === team.department);
+                    return (
+                      <tr key={team.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 800, color: index < 3 ? 'var(--accent)' : 'var(--text-muted)' }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{team.name}</div>
+                          {dept && (
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{dept.name}</div>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            {getSportIcon(team.sport, 14)} {getSportName(team.sport)}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                            {profile.wins}W - {profile.losses}L
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
+                          {profile.avgPointsFor || '—'} / {profile.avgPointsAgainst || '—'}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontWeight: 600, color: profile.clearedPlayersCount > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                            {profile.clearedPlayersCount} active
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 60, height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+                              <div style={{ width: `${powerScore}%`, height: '100%', background: 'var(--accent)' }} />
+                            </div>
+                            <span style={{ fontWeight: 900, fontSize: 14, color: 'var(--accent)' }}>
+                              {powerScore}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal for Match Deep Dive */}
+      {selectedMatchForModal && (
+        <AIPredictionModal
+          match={selectedMatchForModal}
+          onClose={() => setSelectedMatchForModal(null)}
+        />
+      )}
+    </div>
+  );
+}

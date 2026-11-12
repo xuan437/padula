@@ -1,31 +1,26 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PlusIcon, CheckIcon, UsersIcon, TrophyIcon, ShieldIcon } from '../components/Icons';
+import { SPORTS_CATALOG } from '../lib/sports';
 
 type RegTab = 'teams' | 'players' | 'roster';
 
-const SPORTS_LIST = [
-  { id: 's1', name: 'Basketball' },
-  { id: 's2', name: 'Volleyball' },
-  { id: 's3', name: 'Badminton' },
-  { id: 's4', name: 'Table Tennis' },
-  { id: 's5', name: 'Mobile Legends' },
-  { id: 's6', name: 'DOTA' },
-  { id: 's7', name: 'Valorant' },
-  { id: 's8', name: 'Chess' },
-  { id: 's9', name: 'Cheerdance' },
-];
+const SPORTS_LIST = SPORTS_CATALOG.map(s => ({ id: s.id, name: s.name }));
 
 const POSITIONS_BY_SPORT: Record<string, string[]> = {
   Basketball: ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'],
   Volleyball: ['Setter', 'Outside Hitter', 'Middle Blocker', 'Libero', 'Opposite Hitter'],
-  Badminton: ['Singles', 'Doubles'],
-  'Table Tennis': ['Singles', 'Doubles'],
+  Football: ['Goalkeeper', 'Defender', 'Midfielder', 'Forward', 'Striker'],
+  'Sepak Takraw': ['Tekong (Server)', 'Killer (Spiker)', 'Feeder (Setter)'],
+  Badminton: ['Singles Specialist', 'Doubles Front', 'Doubles Back'],
+  'Table Tennis': ['Offensive Attacker', 'Defensive Chopper', 'All-Rounder'],
+  'Frisbee (Ultimate)': ['Handler', 'Cutter', 'Deep Receiver'],
+  Chess: ['Board 1', 'Board 2', 'Board 3', 'Alternate'],
+  Scrabble: ['Player', 'Alternate'],
   'Mobile Legends': ['Mid Lane', 'Jungler', 'Exp Lane', 'Gold Lane', 'Roamer'],
+  'DOTA 2': ['Carry (Pos 1)', 'Mid (Pos 2)', 'Offlane (Pos 3)', 'Soft Support (Pos 4)', 'Hard Support (Pos 5)'],
   DOTA: ['Carry (Pos 1)', 'Mid (Pos 2)', 'Offlane (Pos 3)', 'Soft Support (Pos 4)', 'Hard Support (Pos 5)'],
   Valorant: ['Duelist', 'Initiator', 'Controller', 'Sentinel'],
-  Chess: ['Board 1', 'Board 2', 'Board 3'],
-  Cheerdance: ['Flyer', 'Base', 'Back Spot', 'Dancer'],
 };
 
 function PlayerCard({ player, department, team }: {
@@ -106,7 +101,7 @@ function PlayerCard({ player, department, team }: {
 }
 
 export default function TeamRegistrationPage() {
-  const { players, teams, departments, divisions, registerTeam, registerPlayer, registerUser } = useApp();
+  const { players, teams, departments, divisions, registerTeam, registerPlayer } = useApp();
   const [tab, setTab] = useState<RegTab>('teams');
   const [filterSport, setFilterSport] = useState('all');
   const [filterTeam, setFilterTeam] = useState('all');
@@ -119,7 +114,6 @@ export default function TeamRegistrationPage() {
   const [playerForm, setPlayerForm] = useState({
     name: '', studentId: '', department: '', sport: 's1', teamId: '',
     jerseyNumber: '', position: '', gwa: '', medicalCleared: true, email: '',
-    password: 'password123',
   });
   const [playerSuccess, setPlayerSuccess] = useState('');
 
@@ -137,7 +131,6 @@ export default function TeamRegistrationPage() {
     if (!playerForm.name.trim() || !playerForm.studentId.trim() || !playerForm.department) return;
     const cleanStudentId = playerForm.studentId.trim();
     const cleanEmail = playerForm.email.trim().toLowerCase() || `${cleanStudentId.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.asiancollege.edu.ph`;
-    const cleanPassword = playerForm.password.trim() || 'password123';
 
     registerPlayer({
       name: playerForm.name, studentId: cleanStudentId,
@@ -151,22 +144,8 @@ export default function TeamRegistrationPage() {
       gmailVerified: Boolean(playerForm.email),
     });
 
-    // Create player login account
-    registerUser({
-      id: `u-pl-${Date.now()}`,
-      name: playerForm.name,
-      role: 'player',
-      username: cleanStudentId,
-      email: cleanEmail,
-      password: cleanPassword,
-      department: playerForm.department,
-      avatarInitials: playerForm.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
-      gmailVerified: Boolean(playerForm.email),
-      isActive: true,
-    });
-
-    setPlayerSuccess(`${playerForm.name} registered! Athlete account created. Login with Student ID "${cleanStudentId}" or email.`);
-    setPlayerForm({ name: '', studentId: '', department: '', sport: 's1', teamId: '', jerseyNumber: '', position: '', gwa: '', medicalCleared: true, email: '', password: 'password123' });
+    setPlayerSuccess(`${playerForm.name} registered successfully!`);
+    setPlayerForm({ name: '', studentId: '', department: '', sport: 's1', teamId: '', jerseyNumber: '', position: '', gwa: '', medicalCleared: true, email: '' });
     setTimeout(() => setPlayerSuccess(''), 4500);
   };
 
@@ -349,20 +328,6 @@ export default function TeamRegistrationPage() {
                     value={playerForm.email}
                     onChange={e => setPlayerForm(p => ({ ...p, email: e.target.value }))}
                   />
-                </div>
-                <div className="form-group">
-                  <label>Athlete Login Password *</label>
-                  <input
-                    className="form-input"
-                    type="password"
-                    placeholder="Set password (e.g. password123)"
-                    value={playerForm.password}
-                    onChange={e => setPlayerForm(p => ({ ...p, password: e.target.value }))}
-                    required
-                  />
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    Used by athlete to log in with Student ID or email.
-                  </span>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

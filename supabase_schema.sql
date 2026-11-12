@@ -12,6 +12,7 @@
 -- CLEAN RESET: Drop existing tables to prevent schema/column drift
 -- ─────────────────────────────────────────────────────────────────────────────
 DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS match_score_audits CASCADE;
 DROP TABLE IF EXISTS announcements CASCADE;
 DROP TABLE IF EXISTS tournament_events CASCADE;
 DROP TABLE IF EXISTS matches CASCADE;
@@ -112,6 +113,7 @@ CREATE TABLE IF NOT EXISTS players (
 -- 7. TOURNAMENT MATCHES
 CREATE TABLE IF NOT EXISTS matches (
   id TEXT PRIMARY KEY,
+  event_id TEXT,
   sport TEXT NOT NULL,
   division TEXT,
   team_a TEXT NOT NULL,
@@ -122,9 +124,16 @@ CREATE TABLE IF NOT EXISTS matches (
   venue TEXT NOT NULL,
   round TEXT NOT NULL,
   round_number INT DEFAULT 1,
+  slot INT,
   match_number INT DEFAULT 1,
   scheduled_time TIMESTAMPTZ,
+  next_match_id TEXT,
+  next_slot TEXT CHECK (next_slot IN ('A', 'B')),
   winner TEXT,
+  finalized_by TEXT,
+  finalized_at TIMESTAMPTZ,
+  is_bye BOOLEAN DEFAULT false,
+  scorer_id TEXT,
   referee TEXT,
   scorekeeper TEXT,
   coach_a TEXT,
@@ -174,6 +183,22 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 10b. MATCH SCORE AUDIT LOGS (Score changes, submissions, and director overrides)
+CREATE TABLE IF NOT EXISTS match_score_audits (
+  id TEXT PRIMARY KEY,
+  match_id TEXT NOT NULL,
+  caller_name TEXT NOT NULL,
+  caller_role TEXT NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('score_update', 'score_finalize', 'score_override', 'score_correct', 'match_reopen')),
+  old_score_a INT,
+  old_score_b INT,
+  new_score_a INT NOT NULL,
+  new_score_b INT NOT NULL,
+  winner TEXT,
+  reason TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 11. USER ACCOUNTS (Role-based authentication)
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
@@ -204,6 +229,7 @@ ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tournament_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE match_score_audits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 -- Public / Anon read & authenticated operational policies
@@ -251,6 +277,12 @@ BEGIN
   DROP POLICY IF EXISTS "Operational Write Matches" ON matches;
   CREATE POLICY "Operational Write Matches" ON matches FOR ALL USING (true);
 
+  -- Match Score Audits
+  DROP POLICY IF EXISTS "Public Read Match Audits" ON match_score_audits;
+  CREATE POLICY "Public Read Match Audits" ON match_score_audits FOR SELECT USING (true);
+  DROP POLICY IF EXISTS "Operational Write Match Audits" ON match_score_audits;
+  CREATE POLICY "Operational Write Match Audits" ON match_score_audits FOR ALL USING (true);
+
   -- Tournament Events
   DROP POLICY IF EXISTS "Public Read Events" ON tournament_events;
   CREATE POLICY "Public Read Events" ON tournament_events FOR SELECT USING (true);
@@ -275,6 +307,112 @@ BEGIN
   DROP POLICY IF EXISTS "Operational Write Users" ON users;
   CREATE POLICY "Operational Write Users" ON users FOR ALL USING (true);
 END $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- RPC: FINISH_MATCH (Scorer-Controlled Finalization & Advancement)
+-- Enforces:
+-- 1. Match not found or already finished
+-- 2. No placeholder teams
+-- 3. No ties or 0-0
+-- 4. Scorer identity or director/coordinator override
+-- 5. Single atomic transaction for winner assignment and next round slot advance
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION finish_match(
+  p_match_id TEXT,
+  p_caller_name TEXT,
+  p_caller_role TEXT DEFAULT 'scorer',
+  p_is_override BOOLEAN DEFAULT false
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_match matches%ROWTYPE;
+  v_winner TEXT;
+  v_now TIMESTAMPTZ := NOW();
+BEGIN
+  SELECT * INTO v_match FROM matches WHERE id = p_match_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Match not found.');
+  END IF;
+
+  IF v_match.status = 'finished' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Match is already finished.');
+  END IF;
+
+  IF v_match.team_a ILIKE 'Winner of%' OR v_match.team_b ILIKE 'Winner of%' OR
+     v_match.team_a ILIKE 'TBD%' OR v_match.team_b ILIKE 'TBD%' OR
+     v_match.team_a ILIKE 'BYE%' OR v_match.team_b ILIKE 'BYE%' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Cannot finalize match with placeholder teams.');
+  END IF;
+
+  IF v_match.score_a = v_match.score_b THEN
+    IF v_match.score_a = 0 THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Cannot finalize match with 0–0 scores. Game results must be entered.');
+    ELSE
+      RETURN jsonb_build_object('success', false, 'message', 'Cannot finalize match with tied scores. A knockout match must have a winner.');
+    END IF;
+  END IF;
+
+  IF LOWER(TRIM(COALESCE(v_match.scorekeeper, ''))) <> LOWER(TRIM(p_caller_name)) THEN
+    IF NOT (p_caller_role IN ('director', 'coordinator') AND p_is_override) THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Security: Only assigned Official Scorer can finalize this match.');
+    END IF;
+  END IF;
+
+  IF v_match.score_a > v_match.score_b THEN
+    v_winner := v_match.team_a;
+  ELSE
+    v_winner := v_match.team_b;
+  END IF;
+
+  UPDATE matches SET
+    status = 'finished',
+    winner = v_winner,
+    finalized_by = p_caller_name,
+    finalized_at = v_now,
+    conflict_warning = NULL
+  WHERE id = p_match_id;
+
+  IF v_match.next_match_id IS NOT NULL AND v_match.next_slot IS NOT NULL THEN
+    IF v_match.next_slot = 'A' THEN
+      UPDATE matches SET team_a = v_winner WHERE id = v_match.next_match_id;
+    ELSIF v_match.next_slot = 'B' THEN
+      UPDATE matches SET team_b = v_winner WHERE id = v_match.next_match_id;
+    END IF;
+  END IF;
+
+  INSERT INTO audit_logs (id, action, user_id, user_name, user_role, details, entity_id, entity_type, created_at)
+  VALUES (
+    'al_' || gen_random_uuid(),
+    CASE WHEN p_is_override THEN 'score_override' ELSE 'score_finalize' END,
+    p_caller_name,
+    p_caller_name,
+    p_caller_role,
+    'Finalized match ' || v_match.team_a || ' vs ' || v_match.team_b || ' with score ' || v_match.score_a || '–' || v_match.score_b || '. Winner: ' || v_winner,
+    p_match_id,
+    'Match',
+    v_now
+  );
+
+  INSERT INTO match_score_audits (id, match_id, caller_name, caller_role, action, old_score_a, old_score_b, new_score_a, new_score_b, winner, created_at)
+  VALUES (
+    'msa_' || gen_random_uuid(),
+    p_match_id,
+    p_caller_name,
+    p_caller_role,
+    CASE WHEN p_is_override THEN 'score_override' ELSE 'score_finalize' END,
+    v_match.score_a,
+    v_match.score_b,
+    v_match.score_a,
+    v_match.score_b,
+    v_winner,
+    v_now
+  );
+
+  RETURN jsonb_build_object('success', true, 'winner', v_winner);
+END;
+$$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- REALTIME SUBSCRIPTIONS

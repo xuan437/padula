@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import type { Player } from '../types';
 
@@ -170,33 +170,28 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
   const dept = departments.find(d => d.id === activePlayer.department);
   const team = teams.find(t => t.id === activePlayer.teamId);
 
-  const currentSeasonGoals = activePlayer.currentSeasonGoals ?? 29;
-  const intramuralsGoals   = Math.round(currentSeasonGoals * 0.72);  // ~72% from intramurals
-  const exhibitionGoals    = currentSeasonGoals - intramuralsGoals;
+  const currentSeasonGoals = activePlayer.currentSeasonGoals ?? activePlayer.intGoals ?? 0;
+  const intramuralsGoals   = activePlayer.intGoals ?? 0;
+  const exhibitionGoals    = Math.max(0, currentSeasonGoals - intramuralsGoals);
 
-  const careerHistory = activePlayer.careerHistory || [
-    { season: '2025–2026', team: team?.name || 'Padula Eagles',    matches: 14, goals: 21 },
-    { season: '2024–2025', team: 'Dumaguete Heat',                  matches: 18, goals: 19 },
-    { season: '2023–2024', team: 'Negros Junior Stars',             matches: 22, goals: 15 },
-  ];
+  const careerHistory = activePlayer.careerHistory || [];
+  const matchStats = activePlayer.matchStats || [];
 
-  const matchStats = activePlayer.matchStats || [
-    { matchday: 'MD 32', venue: 'H', opponent: 'Padula',  against: 'Lazio',         result: 'W 1-0', points: 1, assists: 0, rebounds: 2, mins: "83'" },
-    { matchday: 'MD 31', venue: 'A', opponent: 'Padula',  against: 'Juventus',      result: 'L 1-2', points: 1, assists: 0, rebounds: 1, mins: "90'" },
-    { matchday: 'MD 30', venue: 'H', opponent: 'Padula',  against: 'Udinese Calcio',result: 'D 1-1', points: 1, assists: 0, rebounds: 3, mins: "90'" },
-    { matchday: 'MD 29', venue: 'A', opponent: 'Padula',  against: 'Sampdoria',     result: 'L 0-1', points: 0, assists: 0, rebounds: 1, mins: "90'" },
-    { matchday: 'MD 28', venue: 'H', opponent: 'Padula',  against: 'Inter Mediolan',result: 'L 2-3', points: 0, assists: 1, rebounds: 2, mins: "90'" },
-    { matchday: 'MD 27', venue: 'A', opponent: 'Padula',  against: 'Chievo Verona', result: 'W 2-1', points: 1, assists: 0, rebounds: 1, mins: "75'" },
-  ];
-
-  const topScorers = [
-    { rank: 1,  name: 'Fabio Quagliarella', dept: 'BAA', pts: 21 },
-    { rank: 2,  name: activePlayer.name,     dept: dept?.shortName || 'BAA', pts: 21 },
-    { rank: 3,  name: 'Duván Zapata',        dept: 'CSE', pts: 20 },
-    { rank: 4,  name: 'Cristiano Ronaldo',   dept: 'HTM', pts: 19 },
-    { rank: 5,  name: 'Arkadiusz Milik',     dept: 'DPD', pts: 16 },
-    { rank: 6,  name: 'Francesco Caputo',    dept: 'Senior Dept', pts: 14 },
-  ];
+  const topScorers = useMemo(() => {
+    return players
+      .filter(p => p.sport === activePlayer.sport)
+      .map(p => {
+        const pDept = departments.find(d => d.id === p.department);
+        return {
+          name: p.name,
+          dept: pDept?.shortName || pDept?.name || 'Padula',
+          pts: p.currentSeasonGoals ?? p.intGoals ?? 0,
+        };
+      })
+      .sort((a, b) => b.pts - a.pts)
+      .slice(0, 6)
+      .map((p, idx) => ({ rank: idx + 1, ...p }));
+  }, [players, departments, activePlayer.sport]);
 
   const initials = activePlayer.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const isMe = (name: string) => name === activePlayer.name;
@@ -296,7 +291,7 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
             <InfoBox title="Position"        value={activePlayer.position    || 'Small Forward'} />
             <InfoBox title="Matches Played"  value={String(matchStats.length)} />
             <InfoBox title="Hometown"        value={activePlayer.placeOfBirth || 'Dumaguete, PH'} />
-            <InfoBox title="Athletic Mgr"    value="Director Dave Cruz" />
+            <InfoBox title="Sports Director" value="Mr. John Eric Samane" />
             <InfoBox title="Season Points"   value={String(currentSeasonGoals)} />
           </div>
         </div>
@@ -326,23 +321,29 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {careerHistory.map((row, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: i === 0 ? C.accentDim : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${i === 0 ? 'rgba(249,115,22,0.3)' : C.border}`,
-                  borderRadius: '10px', padding: '10px 14px',
-                }}>
-                  <div>
-                    <div style={{ fontSize: '10px', color: C.textM, fontWeight: 600 }}>{row.season}</div>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: C.textP }}>{row.team}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '18px', fontSize: '14px', fontWeight: 700 }}>
-                    <span style={{ color: C.textS }}>{row.matches}</span>
-                    <span style={{ color: C.accent }}>{row.goals}</span>
-                  </div>
+              {careerHistory.length === 0 ? (
+                <div style={{ padding: '24px 10px', textAlign: 'center', color: C.textM, fontSize: '12px' }}>
+                  No prior collegiate seasons on file.
                 </div>
-              ))}
+              ) : (
+                careerHistory.map((row, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: i === 0 ? C.accentDim : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${i === 0 ? 'rgba(249,115,22,0.3)' : C.border}`,
+                    borderRadius: '10px', padding: '10px 14px',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '10px', color: C.textM, fontWeight: 600 }}>{row.season}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.textP }}>{row.team}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '18px', fontSize: '14px', fontWeight: 700 }}>
+                      <span style={{ color: C.textS }}>{row.matches}</span>
+                      <span style={{ color: C.accent }}>{row.goals}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -375,19 +376,27 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
                   </tr>
                 </thead>
                 <tbody>
-                  {matchStats.map((m: any, i: number) => (
-                    <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
-                      <td style={{ padding: '10px 8px', fontWeight: 700, color: C.accent }}>{m.matchday}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', color: m.venue === 'H' ? C.green : C.blue, fontWeight: 700, fontSize: '11px' }}>{m.venue}</td>
-                      <td style={{ padding: '10px 8px', color: C.textS, textAlign: 'center' }}>{m.opponent || 'Padula'}</td>
-                      <td style={{ padding: '10px 8px', color: C.textS, textAlign: 'center' }}>{m.against || m.opponent}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: resultColor(m.result) }}>{m.result}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: C.textP }}>{m.points}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textS }}>{m.assists}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textS }}>{m.rebounds}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textM }}>{m.mins || m.minutes + "'"}</td>
+                  {matchStats.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ padding: '24px 8px', textAlign: 'center', color: C.textM }}>
+                        No official matches recorded yet for this athlete.
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    matchStats.map((m: any, i: number) => (
+                      <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+                        <td style={{ padding: '10px 8px', fontWeight: 700, color: C.accent }}>{m.matchday}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', color: m.venue === 'H' ? C.green : C.blue, fontWeight: 700, fontSize: '11px' }}>{m.venue}</td>
+                        <td style={{ padding: '10px 8px', color: C.textS, textAlign: 'center' }}>{m.opponent || 'Padula'}</td>
+                        <td style={{ padding: '10px 8px', color: C.textS, textAlign: 'center' }}>{m.against || m.opponent}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: resultColor(m.result) }}>{m.result}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: C.textP }}>{m.points}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textS }}>{m.assists}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textS }}>{m.rebounds}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textM }}>{m.mins || m.minutes + "'"}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -400,23 +409,29 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
               <span style={{ fontSize: '11px', color: C.accent, fontWeight: 600 }}>Intramurals 2026</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {topScorers.map((s, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '10px 12px', borderRadius: '10px',
-                  background: isMe(s.name) ? C.accentDim : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${isMe(s.name) ? 'rgba(249,115,22,0.35)' : C.border}`,
-                }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: C.textM, minWidth: '18px' }}>{s.rank}.</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: isMe(s.name) ? 800 : 600, color: isMe(s.name) ? C.textP : C.textS }}>
-                      {s.name}
-                    </div>
-                    <div style={{ fontSize: '10px', color: C.textM }}>{s.dept}</div>
-                  </div>
-                  <span style={{ fontSize: '15px', fontWeight: 800, color: C.accent }}>{s.pts}</span>
+              {topScorers.length === 0 ? (
+                <div style={{ padding: '24px 10px', textAlign: 'center', color: C.textM, fontSize: '12px' }}>
+                  No tournament scorers recorded yet.
                 </div>
-              ))}
+              ) : (
+                topScorers.map((s, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '10px 12px', borderRadius: '10px',
+                    background: isMe(s.name) ? C.accentDim : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isMe(s.name) ? 'rgba(249,115,22,0.35)' : C.border}`,
+                  }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: C.textM, minWidth: '18px' }}>{s.rank}.</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: isMe(s.name) ? 800 : 600, color: isMe(s.name) ? C.textP : C.textS }}>
+                        {s.name}
+                      </div>
+                      <div style={{ fontSize: '10px', color: C.textM }}>{s.dept}</div>
+                    </div>
+                    <span style={{ fontSize: '15px', fontWeight: 800, color: C.accent }}>{s.pts}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

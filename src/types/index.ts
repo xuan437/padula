@@ -5,20 +5,38 @@
 // ── Roles ────────────────────────────────────────────────────────────────────
 export type UserRole = 'director' | 'coordinator' | 'scorer' | 'player' | 'guest';
 
+export type StaffRole = 'director' | 'coordinator' | 'scorer';
+export type StaffStatus = 'active' | 'pending' | 'disabled';
+
+export interface StaffMember {
+  id: string;
+  email: string;
+  name: string;
+  role: StaffRole;
+  assignedCompetitionId?: string; // e.g. 's1' (Basketball)
+  assignedMatchIds?: string[];    // match IDs assigned to scorer
+  status: StaffStatus;
+  addedBy?: string;
+  createdAt?: string;
+  lastLoginAt?: string;
+  isMock?: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
   role: UserRole;
   username: string;
-  email?: string;          // institutional Google / Gmail account
-  password?: string;       // account password / hash
-  department?: string;     // assigned dept (coordinator/scorer)
-  assignedSport?: string;  // assigned sport for scorers
+  email: string;           // institutional Google (@asiancollege.edu.ph)
+  department?: string;     // assigned dept
+  assignedSport?: string;  // assigned sport / competition ID
+  assignedCompetitionId?: string;
+  assignedMatchIds?: string[];
+  status?: StaffStatus;
   avatarInitials?: string;
   gmailVerified?: boolean;
   isActive?: boolean;
-  isDefaultPassword?: boolean;
-  mustChangePassword?: boolean;
+  isMock?: boolean;
 }
 
 // ── Sport Catalog ────────────────────────────────────────────────────────────
@@ -41,12 +59,14 @@ export interface Department {
   name: string;
   shortName: string;
   color: string;           // hex accent color
+  isMock?: boolean;
 }
 
 export interface Division {
   id: string;
   name: string;            // e.g. "Men's Varsity", "Women's Varsity", "Open"
   sportId: string;
+  isMock?: boolean;
 }
 
 export interface Venue {
@@ -55,6 +75,7 @@ export interface Venue {
   capacity: number;
   location: string;
   sports: string[];        // sport IDs supported
+  isMock?: boolean;
 }
 
 // ── Players & Teams ──────────────────────────────────────────────────────────
@@ -107,6 +128,7 @@ export interface Player {
   careerHistory?: PlayerCareerHistory[];
   matchStats?: PlayerMatchStat[];
   performanceTrend?: number[]; // rating or points trend e.g. [12, 14, 18, 22, 28, 35]
+  isMock?: boolean;
 }
 
 export interface Team {
@@ -117,9 +139,11 @@ export interface Team {
   department: string;      // department ID
   players: string[];       // player IDs
   coach?: string;
+  trainer?: string;        // team athletic trainer
   seed?: number;
   color?: string;
   isActive?: boolean;
+  isMock?: boolean;
 }
 
 // ── Officials ─────────────────────────────────────────────────────────────────
@@ -135,11 +159,13 @@ export interface GameOfficial {
   contact?: string;
   assignedGameId?: string;
   isActive?: boolean;
+  isMock?: boolean;
 }
 
 // ── Matches ───────────────────────────────────────────────────────────────────
 export interface Match {
   id: string;
+  eventId?: string;
   sport: string;
   division?: string;
   teamA: string;
@@ -147,12 +173,19 @@ export interface Match {
   scoreA: number;
   scoreB: number;
   status: 'scheduled' | 'live' | 'finished';
-  venue: string;
+  venue?: string;
   round: string;
-  roundNumber: number;    // 1 = QF, 2 = SF, 3 = Final
-  matchNumber: number;    // position in round
+  roundNumber: number;    // 1 = QF/R1, 2 = SF, 3 = Final
+  slot?: number;          // position within the round
+  matchNumber?: number;   // overall match sequence number
+  nextMatchId?: string | null;
+  nextSlot?: 'A' | 'B' | null;
   scheduledTime?: string; // ISO datetime string
   winner?: string;
+  finalizedBy?: string;
+  finalizedAt?: string;
+  isBye?: boolean;
+  scorerId?: string;
   referee?: string;
   scorekeeper?: string;
   coachA?: string;
@@ -160,6 +193,7 @@ export interface Match {
   manager?: string;
   conflictWarning?: string;
   offlineQueue?: { scoreA: number; scoreB: number; ts: number }[];
+  isMock?: boolean;
 }
 
 // ── Bracket node ──────────────────────────────────────────────────────────────
@@ -182,9 +216,10 @@ export interface TournamentEvent {
   endDate?: string;
   venue: string;
   status: 'draft' | 'published' | 'ongoing' | 'completed';
-  bracket: Match[];
+  bracket?: Match[];
   archived?: boolean;
   archivedAt?: string;
+  isMock?: boolean;
 }
 
 // ── Standings ─────────────────────────────────────────────────────────────────
@@ -218,18 +253,21 @@ export interface Announcement {
   priority: 'normal' | 'urgent';
   createdAt: string;
   createdBy: string;
+  isMock?: boolean;
 }
 
 // ── Audit Log ────────────────────────────────────────────────────────────────
 export type AuditAction =
   | 'login' | 'logout'
-  | 'event_create' | 'event_update' | 'event_publish' | 'event_archive'
+  | 'event_create' | 'event_update' | 'event_publish' | 'event_archive' | 'archive_event'
   | 'team_register' | 'player_register' | 'player_clear'
   | 'bracket_generate'
-  | 'match_start' | 'score_update' | 'match_finish'
+  | 'match_start' | 'score_update' | 'score_correct' | 'score_finalize' | 'score_override' | 'match_finish'
   | 'official_register' | 'official_assign'
+  | 'account_add' | 'account_remove' | 'account_deactivate' | 'sensitive_action'
   | 'announcement_post'
-  | 'department_add' | 'venue_add' | 'division_add';
+  | 'department_add' | 'venue_add' | 'division_add'
+  | 'delete_mock_data';
 
 export interface AuditLog {
   id: string;
@@ -241,6 +279,7 @@ export interface AuditLog {
   timestamp: string;        // ISO string
   entityId?: string;        // ID of affected object
   entityType?: string;
+  isMock?: boolean;
 }
 
 // ── Misc ──────────────────────────────────────────────────────────────────────

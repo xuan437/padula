@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { PrinterIcon } from '../components/Icons';
+import { PrinterIcon, SparklesIcon } from '../components/Icons';
 
 type AnalyticsTab = 'overview' | 'sports' | 'archive' | 'reports';
 
@@ -45,10 +45,10 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 }
 
 export default function AnalyticsDashboard() {
-  const { matches, teams, players, departments, events, auditLogs, computeMedalTally } = useApp();
+  const { matches, teams, players, departments, events, auditLogs, computeMedalTally, setActiveView } = useApp();
   const [tab, setTab] = useState<AnalyticsTab>('overview');
 
-  const finished      = matches.filter(m => m.status === 'finished');
+  const finished      = matches.filter(m => m.status === 'finished' && !m.isBye);
   const live          = matches.filter(m => m.status === 'live');
   const totalGoals    = finished.reduce((s, m) => s + m.scoreA + m.scoreB, 0);
   const avgScore      = finished.length ? (totalGoals / finished.length / 2).toFixed(1) : '—';
@@ -83,9 +83,14 @@ export default function AnalyticsDashboard() {
           <h1 className="page-title">Analytics & Reports</h1>
           <p className="page-desc">Tournament data analysis, scoring distributions, and printable summaries</p>
         </div>
-        <button className="btn btn-sm btn-ghost" onClick={printReport}>
-          <PrinterIcon size={14} /> Print Summary
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button className="btn btn-sm btn-primary" onClick={() => setActiveView('predictions')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <SparklesIcon size={14} /> Prediction AI Engine
+          </button>
+          <button className="btn btn-sm btn-ghost" onClick={printReport}>
+            <PrinterIcon size={14} /> Print Summary
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

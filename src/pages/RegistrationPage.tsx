@@ -5,6 +5,7 @@ import {
   CheckIcon,
   CalendarIcon,
 } from '../components/Icons';
+import { SPORTS_CATALOG, getSportName } from '../lib/sports';
 
 type RegTab = 'teams' | 'players' | 'referees' | 'scorekeepers' | 'coaches' | 'managers' | 'coordinators';
 
@@ -47,9 +48,9 @@ export default function RegistrationPage() {
 
   // Form states
   const [teamForm, setTeamForm] = useState({ name: '', sport: 's1', department: 'd1', division: 'div1', color: '#3b82f6' });
-  const [playerForm, setPlayerForm] = useState({ name: '', studentId: '', department: 'd1', sport: 's1', jerseyNumber: '', position: '', email: '', password: 'password123', medicalCleared: true });
-  const [officialForm, setOfficialForm] = useState({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '', password: 'password123' });
-  const [coordForm, setCoordForm] = useState({ name: '', email: '', department: 'd1', password: 'password123' });
+  const [playerForm, setPlayerForm] = useState({ name: '', studentId: '', department: 'd1', sport: 's1', jerseyNumber: '', position: '', email: '', medicalCleared: true });
+  const [officialForm, setOfficialForm] = useState({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '' });
+  const [coordForm, setCoordForm] = useState({ name: '', email: '', department: 'd1' });
 
   // Handle Team Submit
   const handleTeamSubmit = (e: React.FormEvent) => {
@@ -75,9 +76,8 @@ export default function RegistrationPage() {
     if (!playerForm.name.trim() || !playerForm.studentId.trim()) return;
     const cleanStudentId = playerForm.studentId.trim();
     const cleanEmail = playerForm.email.trim().toLowerCase() || `${cleanStudentId.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.asiancollege.edu.ph`;
-    const cleanPassword = playerForm.password.trim() || 'password123';
 
-    // 1. Register player entity
+    // Register player entity (no player login account)
     registerPlayer({
       name: playerForm.name.trim(),
       studentId: cleanStudentId,
@@ -91,27 +91,13 @@ export default function RegistrationPage() {
       currentSeasonGoals: 0,
     });
 
-    // 2. Create login account for this player
-    registerUser({
-      id: `u-pl-${Date.now()}`,
-      name: playerForm.name.trim(),
-      role: 'player',
-      username: cleanStudentId,
-      email: cleanEmail,
-      password: cleanPassword,
-      department: playerForm.department,
-      avatarInitials: playerForm.name.trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
-      gmailVerified: Boolean(playerForm.email.trim()),
-      isActive: true,
-    });
-
-    setSuccessBanner(`Athlete "${playerForm.name}" registered! They can log in using Student ID "${cleanStudentId}" or email with their password.`);
+    setSuccessBanner(`Athlete "${playerForm.name}" (${cleanStudentId}) registered successfully.`);
     setRegisteredPlayerNotice(true);
-    setPlayerForm({ name: '', studentId: '', department: 'd1', sport: 's1', jerseyNumber: '', position: '', email: '', password: 'password123', medicalCleared: true });
+    setPlayerForm({ name: '', studentId: '', department: 'd1', sport: 's1', jerseyNumber: '', position: '', email: '', medicalCleared: true });
     setTimeout(() => {
       setRegisteredPlayerNotice(false);
       setSuccessBanner(null);
-    }, 8000);
+    }, 5000);
   };
 
   // Handle Official Submit (referee, scorekeeper, coach, manager)
@@ -122,7 +108,6 @@ export default function RegistrationPage() {
     const cleanName = officialForm.name.trim();
     const cleanSport = officialForm.sport;
     const cleanContact = officialForm.contact.trim().toLowerCase();
-    const cleanPassword = officialForm.password?.trim() || 'password123';
     const license = officialForm.licenseId.trim() || `PAD-${role.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-3)}`;
 
     // 1. Register official in officials table
@@ -136,7 +121,7 @@ export default function RegistrationPage() {
       isActive: true,
     });
 
-    // 2. If scorekeeper, ALWAYS create a dedicated user login account!
+    // 2. If scorekeeper, register into authorized staff user accounts for Google sign-in
     if (role === 'scorekeeper') {
       const cleanEmail = cleanContact.includes('@')
         ? cleanContact
@@ -151,30 +136,17 @@ export default function RegistrationPage() {
         role: 'scorer',
         username: cleanUsername,
         email: cleanEmail,
-        password: cleanPassword,
         avatarInitials: cleanName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
         isActive: true,
       });
 
-      setSuccessBanner(`Scorekeeper "${cleanName}" registered! Log in with: "${cleanEmail}" or "${cleanUsername}" with your password.`);
+      setSuccessBanner(`Scorekeeper "${cleanName}" authorized for Google Sign-In with email "${cleanEmail}".`);
     } else {
-      // Other officials with email
-      if (cleanContact) {
-        registerUser({
-          id: `u-${Date.now()}`,
-          name: cleanName,
-          role: 'guest',
-          username: cleanContact.split('@')[0],
-          email: cleanContact,
-          password: cleanPassword,
-          isActive: true,
-        });
-      }
       setSuccessBanner(`${role.charAt(0).toUpperCase() + role.slice(1)} "${cleanName}" registered successfully.`);
     }
 
-    setOfficialForm({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '', password: 'password123' });
-    setTimeout(() => setSuccessBanner(null), 6000);
+    setOfficialForm({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '' });
+    setTimeout(() => setSuccessBanner(null), 5000);
   };
 
   // Handle Coordinator Submit (Director Only)
@@ -183,20 +155,21 @@ export default function RegistrationPage() {
     if (!isDirector || coordinatorLimitReached) return;
     if (!coordForm.name.trim() || !coordForm.email.trim()) return;
 
+    const email = coordForm.email.trim().toLowerCase();
+    const finalEmail = email.includes('@') ? email : `${email}@asiancollege.edu.ph`;
+
     registerUser({
       id: `u-${Date.now()}`,
       name: coordForm.name.trim(),
       role: 'coordinator',
-      username: coordForm.email.split('@')[0],
-      email: coordForm.email.trim().toLowerCase(),
+      username: finalEmail.split('@')[0],
+      email: finalEmail,
       department: coordForm.department,
-      password: coordForm.password || 'password123',
-      mustChangePassword: true,
       isActive: true,
     });
 
-    setSuccessBanner(`Sports Coordinator "${coordForm.name}" registered successfully.`);
-    setCoordForm({ name: '', email: '', department: 'd1', password: 'password123' });
+    setSuccessBanner(`Sports Coordinator "${coordForm.name}" registered for Google Sign-In with "${finalEmail}".`);
+    setCoordForm({ name: '', email: '', department: 'd1' });
     setTimeout(() => setSuccessBanner(null), 4000);
   };
 
@@ -360,7 +333,7 @@ export default function RegistrationPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Padula Eagles"
+                  placeholder="Enter team name"
                   value={teamForm.name}
                   onChange={e => setTeamForm(p => ({ ...p, name: e.target.value }))}
                   className="form-input"
@@ -385,15 +358,9 @@ export default function RegistrationPage() {
                   onChange={e => setTeamForm(p => ({ ...p, sport: e.target.value }))}
                   className="form-input"
                 >
-                  <option value="s1">Basketball (5v5)</option>
-                  <option value="s2">Volleyball</option>
-                  <option value="s3">Badminton</option>
-                  <option value="s4">Table Tennis</option>
-                  <option value="s5">Mobile Legends</option>
-                  <option value="s6">DOTA</option>
-                  <option value="s7">Valorant</option>
-                  <option value="s8">Chess</option>
-                  <option value="s9">Cheerdance</option>
+                  {SPORTS_CATALOG.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.format})</option>
+                  ))}
                 </select>
               </div>
 
@@ -435,7 +402,7 @@ export default function RegistrationPage() {
                       <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '12px', fontWeight: 700 }}>{t.name}</td>
                         <td style={{ padding: '12px' }}>{dept?.shortName || t.department}</td>
-                        <td style={{ padding: '12px', textTransform: 'capitalize' }}>{t.sport === 's1' ? 'Basketball' : t.sport === 's2' ? 'Volleyball' : t.sport}</td>
+                        <td style={{ padding: '12px' }}>{getSportName(t.sport)}</td>
                         <td style={{ padding: '12px' }}>
                           <span style={{
                             padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700,
@@ -515,15 +482,9 @@ export default function RegistrationPage() {
                   onChange={e => setPlayerForm(p => ({ ...p, sport: e.target.value }))}
                   className="form-input"
                 >
-                  <option value="s1">Basketball</option>
-                  <option value="s2">Volleyball</option>
-                  <option value="s3">Badminton</option>
-                  <option value="s4">Table Tennis</option>
-                  <option value="s5">Mobile Legends</option>
-                  <option value="s6">DOTA</option>
-                  <option value="s7">Valorant</option>
-                  <option value="s8">Chess</option>
-                  <option value="s9">Cheerdance</option>
+                  {SPORTS_CATALOG.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -558,21 +519,6 @@ export default function RegistrationPage() {
                   onChange={e => setPlayerForm(p => ({ ...p, email: e.target.value }))}
                   className="form-input"
                 />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Athlete Login Password *</label>
-                <input
-                  type="password"
-                  placeholder="Set password (e.g. password123)"
-                  value={playerForm.password}
-                  onChange={e => setPlayerForm(p => ({ ...p, password: e.target.value }))}
-                  className="form-input"
-                  required
-                />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
-                  The player will use their Student ID or Email and this password to log in.
-                </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '24px' }}>
@@ -700,10 +646,9 @@ export default function RegistrationPage() {
                     onChange={e => setOfficialForm(p => ({ ...p, sport: e.target.value }))}
                     className="form-input"
                   >
-                    <option value="Basketball">Basketball</option>
-                    <option value="Volleyball">Volleyball</option>
-                    <option value="Badminton">Badminton</option>
-                    <option value="Table Tennis">Table Tennis</option>
+                    {SPORTS_CATALOG.map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
                     <option value="All Sports">All Sports</option>
                   </select>
                 </div>
@@ -743,20 +688,6 @@ export default function RegistrationPage() {
                     className="form-input"
                   />
                 </div>
-
-                {role === 'scorekeeper' && (
-                  <div className="form-group">
-                    <label className="form-label">Login Password *</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="Enter password for scorekeeper login"
-                      value={officialForm.password}
-                      onChange={e => setOfficialForm(p => ({ ...p, password: e.target.value }))}
-                      className="form-input"
-                    />
-                  </div>
-                )}
 
                 <button type="submit" className="btn btn-primary" style={{ padding: '11px 18px', fontWeight: 700 }}>
                   Register {roleLabel}
@@ -908,17 +839,6 @@ export default function RegistrationPage() {
                 >
                   {departments.map(d => <option key={d.id} value={d.id}>{d.shortName} – {d.name}</option>)}
                 </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Temporary Password</label>
-                <input
-                  type="text"
-                  disabled={coordinatorLimitReached}
-                  value={coordForm.password}
-                  onChange={e => setCoordForm(p => ({ ...p, password: e.target.value }))}
-                  className="form-input"
-                />
               </div>
 
               <button
