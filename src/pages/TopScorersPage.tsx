@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
-import { TrophyIcon, SearchIcon } from '../components/Icons';
+import { getSportName, getSportIcon } from '../lib/sports';
+import { SportFilter } from '../components/ui';
+import { TrophyIcon, SearchIcon, XIcon } from '../components/Icons';
 import type { Player } from '../types';
 
 export default function TopScorersPage() {
@@ -9,6 +10,14 @@ export default function TopScorersPage() {
   const [selectedSport, setSelectedSport] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
+  const sportCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const p of players) {
+      acc[p.sport] = (acc[p.sport] || 0) + 1;
+    }
+    return acc;
+  }, [players]);
 
   // Compute leaderboard
   const leaderboard = useMemo(() => {
@@ -27,7 +36,7 @@ export default function TopScorersPage() {
         const team = teams.find(t => t.id === p.teamId);
         const dept = departments.find(d => d.id === p.department);
         const points = p.currentSeasonGoals ?? p.intGoals ?? 0;
-        const matchesPlayed = p.intMatches ?? (p.matchStats?.length || 1);
+        const matchesPlayed = p.intMatches ?? p.matchStats?.length ?? 0;
         return {
           player: p,
           teamName: team?.name || 'Independent Athlete',
@@ -55,48 +64,13 @@ export default function TopScorersPage() {
       </div>
 
       {/* Sport Filter Tabs */}
-      <div style={{ overflowX: 'auto', paddingBottom: '4px' }}>
-        <div style={{ display: 'flex', gap: '8px', minWidth: 'max-content' }}>
-          <button
-            className={`btn btn-sm ${selectedSport === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setSelectedSport('all')}
-            style={{ borderRadius: '20px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 600 }}
-          >
-            All Sports ({players.length})
-          </button>
-          {SPORTS_CATALOG.map(sp => {
-            const count = players.filter(p => p.sport === sp.id).length;
-            const isSelected = selectedSport === sp.id;
-            return (
-              <button
-                key={sp.id}
-                className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setSelectedSport(sp.id)}
-                style={{
-                  borderRadius: '20px',
-                  padding: '6px 14px',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <span>{getSportIcon(sp.id, 14, isSelected ? '#fff' : 'var(--text-muted)')}</span>
-                <span>{sp.name}</span>
-                <span style={{
-                  fontSize: '10.5px',
-                  padding: '1px 6px',
-                  borderRadius: '10px',
-                  background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--bg-elevated)',
-                  color: isSelected ? '#fff' : 'var(--text-muted)',
-                }}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="glass-card" style={{ padding: '12px 16px' }}>
+        <SportFilter
+          value={selectedSport}
+          onChange={setSelectedSport}
+          counts={sportCounts}
+          allLabel="All Sports"
+        />
       </div>
 
       {/* Search Bar */}
@@ -310,12 +284,14 @@ export default function TopScorersPage() {
                 top: '16px',
                 background: 'none',
                 border: 'none',
-                fontSize: '20px',
                 color: 'var(--text-muted)',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              ✕
+              <XIcon size={18} />
             </button>
 
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '20px' }}>
@@ -357,7 +333,7 @@ export default function TopScorersPage() {
               <div style={{ background: 'var(--bg-elevated)', padding: '12px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Matches Played</div>
                 <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '4px' }}>
-                  {selectedPlayer.intMatches ?? (selectedPlayer.matchStats?.length || 1)}
+                  {selectedPlayer.intMatches ?? selectedPlayer.matchStats?.length ?? 0}
                 </div>
               </div>
             </div>

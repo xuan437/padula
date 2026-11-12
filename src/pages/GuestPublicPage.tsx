@@ -18,10 +18,16 @@ import {
   GlobeIcon,
   SparklesIcon,
   ChevronRightIcon,
+  XIcon,
+  CheckIcon,
+  ClockIcon,
 } from '../components/Icons';
 import padulaTitleImg from '../assets/padula-title.png';
 import TournamentTreeBracket from '../components/TournamentTreeBracket';
 import AIPredictionModal from '../components/AIPredictionModal';
+import FloatingDepartmentCards from '../components/FloatingDepartmentCards';
+import DigitalLedClock from '../components/DigitalLedClock';
+import { SportFilter } from '../components/ui';
 import { predictMatch } from '../lib/predictionAi';
 import type { Match } from '../types';
 
@@ -88,7 +94,8 @@ function QRCodeDisplay({ url, size = 110 }: { url: string; size?: number }) {
 // ── Share Match Result Card ────────────────────────────────────────────────
 function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
-  const text = `🏆 ${match.teamA} ${match.scoreA} – ${match.scoreB} ${match.teamB} (${getSportName(match.sport)} - ${match.round}) · Asian College Padula Athletics`;
+  const formatLabel = match.format === 'round_robin' ? 'Round Robin' : 'Single Elimination';
+  const text = `🏆 ${match.teamA} ${match.scoreA} – ${match.scoreB} ${match.teamB} (${getSportName(match.sport)} - ${match.round} · ${formatLabel}) · 📅 ${match.scheduledDate || '2026-11-10'} · ⏰ ${match.scheduledTime || '09:00 AM'} · 📍 ${match.venue || 'Main Court'} · Asian College Padula Athletics`;
 
   const copyText = () => {
     if (navigator.clipboard) {
@@ -111,15 +118,17 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
       padding: '16px',
     }}>
       <div className="glass-card" style={{
-        maxWidth: '440px',
+        maxWidth: '460px',
         width: '100%',
         padding: '24px',
         background: 'var(--bg-surface)',
         borderRadius: '16px',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Share Match Result</h3>
-          <button className="btn btn-sm btn-ghost" onClick={onClose}>✕</button>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Share Official Match Card</h3>
+          <button className="btn btn-sm btn-ghost" onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <XIcon size={16} />
+          </button>
         </div>
 
         {/* Card preview */}
@@ -131,11 +140,24 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
           textAlign: 'center',
           marginBottom: '16px',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
             Asian College Padula Intramurals
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-            {getSportName(match.sport)} · {match.round} · {match.venue}
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '6px' }}>
+            {getSportName(match.sport)} · {match.round} ({formatLabel})
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <CalendarIcon size={11} color="var(--text-muted)" /> {match.scheduledDate || '2026-11-10'}
+            </span>
+            <span>·</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <ClockIcon size={11} color="var(--text-muted)" /> {match.scheduledTime || '09:00 AM'}
+            </span>
+            <span>·</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <MapPinIcon size={11} color="var(--text-muted)" /> {match.venue || 'Main Court'}
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', margin: '14px 0' }}>
             <div style={{ flex: 1, textAlign: 'right' }}>
@@ -161,15 +183,18 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
             </div>
           </div>
           {match.winner && (
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', marginTop: '8px' }}>
-              Winner: {match.winner}
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+              <TrophyIcon size={14} color="#10b981" /> Official Winner: {match.winner}
             </div>
           )}
+          <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-light)', paddingTop: '8px' }}>
+            Scorer: {match.scorekeeper || 'Official Desk'} · Referee: {match.referee || 'Certified Official'}
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={copyText}>
-            {copied ? '✓ Copied to Clipboard!' : 'Copy Result Text'}
+          <button className="btn btn-primary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={copyText}>
+            {copied ? <><CheckIcon size={14} /> Copied to Clipboard!</> : 'Copy Full Result Details'}
           </button>
           <button className="btn btn-ghost" onClick={onClose}>Close</button>
         </div>
@@ -206,7 +231,9 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
         textAlign: 'center',
       }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-          <button className="btn btn-sm btn-ghost" onClick={onClose} style={{ color: '#64748b' }}>✕</button>
+          <button className="btn btn-sm btn-ghost" onClick={onClose} style={{ color: '#64748b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <XIcon size={16} />
+          </button>
         </div>
 
         <div style={{ fontSize: '12px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -247,7 +274,42 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
 // MAIN COMPONENT: GUEST PUBLIC RESULTS PAGE
 // ═════════════════════════════════════════════════════════════════════════════
 export default function GuestPublicPage() {
-  const { matches, teams, players, announcements, departments, computeMedalTally, computeStandings, setActiveView, currentUser } = useApp();
+  const { matches, teams, players, announcements, departments, events, venues, computeMedalTally, computeStandings, setActiveView, currentUser } = useApp();
+
+  // Helper to resolve full Event & Venue details for any match
+  const getMatchContext = (m: Match) => {
+    const ev = events.find(e => e.id === m.eventId || e.sport === m.sport);
+    const venueName = m.venue || ev?.venue || 'Asian College Main Gym';
+    const venueObj = venues.find(v => v.name.toLowerCase() === venueName.toLowerCase());
+    const format = m.format || ev?.format || (m.round.toLowerCase().includes('round robin') ? 'round_robin' : 'single_elimination');
+    const formatLabel = format === 'round_robin' ? 'Round Robin' : 'Single Elimination';
+    let formattedDate = m.scheduledDate || ev?.startDate || 'Nov 10, 2026';
+    let timeStr = m.scheduledTime || ev?.startTime || '09:00 AM';
+    if (m.scheduledTime && m.scheduledTime.includes('T')) {
+      const d = new Date(m.scheduledTime);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        timeStr = d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+      }
+    } else if (formattedDate && /^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
+      const d = new Date(`${formattedDate}T00:00:00`);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      }
+    }
+    return {
+      eventName: ev?.name || `${getSportName(m.sport)} Tournament`,
+      eventStartTime: ev?.startTime || '08:00',
+      eventEndTime: ev?.endTime || '17:00',
+      venueName,
+      venueLocation: venueObj?.location || 'Asian College Dumaguete Campus',
+      venueCapacity: venueObj?.capacity,
+      format,
+      formatLabel,
+      formattedDate,
+      timeStr,
+    };
+  };
 
   // Read initial tab and sport filter from URL query params (for sharing)
   const [tab, setTab] = useState<PublicTab>(() => {
@@ -270,17 +332,39 @@ export default function GuestPublicPage() {
   });
 
   const [searchTeam, setSearchTeam] = useState('');
+  const [myTeam, setMyTeam] = useState<string>(() => {
+    try { return localStorage.getItem('padula_my_team') || ''; } catch { return ''; }
+  });
+  const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [showSharePanel, setShowSharePanel] = useState(false);
   const [showPosterModal, setShowPosterModal] = useState(false);
   const [shareMatch, setShareMatch] = useState<any | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<string>('Just now');
+  const [lastUpdated, setLastUpdated] = useState<string>('Updated 1 min ago');
   const [selectedAiMatch, setSelectedAiMatch] = useState<Match | null>(null);
   const [simSport, setSimSport] = useState<string>('s1');
   const [simTeamA, setSimTeamA] = useState<string>('');
   const [simTeamB, setSimTeamB] = useState<string>('');
   const [simResult, setSimResult] = useState<any | null>(null);
   const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
+
+  useEffect(() => {
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, []);
+
+  const handleToggleMyTeam = (teamName: string) => {
+    const next = myTeam === teamName ? '' : teamName;
+    setMyTeam(next);
+    setSearchTeam(next);
+    try { localStorage.setItem('padula_my_team', next); } catch {}
+  };
 
   // Update URL params when tab or filter changes
   useEffect(() => {
@@ -296,14 +380,15 @@ export default function GuestPublicPage() {
 
   // Real-time last updated tick
   useEffect(() => {
+    let mins = 0;
     const updateTime = () => {
-      const now = new Date();
-      setLastUpdated(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setLastUpdated(mins === 0 ? 'Updated just now' : `Updated ${mins} min ago`);
+      mins = (mins + 1) % 3;
     };
     updateTime();
-    const interval = setInterval(updateTime, 30000);
+    const interval = setInterval(updateTime, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [matches]);
 
   const togglePublicTheme = () => {
     const next = isDark ? 'light' : 'dark';
@@ -385,15 +470,18 @@ export default function GuestPublicPage() {
   return (
     <div style={{
       maxWidth: '1240px',
+      width: '100%',
       margin: '0 auto',
-      padding: '24px 16px 64px',
+      padding: '20px 16px 88px',
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
       gap: '20px',
+      boxSizing: 'border-box',
+      minWidth: 0,
     }}>
 
-      {/* ── TOP NAV BAR: Minimal Spectator Header ── */}
+      {/* ── TOP NAV BAR: Spectator Header ── */}
       <header style={{
         display: 'flex',
         alignItems: 'center',
@@ -417,9 +505,9 @@ export default function GuestPublicPage() {
                 Asian College Athletics • Dumaguete
               </span>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>•</span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
-                Live Sync
+              <span style={{ fontSize: '11px', color: isOnline ? 'var(--text-secondary)' : '#f59e0b', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: isOnline ? '#10b981' : '#f59e0b' }} />
+                {isOnline ? `Live Sync · ${lastUpdated}` : 'Offline · Cached View'}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
@@ -427,49 +515,48 @@ export default function GuestPublicPage() {
                 src={padulaTitleImg}
                 alt="PADULA 2026"
                 style={{
-                  height: '64px',
+                  height: 'clamp(42px, 7vw, 56px)',
                   width: 'auto',
-                  maxWidth: '240px',
+                  maxWidth: '200px',
                   objectFit: 'contain',
                   filter: 'drop-shadow(0 4px 14px rgba(15, 35, 71, 0.35))',
                 }}
               />
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <h1 style={{
                   fontFamily: 'var(--font-sports)',
-                  fontSize: '22px',
+                  fontSize: 'clamp(18px, 4vw, 22px)',
                   fontWeight: 900,
                   fontStyle: 'italic',
                   textTransform: 'uppercase',
                   color: 'var(--text-primary)',
                   margin: 0,
                   letterSpacing: '0.02em',
-                  lineHeight: 1.1,
+                  lineHeight: 1.15,
                 }}>
-                  Public Results & Scoreboard
+                  Padula Sports — Tournament Analytics
                 </h1>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  Tournament Analytics Portal · <span style={{ color: 'var(--text-muted)' }}>Last updated: {lastUpdated}</span>
+                  Public Results, Live Scores, Brackets &amp; Standings
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right: Actions (Staff Login, Theme, Share, Print) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Share QR Button */}
+        {/* Right: Compact Icon Group (Share/QR, Theme, Print) + One Labeled "Staff Login" Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="btn btn-sm btn-ghost"
             onClick={() => setShowSharePanel(p => !p)}
+            title="Share or scan QR code"
             style={{ fontWeight: 600 }}
           >
             <GlobeIcon size={14} />
             <span>Share / QR</span>
           </button>
 
-          {/* Theme toggle */}
           <button
             type="button"
             className="btn btn-sm btn-ghost"
@@ -479,23 +566,21 @@ export default function GuestPublicPage() {
             {isDark ? <SunIcon size={14} /> : <MoonIcon size={14} />}
           </button>
 
-          {/* Print */}
           <button
             type="button"
             className="btn btn-sm btn-ghost"
             onClick={handlePrint}
+            title="Print Tournament Sheet"
           >
             <PrinterIcon size={14} />
             <span>Print</span>
           </button>
 
-          {/* Staff Login Link */}
-          {/* Back to Dashboard (logged-in) or Staff Login (guest) */}
           {currentUser ? (
             <button
               type="button"
               className="btn btn-sm btn-primary"
-              onClick={() => setActiveView(currentUser.role === 'scorer' ? 'scorer-dashboard' : 'admin')}
+              onClick={() => setActiveView(currentUser.role === 'scorer' ? 'scorekeeper' : 'admin')}
               style={{ fontWeight: 700 }}
             >
               <span>← Back to Dashboard</span>
@@ -508,13 +593,13 @@ export default function GuestPublicPage() {
               style={{ fontWeight: 700 }}
             >
               <ShieldIcon size={14} />
-              <span>Staff &amp; Athlete Login</span>
+              <span>Staff Login</span>
             </button>
           )}
         </div>
       </header>
 
-      {/* ── QR SHARE PANEL (Collapsible / Modal) ── */}
+      {/* ── QR SHARE PANEL (Collapsible) ── */}
       {showSharePanel && (
         <div className="glass-card" style={{
           padding: '20px 24px',
@@ -549,8 +634,8 @@ export default function GuestPublicPage() {
               }}>
                 {publicUrl}
               </div>
-              <button className="btn btn-sm btn-primary" onClick={copyPublicUrl}>
-                {copiedLink ? '✓ Copied' : 'Copy Link'}
+              <button className="btn btn-sm btn-primary" onClick={copyPublicUrl} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {copiedLink ? <><CheckIcon size={12} /> Copied</> : 'Copy Link'}
               </button>
               <button className="btn btn-sm btn-ghost" onClick={() => setShowPosterModal(true)}>
                 Print QR Poster
@@ -560,137 +645,200 @@ export default function GuestPublicPage() {
         </div>
       )}
 
-      {/* ── FILTER BAR: Sports Catalog & Team Search ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {/* Sport pills */}
-        <div style={{
-          display: 'flex',
-          gap: '6px',
-          overflowX: 'auto',
-          paddingBottom: '4px',
-          scrollbarWidth: 'none',
-        }}>
-          <button
-            type="button"
-            className={`btn btn-sm ${filterSport === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setFilterSport('all')}
-            style={{ borderRadius: '20px', padding: '5px 14px', flexShrink: 0 }}
-          >
-            All Sports
-          </button>
-          {SPORTS_CATALOG.map(s => {
-            const isSel = filterSport === s.id;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                className={`btn btn-sm ${isSel ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setFilterSport(s.id)}
+      {/* ── LIVE NOW HERO STRIP (Big scores, sport icon, court, pulsing dot) ── */}
+      {liveMatches.length > 0 && (
+        <div
+          className="glass-card"
+          style={{
+            padding: '14px 18px',
+            borderRadius: '14px',
+            border: '1.5px solid var(--badge-live-border)',
+            background: 'linear-gradient(135deg, var(--badge-live-bg), var(--bg-surface))',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 900, color: 'var(--color-live)', letterSpacing: '0.06em' }}>
+              <span className="live-dot" style={{ background: 'var(--color-live)' }} />
+              LIVE NOW ON COURT ({liveMatches.length})
+            </div>
+            <button
+              type="button"
+              onClick={() => setTab('live')}
+              className="btn btn-ghost btn-sm"
+              style={{ fontSize: 11.5, padding: '3px 9px', fontWeight: 700 }}
+            >
+              View Live Feed →
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+            {liveMatches.map(m => (
+              <div
+                key={`strip-${m.id}`}
+                onClick={() => setTab('live')}
                 style={{
-                  borderRadius: '20px',
-                  padding: '5px 14px',
-                  flexShrink: 0,
-                  display: 'inline-flex',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  cursor: 'pointer',
                 }}
               >
-                {getSportIcon(s.id, 13, isSel ? '#ffffff' : 'var(--text-muted)')}
-                <span>{s.name}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700 }}>
+                    {getSportIcon(m.sport, 13, 'var(--accent)')}
+                    <span>{getSportName(m.sport)} · {m.venue || 'Main Arena'}</span>
+                  </div>
+                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 3 }}>
+                    {m.teamA} <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>vs</span> {m.teamB}
+                  </div>
+                </div>
+                <div style={{ fontSize: '22px', fontWeight: 900, color: 'var(--color-live)', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap' }}>
+                  {m.scoreA} – {m.scoreB}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── DIGITAL ARENA LED CLOCK & CALENDAR ── */}
+      <DigitalLedClock />
+
+      {/* ── FLOATING DEPARTMENT CARDS (Animated with Official Department Logos & Acronyms) ── */}
+      <FloatingDepartmentCards
+        selectedAcronym={searchTeam}
+        onSelectDepartment={acronym => {
+          if (searchTeam.toUpperCase() === acronym.toUpperCase()) {
+            setSearchTeam('');
+          } else {
+            setSearchTeam(acronym);
+          }
+        }}
+      />
+
+      {/* ── ONE UNIFIED SPORT SELECTOR FOR ALL TABS ── */}
+      <SportFilter
+        value={filterSport === 'all' ? 'ALL' : filterSport}
+        onChange={sp => setFilterSport(sp === 'ALL' ? 'all' : sp)}
+      />
+
+      {/* ── TABS ROW + SEARCH TEAMS + MY TEAM BOOKMARK ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+        <nav className="glass-card no-scrollbar" style={{
+          display: 'flex',
+          gap: '4px',
+          padding: '5px',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          borderRadius: '12px',
+          flex: '1 1 560px',
+          maxWidth: '100%',
+          minWidth: 0,
+        }}>
+          {([
+            { id: 'live',          label: 'Live',          icon: <FlameIcon size={14} />,    count: liveMatches.length },
+            { id: 'results',       label: 'Results',       icon: <TrophyIcon size={14} />,   count: finishedMatches.length },
+            { id: 'standings',     label: 'Standings',     icon: <MedalIcon size={14} />,    count: undefined },
+            { id: 'brackets',      label: 'Brackets',      icon: <BracketsIcon size={14} />, count: undefined },
+            { id: 'schedule',      label: 'Schedule',      icon: <CalendarIcon size={14} />, count: scheduledMatches.length },
+            { id: 'tally',         label: 'Medal Tally',   icon: <MedalIcon size={14} />,    count: undefined },
+            { id: 'announcements', label: 'Announcements', icon: <FileTextIcon size={14} />, count: announcements.length },
+            { id: 'predictions',   label: 'Predictions',   icon: <SparklesIcon size={14} />, count: undefined },
+          ]).map(t => {
+            const isActive = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontWeight: isActive ? 700 : 600,
+                  whiteSpace: 'nowrap',
+                  padding: '8px 12px',
+                  minHeight: '36px',
+                }}
+                onClick={() => setTab(t.id as PublicTab)}
+              >
+                {t.icon}
+                <span>{t.label}</span>
+                {t.count !== undefined && t.count > 0 && (
+                  <span style={{
+                    background: isActive ? 'rgba(255,255,255,0.25)' : t.id === 'live' ? 'var(--badge-live-bg)' : 'var(--bg-elevated)',
+                    color: isActive ? '#fff' : t.id === 'live' ? 'var(--badge-live-text)' : 'var(--text-muted)',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                  }}>
+                    {t.count}
+                  </span>
+                )}
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        {/* Team search input */}
-        <div style={{ position: 'relative', maxWidth: '380px' }}>
-          <input
-            type="text"
-            className="form-input"
-            value={searchTeam}
-            onChange={e => setSearchTeam(e.target.value)}
-            placeholder="Search teams..."
-            style={{
-              paddingLeft: '34px',
-              paddingRight: '12px',
-              paddingTop: '8px',
-              paddingBottom: '8px',
-              fontSize: '13px',
-              borderRadius: '10px',
-            }}
-          />
-          <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-            <SearchIcon size={15} />
-          </div>
-          {searchTeam && (
-            <button
-              type="button"
-              onClick={() => setSearchTeam('')}
+        {/* Search Teams + My Team Star Filter on the Tab Row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 240px', maxWidth: '100%', minWidth: 0 }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="text"
+              className="form-input"
+              value={searchTeam}
+              onChange={e => setSearchTeam(e.target.value)}
+              placeholder="Search teams..."
               style={{
-                position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px',
+                paddingLeft: '32px',
+                paddingRight: '26px',
+                paddingTop: '8px',
+                paddingBottom: '8px',
+                fontSize: '12.5px',
+                borderRadius: '10px',
               }}
-            >
-              ✕
-            </button>
-          )}
+            />
+            <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+              <SearchIcon size={14} />
+            </div>
+            {searchTeam && (
+              <button
+                type="button"
+                onClick={() => { setSearchTeam(''); setMyTeam(''); }}
+                style={{
+                  position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <XIcon size={12} />
+              </button>
+            )}
+          </div>
+
+          <select
+            value={myTeam}
+            onChange={e => handleToggleMyTeam(e.target.value)}
+            className="form-input"
+            title="Bookmark My Team to highlight and filter their matches"
+            style={{ width: 'auto', maxWidth: '150px', padding: '8px 10px', fontSize: '12px', borderRadius: '10px', fontWeight: 700 }}
+          >
+            <option value="">★ My Team</option>
+            {teams.map(t => (
+              <option key={t.id} value={t.name}>★ {t.name}</option>
+            ))}
+          </select>
         </div>
       </div>
-
-      {/* ── TABS BAR (Clean responsive tabs) ── */}
-      <nav className="glass-card" style={{
-        display: 'flex',
-        gap: '4px',
-        padding: '6px',
-        overflowX: 'auto',
-        borderRadius: '12px',
-      }}>
-        {([
-          { id: 'live',          label: 'Live Matches',  icon: <FlameIcon size={14} />, count: liveMatches.length },
-          { id: 'results',       label: 'Results',       icon: <TrophyIcon size={14} />, count: finishedMatches.length },
-          { id: 'standings',     label: 'Standings',     icon: <MedalIcon size={14} />, count: undefined },
-          { id: 'brackets',      label: 'Brackets',      icon: <BracketsIcon size={14} />, count: undefined },
-          { id: 'schedule',      label: 'Schedule',      icon: <CalendarIcon size={14} />, count: scheduledMatches.length },
-          { id: 'predictions',   label: 'Prediction AI', icon: <SparklesIcon size={14} />, count: undefined },
-          { id: 'tally',         label: 'Medal Tally',   icon: <MedalIcon size={14} />, count: undefined },
-          { id: 'announcements', label: 'Announcements', icon: <FileTextIcon size={14} />, count: announcements.length },
-        ]).map(t => {
-          const isActive = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-ghost'}`}
-              style={{
-                flex: '1 1 auto',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                fontWeight: isActive ? 700 : 500,
-                whiteSpace: 'nowrap',
-                padding: '8px 12px',
-              }}
-              onClick={() => setTab(t.id as PublicTab)}
-            >
-              {t.icon}
-              <span>{t.label}</span>
-              {t.count !== undefined && t.count > 0 && (
-                <span style={{
-                  background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--bg-elevated)',
-                  color: isActive ? '#fff' : 'var(--text-muted)',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  padding: '1px 6px',
-                  borderRadius: '10px',
-                }}>
-                  {t.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
 
       {/* ═══════════════════════════════════════════════════════════════════════
           TAB 1: LIVE MATCHES
@@ -717,19 +865,58 @@ export default function GuestPublicPage() {
             }}>
               {liveMatches.map(m => {
                 const sportMeta = SPORTS_CATALOG.find(s => s.id === m.sport);
+                const livePred = predictMatch(m.teamA, m.teamB, m.sport, matches, teams, players, m);
+                const ctx = getMatchContext(m);
                 return (
                   <div key={m.id} className="scoreboard-card glass-card" style={{ padding: '20px' }}>
-                    {/* Header: Sport & LIVE badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Header: Sport, Format & LIVE badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         {getSportIcon(m.sport, 16, 'var(--accent)')}
                         <span style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text-primary)' }}>
                           {sportMeta?.name || m.sport} · {m.round}
+                        </span>
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          background: ctx.format === 'round_robin' ? 'rgba(59,130,246,0.14)' : 'rgba(220,38,38,0.14)',
+                          color: ctx.format === 'round_robin' ? '#3b82f6' : 'var(--accent)',
+                        }}>
+                          {ctx.formatLabel}
                         </span>
                       </div>
                       <div className="live-indicator">
                         <span className="live-dot" /> LIVE
                       </div>
+                    </div>
+
+                    {/* Full Date, Time & Event Place Banner */}
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '6px 12px',
+                      fontSize: '11.5px',
+                      color: 'var(--text-secondary)',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-light)',
+                      marginBottom: '12px',
+                    }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <CalendarIcon size={12} color="var(--text-muted)" />
+                        <strong>Date:</strong> {ctx.formattedDate}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <ClockIcon size={12} color="var(--text-muted)" />
+                        <strong>Time:</strong> {ctx.timeStr}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPinIcon size={12} color="var(--accent)" />
+                        <strong>Event Place:</strong> {ctx.venueName} ({ctx.venueLocation}{ctx.venueCapacity ? ` · Cap ${ctx.venueCapacity}` : ''})
+                      </span>
                     </div>
 
                     {/* Team vs Team with score in center (fully responsive) */}
@@ -775,6 +962,38 @@ export default function GuestPublicPage() {
                       </div>
                     </div>
 
+                    {/* AI Live Winner Prediction Strip (based on Past Performance + Live Score) */}
+                    {livePred && (
+                      <div
+                        onClick={() => setSelectedAiMatch(m)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(59, 130, 246, 0.10))',
+                          border: '1px solid rgba(220, 38, 38, 0.3)',
+                          marginBottom: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', marginBottom: '5px' }}>
+                          <span style={{ fontWeight: 800, color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <SparklesIcon size={13} /> AI Predicts: <strong style={{ color: 'var(--text-primary)' }}>{livePred.predictedWinner}</strong> ({livePred.predictedWinnerProb}%)
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                            Proj Final: {livePred.predictedScoreA}–{livePred.predictedScoreB}
+                          </span>
+                        </div>
+                        <div style={{ width: '100%', height: '5px', background: 'rgba(59, 130, 246, 0.35)', borderRadius: '3px', overflow: 'hidden', display: 'flex', marginBottom: '5px' }}>
+                          <div style={{ width: `${livePred.winProbA}%`, background: 'var(--accent)' }} />
+                          <div style={{ width: `${livePred.winProbB}%`, background: '#3b82f6' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                          <span>Past Perf: {livePred.statsA.eloRating} Elo ({livePred.statsA.wins}W–{livePred.statsA.losses}L) vs {livePred.statsB.eloRating} Elo ({livePred.statsB.wins}W–{livePred.statsB.losses}L)</span>
+                          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Full AI Forecast ↗</span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Sport-specific round & detail info */}
                     <div style={{
                       background: 'var(--bg-elevated)',
@@ -800,7 +1019,7 @@ export default function GuestPublicPage() {
                       <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Active</span>
                     </div>
 
-                    {/* Footer: Venue & Share Action */}
+                    {/* Footer: Officials & Share Action */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -809,9 +1028,11 @@ export default function GuestPublicPage() {
                       color: 'var(--text-muted)',
                       borderTop: '1px solid var(--border-light)',
                       paddingTop: '10px',
+                      flexWrap: 'wrap',
+                      gap: '8px',
                     }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <MapPinIcon size={13} color="var(--text-muted)" /> {m.venue}
+                      <span>
+                        Scorer: <strong>{m.scorekeeper || 'Official Desk'}</strong> · Ref: <strong>{m.referee || 'Certified Official'}</strong>
                       </span>
                       <button
                         type="button"
@@ -841,68 +1062,95 @@ export default function GuestPublicPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {finishedMatches.map(m => (
-                <div key={m.id} className="glass-card" style={{
-                  padding: '16px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '12px',
-                }}>
-                  {/* Left: Sport & Teams */}
-                  <div style={{ flex: '1 1 260px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      {getSportIcon(m.sport, 14, 'var(--accent)')}
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                        {getSportName(m.sport)} · {m.round}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                      <span style={{ color: m.winner === m.teamA ? 'var(--accent)' : 'inherit', fontWeight: m.winner === m.teamA ? 900 : 700 }}>
-                        {m.teamA}
-                      </span>
-                      <span style={{ color: 'var(--text-muted)', fontWeight: 500, margin: '0 6px' }}>vs</span>
-                      <span style={{ color: m.winner === m.teamB ? 'var(--accent)' : 'inherit', fontWeight: m.winner === m.teamB ? 900 : 700 }}>
-                        {m.teamB}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <MapPinIcon size={12} /> {m.venue}
-                      {m.winner && (
-                        <span style={{ marginLeft: '6px', color: '#10b981', fontWeight: 700 }}>
-                          • Winner: {m.winner}
+              {finishedMatches.map(m => {
+                const ctx = getMatchContext(m);
+                return (
+                  <div key={m.id} className="glass-card" style={{
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                  }}>
+                    {/* Left: Sport, Format, Teams & Full Details */}
+                    <div style={{ flex: '1 1 320px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                        {getSportIcon(m.sport, 14, 'var(--accent)')}
+                        <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                          {getSportName(m.sport)} · {m.round} {m.matchNumber ? `(Match #${m.matchNumber})` : ''}
                         </span>
-                      )}
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          background: ctx.format === 'round_robin' ? 'rgba(59,130,246,0.14)' : 'rgba(220,38,38,0.14)',
+                          color: ctx.format === 'round_robin' ? '#3b82f6' : 'var(--accent)',
+                        }}>
+                          {ctx.formatLabel}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        <span style={{ color: m.winner === m.teamA ? 'var(--accent)' : 'inherit', fontWeight: m.winner === m.teamA ? 900 : 700 }}>
+                          {m.teamA}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 500, margin: '0 6px' }}>vs</span>
+                        <span style={{ color: m.winner === m.teamB ? 'var(--accent)' : 'inherit', fontWeight: m.winner === m.teamB ? 900 : 700 }}>
+                          {m.teamB}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '6px 14px', alignItems: 'center' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <CalendarIcon size={12} color="var(--text-muted)" />
+                          <strong>Date:</strong> {ctx.formattedDate}
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <ClockIcon size={12} color="var(--text-muted)" />
+                          <strong>Time:</strong> {ctx.timeStr}
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPinIcon size={12} color="var(--accent)" />
+                          <strong>Event Place:</strong> {ctx.venueName} ({ctx.venueLocation})
+                        </span>
+                        {m.winner && (
+                          <span style={{ color: '#10b981', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            • Winner: {m.winner}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Event: {ctx.eventName} · Official Scorer: {m.scorekeeper || 'Official Desk'} · Referee: {m.referee || 'Certified Official'}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Right: Final score badge & Share Card */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      background: 'var(--bg-elevated)',
-                      border: '1px solid var(--border)',
-                      padding: '6px 14px',
-                      borderRadius: '8px',
-                      fontSize: '18px',
-                      fontWeight: 900,
-                      color: 'var(--text-primary)',
-                      letterSpacing: '1px',
-                    }}>
-                      {m.scoreA} – {m.scoreB}
+                    {/* Right: Final score badge & Share Card */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
+                        padding: '6px 14px',
+                        borderRadius: '8px',
+                        fontSize: '18px',
+                        fontWeight: 900,
+                        color: 'var(--text-primary)',
+                        letterSpacing: '1px',
+                      }}>
+                        {m.scoreA} – {m.scoreB}
+                      </div>
+                      <span className="status-badge finished">FINAL</span>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setShareMatch(m)}
+                        style={{ padding: '6px 10px', fontSize: '11.5px' }}
+                      >
+                        Share Card
+                      </button>
                     </div>
-                    <span className="status-badge finished">FINAL</span>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-ghost"
-                      onClick={() => setShareMatch(m)}
-                      style={{ padding: '6px 10px', fontSize: '11.5px' }}
-                    >
-                      Share Card
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -966,7 +1214,7 @@ export default function GuestPublicPage() {
       {tab === 'brackets' && (
         <TournamentTreeBracket
           initialSportId={filterSport !== 'all' ? filterSport : 's1'}
-          showSportSelector={true}
+          showSportSelector={false}
         />
       )}
 
@@ -980,59 +1228,86 @@ export default function GuestPublicPage() {
               No upcoming scheduled matches found matching this filter.
             </div>
           ) : (
-            scheduledMatches.map(m => (
-              <div key={m.id} className="glass-card" style={{
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '12px',
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    {getSportIcon(m.sport, 14, 'var(--accent)')}
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      {getSportName(m.sport)} · {m.round}
-                    </span>
+            scheduledMatches.map(m => {
+              const ctx = getMatchContext(m);
+              return (
+                <div key={m.id} className="glass-card" style={{
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                }}>
+                  <div style={{ flex: '1 1 320px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                      {getSportIcon(m.sport, 14, 'var(--accent)')}
+                      <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        {getSportName(m.sport)} · {m.round} {m.matchNumber ? `(Match #${m.matchNumber})` : ''}
+                      </span>
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        background: ctx.format === 'round_robin' ? 'rgba(59,130,246,0.14)' : 'rgba(220,38,38,0.14)',
+                        color: ctx.format === 'round_robin' ? '#3b82f6' : 'var(--accent)',
+                      }}>
+                        {ctx.formatLabel}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      {isPlaceholder(m.teamA) ? 'TBD' : m.teamA} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>vs</span> {isPlaceholder(m.teamB) ? 'TBD' : m.teamB}
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '6px 14px', alignItems: 'center' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <CalendarIcon size={12} color="var(--text-muted)" />
+                        <strong>Date:</strong> {ctx.formattedDate}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <ClockIcon size={12} color="var(--text-muted)" />
+                        <strong>Time:</strong> {ctx.timeStr}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPinIcon size={12} color="var(--accent)" />
+                        <strong>Event Place:</strong> {ctx.venueName} ({ctx.venueLocation}{ctx.venueCapacity ? ` · Cap ${ctx.venueCapacity}` : ''})
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Event: {ctx.eventName} · Official Scorer: {m.scorekeeper || 'Official Desk'} · Referee: {m.referee || 'Certified Official'}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    {isPlaceholder(m.teamA) ? 'TBD' : m.teamA} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>vs</span> {isPlaceholder(m.teamB) ? 'TBD' : m.teamB}
-                  </div>
-                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPinIcon size={12} /> {m.venue}
-                  </div>
-                </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {!isPlaceholder(m.teamA) && !isPlaceholder(m.teamB) && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-ghost"
-                      onClick={() => setSelectedAiMatch(m)}
-                      title="View AI Match Probability Forecast"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        color: 'var(--accent)',
-                        borderColor: 'rgba(220, 38, 38, 0.35)',
-                        padding: '4px 10px',
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        background: 'rgba(220, 38, 38, 0.06)',
-                      }}
-                    >
-                      <SparklesIcon size={13} /> AI Forecast
-                    </button>
-                  )}
-                  <span className="status-badge scheduled">SCHEDULED</span>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    {m.scheduledTime || 'TBD'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    {!isPlaceholder(m.teamA) && !isPlaceholder(m.teamB) && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setSelectedAiMatch(m)}
+                        title="View AI Match Probability Forecast"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          color: 'var(--accent)',
+                          borderColor: 'rgba(220, 38, 38, 0.35)',
+                          padding: '4px 10px',
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          background: 'rgba(220, 38, 38, 0.06)',
+                        }}
+                      >
+                        <SparklesIcon size={13} /> AI Forecast
+                      </button>
+                    )}
+                    <span className="status-badge scheduled">SCHEDULED</span>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', background: 'var(--bg-elevated)', padding: '5px 10px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                      ⏰ {ctx.timeStr}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </section>
       )}
@@ -1132,7 +1407,7 @@ export default function GuestPublicPage() {
                   {ann.body}
                 </p>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  Posted by {ann.createdBy} · {new Date(ann.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  Posted by {ann.createdBy} · {new Date(ann.createdAt).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             ))
@@ -1264,13 +1539,70 @@ export default function GuestPublicPage() {
                     <div style={{ width: `${simResult.winProbA}%`, background: 'var(--accent)' }} />
                     <div style={{ width: `${simResult.winProbB}%`, background: '#3b82f6' }} />
                   </div>
-                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: '6px 0 0' }}>
-                    💡 {simResult.tacticalSummary}
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: '6px 0 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <SparklesIcon size={12} color="var(--accent)" /> {simResult.tacticalSummary}
                   </p>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Live Matches Winner Predictions */}
+          {liveMatches.length > 0 && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: '#ef4444', marginBottom: 12, letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="live-dot" /> Live Match Winner Predictions ({liveMatches.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                {liveMatches.map(m => {
+                  const pred = predictMatch(m.teamA, m.teamB, m.sport, matches, teams, players, m);
+                  if (!pred) return null;
+
+                  return (
+                    <div
+                      key={m.id}
+                      className="glass-card"
+                      style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, cursor: 'pointer', border: '1.5px solid rgba(220,38,38,0.4)' }}
+                      onClick={() => setSelectedAiMatch(m)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                          {getSportName(m.sport)} · {m.round} · LIVE ({m.scoreA}–{m.scoreB})
+                        </span>
+                        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10b981', fontWeight: 800 }}>
+                          {pred.confidencePct}% AI Conf
+                        </span>
+                      </div>
+
+                      <div style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(16,185,129,0.12)', fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <TrophyIcon size={12} color="#10b981" /> Predicted Winner:
+                        </span>
+                        <strong style={{ color: '#10b981' }}>{pred.predictedWinner} ({pred.predictedWinnerProb}%)</strong>
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>
+                          <span>{m.teamA} ({pred.winProbA}%)</span>
+                          <span>{m.teamB} ({pred.winProbB}%)</span>
+                        </div>
+                        <div style={{ width: '100%', height: 6, background: '#3b82f6', borderRadius: 3, overflow: 'hidden', display: 'flex' }}>
+                          <div style={{ width: `${pred.winProbA}%`, background: 'var(--accent)' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-muted)' }}>
+                        <span>Proj Final: <strong>{pred.predictedScoreA} – {pred.predictedScoreB}</strong></span>
+                        <span style={{ color: 'var(--accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}>
+                          Full Breakdown <ChevronRightIcon size={12} />
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Upcoming Scheduled Matches Forecast Cards */}
           <div>
@@ -1333,6 +1665,50 @@ export default function GuestPublicPage() {
       {selectedAiMatch && <AIPredictionModal match={selectedAiMatch} onClose={() => setSelectedAiMatch(null)} />}
       {showPosterModal && <QRPosterModal url={publicUrl} onClose={() => setShowPosterModal(false)} />}
       {shareMatch && <ShareMatchModal match={shareMatch} onClose={() => setShareMatch(null)} />}
+
+      {/* ── SPECTATOR MOBILE BOTTOM NAVIGATION (44px+ touch targets) ── */}
+      <nav className="mobile-bottom-nav" aria-label="Spectator Mobile Navigation">
+        <button
+          type="button"
+          className={tab === 'live' ? 'active' : ''}
+          onClick={() => setTab('live')}
+        >
+          <FlameIcon size={18} />
+          <span>Live {liveMatches.length > 0 ? `(${liveMatches.length})` : ''}</span>
+        </button>
+        <button
+          type="button"
+          className={tab === 'results' ? 'active' : ''}
+          onClick={() => setTab('results')}
+        >
+          <TrophyIcon size={18} />
+          <span>Results</span>
+        </button>
+        <button
+          type="button"
+          className={tab === 'standings' ? 'active' : ''}
+          onClick={() => setTab('standings')}
+        >
+          <MedalIcon size={18} />
+          <span>Standings</span>
+        </button>
+        <button
+          type="button"
+          className={tab === 'brackets' ? 'active' : ''}
+          onClick={() => setTab('brackets')}
+        >
+          <BracketsIcon size={18} />
+          <span>Brackets</span>
+        </button>
+        <button
+          type="button"
+          className={tab === 'schedule' ? 'active' : ''}
+          onClick={() => setTab('schedule')}
+        >
+          <CalendarIcon size={18} />
+          <span>Schedule</span>
+        </button>
+      </nav>
     </div>
   );
 }

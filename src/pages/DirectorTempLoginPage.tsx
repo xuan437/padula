@@ -39,23 +39,38 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [lockoutMinutes, setLockoutMinutes] = useState<number | null>(null);
+  const [lockoutSeconds, setLockoutSeconds] = useState<number | null>(null);
+  const [pasteBlocked, setPasteBlocked] = useState(false);
 
   // Check lockout on mount and periodic interval
   useEffect(() => {
     const check = () => {
       const state = getLockoutState();
       if (state.lockedUntil && Date.now() < state.lockedUntil) {
-        setLockoutMinutes(Math.ceil((state.lockedUntil - Date.now()) / 60000));
+        setLockoutSeconds(Math.ceil((state.lockedUntil - Date.now()) / 1000));
       } else if (state.lockedUntil && Date.now() >= state.lockedUntil) {
         saveLockoutState({ attempts: 0, lockedUntil: null });
-        setLockoutMinutes(null);
+        setLockoutSeconds(null);
       }
     };
     check();
-    const interval = setInterval(check, 10000);
+    const interval = setInterval(() => {
+      setLockoutSeconds(prev => {
+        if (prev === null || prev <= 1) {
+          saveLockoutState({ attempts: 0, lockedUntil: null });
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!pasteBlocked) return;
+    const t = setTimeout(() => setPasteBlocked(false), 3500);
+    return () => clearTimeout(t);
+  }, [pasteBlocked]);
 
   // If feature flag is disabled, show disabled view (or 404)
   if (!APP_CONFIG.directorTempLoginEnabled) {
@@ -98,9 +113,9 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
     // Check rate limit
     const state = getLockoutState();
     if (state.lockedUntil && Date.now() < state.lockedUntil) {
-      const rem = Math.ceil((state.lockedUntil - Date.now()) / 60000);
-      setLockoutMinutes(rem);
-      setErrorMessage(`Login locked. Too many failed attempts. Try again in ${rem} minute(s).`);
+      const rem = Math.ceil((state.lockedUntil - Date.now()) / 1000);
+      setLockoutSeconds(rem);
+      setErrorMessage(`Login locked. Too many failed attempts. Try again in ${rem} second(s).`);
       return;
     }
 
@@ -120,17 +135,17 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
 
     if (!emailMatches || !passwordMatches) {
       const newAttempts = state.attempts + 1;
-      if (newAttempts >= APP_CONFIG.maxFailedLogins) {
-        const lockUntil = Date.now() + APP_CONFIG.lockoutDurationMinutes * 60 * 1000;
+      if (newAttempts >= 3) {
+        // 3 failed password attempts trigger 15-second cooldown
+        const lockUntil = Date.now() + 15 * 1000;
         saveLockoutState({ attempts: newAttempts, lockedUntil: lockUntil });
-        setLockoutMinutes(APP_CONFIG.lockoutDurationMinutes);
-        addAuditLog('login', `Director temporary login LOCKED: 5 failed attempts from identifier "${cleanEmail}"`);
-        setErrorMessage(GENERIC_ERROR);
+        setLockoutSeconds(15);
+        addAuditLog('login', `Director temporary login LOCKED: 3 failed attempts from identifier "${cleanEmail}" (15s cooldown)`);
+        setErrorMessage('Too many failed attempts. Security cooldown active for 15 seconds.');
       } else {
         saveLockoutState({ attempts: newAttempts, lockedUntil: null });
-        addAuditLog('login', `Director temporary login failed attempt (${newAttempts}/${APP_CONFIG.maxFailedLogins}) for "${cleanEmail}"`);
-        // Exact generic error for all mismatches
-        setErrorMessage(GENERIC_ERROR);
+        addAuditLog('login', `Director temporary login failed attempt (${newAttempts}/3) for "${cleanEmail}"`);
+        setErrorMessage(`${GENERIC_ERROR} (${3 - newAttempts} attempt(s) remaining before 15s cooldown)`);
       }
       setIsLoading(false);
       return;
@@ -236,7 +251,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
           Authorized credentials for Mr. John Eric Samane.
         </p>
 
-        {lockoutMinutes !== null && (
+        {lockoutSeconds !== null && (
           <div style={{
             background: 'rgba(239, 68, 68, 0.15)',
             border: '1px solid rgba(239, 68, 68, 0.4)',
@@ -245,8 +260,13 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
             fontSize: '12px',
             color: '#fca5a5',
             marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontWeight: 600,
           }}>
-            Account locked due to 5 failed attempts. Please wait {lockoutMinutes} minute(s).
+            <LockIcon size={14} color="#fca5a5" />
+            <span>Account locked for security. Cooldown remaining: <strong>{lockoutSeconds}s</strong></span>
           </div>
         )}
 
@@ -258,13 +278,13 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
             <input
               type="email"
               required
-              disabled={lockoutMinutes !== null}
+              disabled={lockoutSeconds !== null}
               value={email}
               onChange={e => { setEmail(e.target.value); setErrorMessage(''); }}
-              placeholder="john.samane@asiancollege.edu.ph"
+              placeholder="jsamane@asiancollege.edu.ph"
               style={{
                 width: '100%',
-                background: 'rgba(255,255,255,0.05)',
+                background: lockoutSeconds !== null ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: '8px',
                 padding: '10px 12px',
@@ -272,6 +292,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
                 color: '#fff',
                 outline: 'none',
                 boxSizing: 'border-box',
+                cursor: lockoutSeconds !== null ? 'not-allowed' : 'text',
               }}
             />
           </div>
@@ -283,22 +304,48 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
             <input
               type="password"
               required
-              disabled={lockoutMinutes !== null}
+              disabled={lockoutSeconds !== null}
               value={password}
-              onChange={e => { setPassword(e.target.value); setErrorMessage(''); }}
-              placeholder="••••••••••••"
+              onChange={e => {
+                if (lockoutSeconds !== null) return;
+                setPassword(e.target.value);
+                setErrorMessage('');
+                setPasteBlocked(false);
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                setPasteBlocked(true);
+              }}
+              onCopy={(e) => e.preventDefault()}
+              onCut={(e) => e.preventDefault()}
+              autoComplete="off"
+              placeholder={lockoutSeconds !== null ? `Locked (${lockoutSeconds}s remaining)` : "••••••••••••"}
               style={{
                 width: '100%',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.15)',
+                background: lockoutSeconds !== null ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.05)',
+                border: lockoutSeconds !== null ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(255,255,255,0.15)',
                 borderRadius: '8px',
                 padding: '10px 12px',
                 fontSize: '13px',
                 color: '#fff',
                 outline: 'none',
                 boxSizing: 'border-box',
+                cursor: lockoutSeconds !== null ? 'not-allowed' : 'text',
               }}
             />
+            {pasteBlocked && (
+              <div style={{
+                color: '#f87171',
+                fontSize: '11px',
+                marginTop: '5px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}>
+                <span>⚠️ Paste is disabled for password security. Please type manually.</span>
+              </div>
+            )}
           </div>
 
           {errorMessage && (
@@ -317,7 +364,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
 
           <button
             type="submit"
-            disabled={isLoading || lockoutMinutes !== null}
+            disabled={isLoading || lockoutSeconds !== null}
             style={{
               width: '100%',
               background: '#dc2626',
@@ -327,8 +374,8 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
               padding: '11px',
               fontSize: '13px',
               fontWeight: 700,
-              cursor: (isLoading || lockoutMinutes !== null) ? 'not-allowed' : 'pointer',
-              opacity: (isLoading || lockoutMinutes !== null) ? 0.6 : 1,
+              cursor: (isLoading || lockoutSeconds !== null) ? 'not-allowed' : 'pointer',
+              opacity: (isLoading || lockoutSeconds !== null) ? 0.6 : 1,
               marginTop: '4px',
               display: 'flex',
               alignItems: 'center',
@@ -337,7 +384,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
             }}
           >
             <LockIcon size={14} />
-            <span>{isLoading ? 'Verifying Credentials…' : 'Access Director Dashboard'}</span>
+            <span>{isLoading ? 'Verifying Credentials…' : lockoutSeconds !== null ? `Locked (${lockoutSeconds}s)` : 'Access Director Dashboard'}</span>
           </button>
 
           <button

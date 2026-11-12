@@ -705,9 +705,9 @@ INSERT INTO users (
   avatar_initials, gmail_verified, is_active, is_default_password
 ) VALUES
   (
-    'u1', 'Alex Rivera', 'director', 'admin',
-    'admin@asiancollege.edu.ph', 'admin123', 'd1', 'All Sports',
-    'AR', true, true, true
+    'u1', 'Mr. John Eric Samane', 'director', 'jsamane',
+    'jsamane@asiancollege.edu.ph', 'padulaAdmin2026', 'd1', 'All Sports',
+    'JS', true, true, true
   ),
   (
     'u2', 'Jordan Lee', 'coordinator', 'coordinator',

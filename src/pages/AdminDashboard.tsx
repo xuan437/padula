@@ -21,6 +21,7 @@ import {
   ClockIcon,
   FileTextIcon,
   XIcon,
+  LockIcon,
 } from '../components/Icons';
 import padulaTitleImg from '../assets/padula-title.png';
 import schoolLogo from '../assets/logo.png';
@@ -173,11 +174,11 @@ function LiveMatchCard({ match, onOpen }: { match: any; onOpen: () => void }) {
 }
 
 // ─── Main AdminDashboard ──────────────────────────────────────────────────────
-export default function AdminDashboard() {
+export default function AdminDashboard({ initialFocus: _initialFocus }: { initialFocus?: string } = {}) {
   const {
     currentUser, matches, officials, players, teams, departments,
     registeredUsers, auditLogs, announcements,
-    assignMatchOfficials, setActiveView, postAnnouncement,
+    assignMatchOfficials, setActiveView,
     updatePlayer, addAuditLog, clearAllMatches,
   } = useApp();
 
@@ -185,11 +186,6 @@ export default function AdminDashboard() {
   const [showMedicalModal, setShowMedicalModal] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [selectedReassignScorer, setSelectedReassignScorer] = useState<Record<string, string>>({});
-
-  // Dashboard state
-  const [scheduleFilter, setScheduleFilter] = useState<{ sport: string; status: string }>({ sport: 'all', status: 'all' });
-  const [announcementForm, setAnnouncementForm] = useState({ title: '', body: '', priority: 'normal' as 'normal' | 'urgent' });
-  const [showAnnForm, setShowAnnForm] = useState(false);
 
   const role = currentUser?.role ?? 'guest';
   const isDirector = role === 'director';
@@ -347,18 +343,6 @@ export default function AdminDashboard() {
     return matches.filter(m => m.scorekeeper?.toLowerCase() === currentUser?.name?.toLowerCase());
   }, [isScorer, matches, currentUser]);
 
-  // ── Schedule table (filtered) ────────────────────────────────────────────────
-  const filteredSchedule = useMemo(() => {
-    return matches.filter(m => {
-      const sportOk = scheduleFilter.sport === 'all' || m.sport === scheduleFilter.sport || getSportName(m.sport).toLowerCase() === scheduleFilter.sport.toLowerCase();
-      const statusOk = scheduleFilter.status === 'all' || m.status === scheduleFilter.status;
-      return sportOk && statusOk;
-    });
-  }, [matches, scheduleFilter]);
-
-  // ── Recent Audit Logs ────────────────────────────────────────────────────────
-  const recentAudit = useMemo(() => [...auditLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10), [auditLogs]);
-
   // ═══════════════════════════════════════════════════════════════════════════
   // SCORER DASHBOARD — simple focused view
   // ═══════════════════════════════════════════════════════════════════════════
@@ -468,19 +452,6 @@ export default function AdminDashboard() {
             </p>
           </div>
         </div>
-
-        {/* Top page navigation shortcuts */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-sm btn-primary" onClick={() => setActiveView('admin')} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <HomeIcon size={14} /> Dashboard
-          </button>
-          <button className="btn btn-sm btn-ghost" onClick={() => setActiveView('officials')} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <ShieldIcon size={14} /> Officials Hub
-          </button>
-          <button className="btn btn-sm btn-ghost" onClick={() => setActiveView('setup-wizard')} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <CalendarIcon size={14} /> Setup Wizard
-          </button>
-        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -547,8 +518,8 @@ export default function AdminDashboard() {
                 <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('registration')}>
                   <ShieldIcon size={15} /> Add Coordinator
                 </button>
-                <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setShowAnnForm(v => !v)}>
-                  <FileTextIcon size={15} /> Post Announcement
+                <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('announcements')}>
+                  <FileTextIcon size={15} /> Announcements Hub
                 </button>
                 {matches.length > 0 && (
                   <button
@@ -576,207 +547,182 @@ export default function AdminDashboard() {
                 <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('officials')}>
                   <ClipboardIcon size={15} /> Assign Scorer
                 </button>
-                <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setShowAnnForm(v => !v)}>
-                  <FileTextIcon size={15} /> Post Announcement
+                <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('announcements')}>
+                  <FileTextIcon size={15} /> Announcements Hub
                 </button>
               </>
             )}
           </div>
+        </div>
 
-          {/* Announcement form */}
-          {showAnnForm && (
-            <div className="glass-card" style={{ marginTop: 14, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Post Announcement</div>
-              <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                <div className="form-group">
-                  <label>Title</label>
-                  <input className="form-input" placeholder="Announcement title" value={announcementForm.title} onChange={e => setAnnouncementForm(p => ({ ...p, title: e.target.value }))} />
+        {/* ── Operational Centers & Dedicated Portals ─────────────────────────── */}
+        <div>
+          <SectionDivider label="Operational Centers & Dedicated Portals" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginTop: 14 }}>
+            {/* Live Scoreboard Hub */}
+            <div
+              className="glass-card"
+              style={{
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                cursor: 'pointer',
+                borderLeft: liveMatches.length > 0 ? '3px solid #ef4444' : '3px solid var(--accent)',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onClick={() => setActiveView('live')}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <LiveIcon size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>Live Scoreboard</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Real-time match broadcast</div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Priority</label>
-                  <select className="form-input" value={announcementForm.priority} onChange={e => setAnnouncementForm(p => ({ ...p, priority: e.target.value as 'normal' | 'urgent' }))}>
-                    <option value="normal">Normal</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
+                {liveMatches.length > 0 && (
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#ef4444', background: 'rgba(239, 68, 68, 0.12)', padding: '2px 8px', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.2s infinite' }} />
+                    {liveMatches.length} ACTIVE
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
+                {liveMatches.length > 0
+                  ? `Currently broadcasting ${liveMatches.length} match${liveMatches.length > 1 ? 'es' : ''} across tournament venues.`
+                  : 'No active games currently in play. Open scoreboard to monitor courts.'}
+              </p>
+              <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                Open Live Desk <ArrowRightIcon size={12} />
+              </div>
+            </div>
+
+            {/* Tournament Schedule & Results */}
+            <div
+              className="glass-card"
+              style={{
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                cursor: 'pointer',
+                borderLeft: '3px solid #3b82f6',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onClick={() => setActiveView('schedule')}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CalendarIcon size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>Schedule &amp; Results</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Master timetable &amp; scores</div>
+                  </div>
                 </div>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#3b82f6', background: 'rgba(59, 130, 246, 0.12)', padding: '2px 8px', borderRadius: 20 }}>
+                  {matches.length} Fixtures
+                </span>
               </div>
-              <div className="form-group">
-                <label>Message</label>
-                <textarea className="form-input" rows={3} placeholder="Announcement body text…" value={announcementForm.body} onChange={e => setAnnouncementForm(p => ({ ...p, body: e.target.value }))} style={{ resize: 'vertical' }} />
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-primary" onClick={() => {
-                  if (!announcementForm.title.trim() || !announcementForm.body.trim()) return;
-                  postAnnouncement({ title: announcementForm.title, body: announcementForm.body, priority: announcementForm.priority, createdBy: currentUser?.name ?? 'Director' });
-                  setAnnouncementForm({ title: '', body: '', priority: 'normal' });
-                  setShowAnnForm(false);
-                }}>Post</button>
-                <button className="btn btn-ghost" onClick={() => setShowAnnForm(false)}>Cancel</button>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
+                {matches.length > 0
+                  ? `Full master timetable with sports filters, venue locations, and results.`
+                  : 'No matches created yet. Generate tournament brackets or schedule games.'}
+              </p>
+              <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>
+                View Master Schedule <ArrowRightIcon size={12} />
               </div>
             </div>
-          )}
-        </div>
 
-        {/* ── Live Now ────────────────────────────────────────────────────── */}
-        <div>
-          <SectionDivider label={`Live Now (${liveMatches.length})`} />
-          {liveMatches.length === 0 ? (
-            <div className="glass-card" style={{ padding: '32px 24px', textAlign: 'center', color: 'var(--text-muted)', marginTop: 14 }}>
-              <LiveIcon size={36} color="var(--text-muted)" />
-              <p style={{ marginTop: 10, fontSize: 14 }}>No live matches right now.{upcomingToday.length > 0 ? ` Next: ${upcomingToday[0]?.teamA} vs ${upcomingToday[0]?.teamB}` : ''}</p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14, marginTop: 14 }}>
-              {liveMatches.map(m => <LiveMatchCard key={m.id} match={m} onOpen={() => setActiveView('live')} />)}
-            </div>
-          )}
-        </div>
-
-        {/* ── Next Matches ────────────────────────────────────────────────── */}
-        {scheduledMatches.length > 0 && (
-          <div>
-            <SectionDivider label="Next Matches" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12, marginTop: 14 }}>
-              {scheduledMatches.slice(0, 5).map(m => <LiveMatchCard key={m.id} match={m} onOpen={() => setActiveView('officials')} />)}
-            </div>
-          </div>
-        )}
-
-        {/* ── Tournament Schedule & Results ───────────────────────────────── */}
-        <div>
-          <SectionDivider label="Tournament Schedule & Results" />
-          <div className="glass-card" style={{ padding: '20px 24px', marginTop: 14 }}>
-            {/* Filters */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-              <select className="form-input" style={{ maxWidth: 170, padding: '7px 10px', fontSize: 12 }}
-                value={scheduleFilter.sport} onChange={e => setScheduleFilter(p => ({ ...p, sport: e.target.value }))}>
-                <option value="all">All Sports</option>
-                {SPORTS_CATALOG.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              <select className="form-input" style={{ maxWidth: 150, padding: '7px 10px', fontSize: 12 }}
-                value={scheduleFilter.status} onChange={e => setScheduleFilter(p => ({ ...p, status: e.target.value }))}>
-                <option value="all">All Statuses</option>
-                <option value="live">Live</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="finished">Finished</option>
-              </select>
-              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>{filteredSchedule.length} matches</span>
+            {/* Official Announcements */}
+            <div
+              className="glass-card"
+              style={{
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                cursor: 'pointer',
+                borderLeft: '3px solid #10b981',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onClick={() => setActiveView('announcements')}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileTextIcon size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>Announcements</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Bulletins &amp; broadcasts</div>
+                  </div>
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.12)', padding: '2px 8px', borderRadius: 20 }}>
+                  {announcements.length} Posted
+                </span>
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
+                {announcements.length > 0
+                  ? `Latest: "${announcements[0]?.title}"`
+                  : 'Post and manage official bulletins across the campus network.'}
+              </p>
+              <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#10b981' }}>
+                Open Announcements Hub <ArrowRightIcon size={12} />
+              </div>
             </div>
 
-            {/* Table */}
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Sport', 'Teams', 'Score', 'Round', 'Venue', 'Status'].map(h => (
-                      <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSchedule.length === 0 ? (
-                    <tr><td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No matches match the selected filters.</td></tr>
-                  ) : filteredSchedule.map(m => {
-                    const sport = SPORTS_CATALOG.find(s => s.id === m.sport || s.name.toLowerCase() === m.sport.toLowerCase());
-                    const isLive = m.status === 'live';
-                    const isFin = m.status === 'finished';
-                    return (
-                      <tr key={m.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
-                        <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {sport?.icon('var(--text-muted)', 15)}
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{sport?.name || m.sport}</span>
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                          {m.teamA} <span style={{ color: 'var(--accent)', fontWeight: 400 }}>vs</span> {m.teamB}
-                        </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-                          {isFin || isLive ? `${m.scoreA} – ${m.scoreB}` : '–'}
-                        </td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{m.round}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <MapPinIcon size={11} color="var(--text-muted)" /> {m.venue}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span className={`status-badge ${m.status}`} style={{ fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            {isLive && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', animation: 'pulse 1.4s infinite' }} />}
-                            {m.status.toUpperCase()}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Recent Audit Activity ───────────────────────────────────────── */}
-        <div>
-          <SectionDivider label="Recent Activity" />
-          <div className="glass-card" style={{ padding: '20px 24px', marginTop: 14 }}>
-            {recentAudit.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0', fontSize: 14 }}>No audit activity recorded yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {recentAudit.map((log, i) => {
-                  const actionColors: Record<string, string> = {
-                    login: '#10b981', logout: '#6b7280', score_update: '#3b82f6',
-                    match_start: '#f59e0b', match_finish: '#8b5cf6', player_register: '#06b6d4',
-                    team_register: '#14b8a6', official_register: '#38bdf8', announcement_post: '#ec4899',
-                    event_create: '#a78bfa', bracket_generate: '#f59e0b',
-                  };
-                  const col = actionColors[log.action] || '#94a3b8';
-                  const timeStr = new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                  const dateStr = new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                  return (
-                    <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px', borderRadius: 8, background: i % 2 === 0 ? 'var(--bg-elevated)' : 'transparent' }}>
-                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: col, flexShrink: 0 }} />
-                      <div style={{ flex: 1, fontSize: '13px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <strong style={{ color: col }}>{log.userName}</strong>
-                        <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}> — {log.details}</span>
-                      </div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{dateStr} {timeStr}</span>
-                      <span style={{ fontSize: '10px', background: `${col}18`, color: col, padding: '2px 7px', borderRadius: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>{log.userRole}</span>
+            {/* Security Audit Trail (Director only) */}
+            {isDirector && (
+              <div
+                className="glass-card"
+                style={{
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  cursor: 'pointer',
+                  borderLeft: '3px solid #8b5cf6',
+                  transition: 'transform 0.15s, box-shadow 0.15s',
+                }}
+                onClick={() => setActiveView('audit')}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139, 92, 246, 0.12)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <LockIcon size={18} />
                     </div>
-                  );
-                })}
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>Security &amp; Audit Trail</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Compliance &amp; activity logs</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.12)', padding: '2px 8px', borderRadius: 20 }}>
+                    {auditLogs.length} Events
+                  </span>
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
+                  Track logins, score adjustments, bracket changes, and administrative actions.
+                </p>
+                <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#8b5cf6' }}>
+                  View Full Audit Trail <ArrowRightIcon size={12} />
+                </div>
               </div>
             )}
-            <div style={{ textAlign: 'right', marginTop: 12 }}>
-              <button className="btn btn-sm btn-ghost" style={{ fontSize: 12 }} onClick={() => setActiveView('audit')}>
-                View Full Audit Trail <ArrowRightIcon size={12} />
-              </button>
-            </div>
           </div>
         </div>
-
-        {/* ── Latest Announcements ─────────────────────────────────────────── */}
-        {announcements.length > 0 && (
-          <div>
-            <SectionDivider label="Latest Announcements" />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-              {announcements.slice(0, 3).map(ann => (
-                <div key={ann.id} className="glass-card" style={{ padding: '14px 20px', borderLeft: ann.priority === 'urgent' ? '3px solid #ef4444' : '3px solid var(--accent)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>{ann.title}</span>
-                    {ann.priority === 'urgent' && <span style={{ fontSize: '10px', fontWeight: 800, color: '#ef4444', background: 'rgba(239,68,68,0.12)', padding: '2px 8px', borderRadius: 20 }}>URGENT</span>}
-                  </div>
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>{ann.body}</p>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: 8 }}>
-                    {ann.createdBy} · {new Date(ann.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
       </div>
 
@@ -811,12 +757,14 @@ export default function AdminDashboard() {
                 top: '16px',
                 background: 'none',
                 border: 'none',
-                fontSize: '20px',
                 color: 'var(--text-muted)',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              ✕
+              <XIcon size={18} />
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
@@ -849,9 +797,9 @@ export default function AdminDashboard() {
                     type="button"
                     className="btn btn-sm btn-primary"
                     onClick={handleApproveAllMedical}
-                    style={{ fontSize: '11px', padding: '4px 10px' }}
+                    style={{ fontSize: '11px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
-                    ✓ Approve All
+                    <CheckIcon size={12} color="#fff" /> Approve All
                   </button>
                 </div>
 
@@ -905,9 +853,9 @@ export default function AdminDashboard() {
                           type="button"
                           className="btn btn-sm btn-primary"
                           onClick={() => handleApproveMedical(p.id)}
-                          style={{ fontSize: '11.5px', fontWeight: 700, padding: '5px 12px' }}
+                          style={{ fontSize: '11.5px', fontWeight: 700, padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                         >
-                          ✓ Approve Clearance
+                          <CheckIcon size={12} color="#fff" /> Approve Clearance
                         </button>
                       </div>
                     </div>
@@ -971,12 +919,14 @@ export default function AdminDashboard() {
                 top: '16px',
                 background: 'none',
                 border: 'none',
-                fontSize: '20px',
                 color: 'var(--text-muted)',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              ✕
+              <XIcon size={18} />
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
@@ -1038,8 +988,12 @@ export default function AdminDashboard() {
                         padding: '8px 10px',
                         fontSize: '12px',
                         color: '#f87171',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
                       }}>
-                        ⚠️ {m.conflictWarning}
+                        <AlertTriangleIcon size={12} color="#f87171" />
+                        <span>{m.conflictWarning}</span>
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>

@@ -12,6 +12,9 @@ import {
   ScrabbleIcon,
   CrosshairIcon,
   TrophyIcon,
+  MedalIcon,
+  FlameIcon,
+  ZapIcon,
 } from '../components/Icons';
 
 export type SportFormat = 'Single elimination' | 'Round robin, then finals' | 'Round robin';
@@ -176,9 +179,127 @@ export const SPORTS_CATALOG: SportMeta[] = [
   },
 ];
 
+export function getIconByKey(key?: string, size = 18, color?: string): React.ReactNode {
+  switch ((key || '').toLowerCase()) {
+    case 'basketball': return <BasketballIcon size={size} color={color} />;
+    case 'volleyball': return <VolleyballIcon size={size} color={color} />;
+    case 'football': return <FootballIcon size={size} color={color} />;
+    case 'sepaktakraw': return <SepakTakrawIcon size={size} color={color} />;
+    case 'tabletennis': return <TableTennisIcon size={size} color={color} />;
+    case 'badminton': return <ShuttlecockIcon size={size} color={color} />;
+    case 'frisbee': return <FrisbeeIcon size={size} color={color} />;
+    case 'chess': return <ChessIcon size={size} color={color} />;
+    case 'scrabble': return <ScrabbleIcon size={size} color={color} />;
+    case 'gamepad': return <GamepadIcon size={size} color={color} />;
+    case 'crosshair': return <CrosshairIcon size={size} color={color} />;
+    case 'medal': return <MedalIcon size={size} color={color} />;
+    case 'flame': return <FlameIcon size={size} color={color} />;
+    case 'zap': return <ZapIcon size={size} color={color} />;
+    default: return <TrophyIcon size={size} color={color} />;
+  }
+}
+
+export function getCustomSports(): SportMeta[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('padula_custom_sports');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          category: item.category || 'team',
+          unit: item.unit || 'Points',
+          rulesSummary: item.rulesSummary || `${item.name} Competition`,
+          format: item.format || 'Single elimination',
+          divisions: item.divisions || ["Men's Division", "Women's Division"],
+          scoringType: item.scoringType || (item.category === 'esport' ? 'esport' : item.category === 'board' ? 'board' : 'points'),
+          periodsDescription: item.periodsDescription || `${item.name} Match Play`,
+          icon: (c?: string, s = 18) => getIconByKey(item.iconKey, s, c),
+        }));
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export function getAllSports(): SportMeta[] {
+  const custom = getCustomSports();
+  if (!custom.length) return SPORTS_CATALOG;
+  // Merge ensuring no duplicate IDs
+  const customIds = new Set(custom.map(c => c.id.toLowerCase()));
+  const filteredCatalog = SPORTS_CATALOG.filter(s => !customIds.has(s.id.toLowerCase()));
+  return [...filteredCatalog, ...custom];
+}
+
+export function saveCustomSport(data: {
+  id?: string;
+  name: string;
+  category: 'team' | 'individual' | 'esport' | 'board';
+  unit?: string;
+  rulesSummary?: string;
+  format?: SportFormat;
+  divisions?: string[];
+  scoringType?: 'basketball' | 'rally' | 'goals' | 'games' | 'points' | 'board' | 'esport';
+  periodsDescription?: string;
+  iconKey?: string;
+}): SportMeta {
+  const id = data.id || `s_${data.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now().toString(36)}`;
+  const iconKey = data.iconKey || (data.category === 'esport' ? 'gamepad' : data.category === 'board' ? 'chess' : 'trophy');
+  const scoringType = data.scoringType || (data.category === 'esport' ? 'esport' : data.category === 'board' ? 'board' : 'points');
+  const format = data.format || 'Single elimination';
+  const unit = data.unit || 'Points';
+  const rulesSummary = data.rulesSummary || `${data.name} Championship rules and scoring format`;
+  const divisions = data.divisions && data.divisions.length ? data.divisions : ["Men's Division", "Women's Division"];
+  const periodsDescription = data.periodsDescription || `${data.name} Match Regulation Play`;
+
+  const record = {
+    id,
+    name: data.name,
+    category: data.category,
+    unit,
+    rulesSummary,
+    format,
+    divisions,
+    scoringType,
+    periodsDescription,
+    iconKey,
+  };
+
+  try {
+    const raw = localStorage.getItem('padula_custom_sports');
+    const existing = raw ? JSON.parse(raw) : [];
+    const updated = Array.isArray(existing) ? existing.filter((item: any) => item.id !== id) : [];
+    updated.push(record);
+    localStorage.setItem('padula_custom_sports', JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('padula_sports_updated', { detail: { id, name: data.name } }));
+  } catch {}
+
+  return {
+    ...record,
+    icon: (c?: string, s = 18) => getIconByKey(iconKey, s, c),
+  };
+}
+
+export function deleteCustomSport(id: string): void {
+  try {
+    const raw = localStorage.getItem('padula_custom_sports');
+    if (raw) {
+      const existing = JSON.parse(raw);
+      if (Array.isArray(existing)) {
+        const updated = existing.filter((item: any) => item.id !== id);
+        localStorage.setItem('padula_custom_sports', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('padula_sports_updated', { detail: { id, deleted: true } }));
+      }
+    }
+  } catch {}
+}
+
 export function getSportName(sportIdOrName: string): string {
   if (!sportIdOrName) return 'All Sports';
-  const match = SPORTS_CATALOG.find(
+  const all = getAllSports();
+  const match = all.find(
     s => s.id.toLowerCase() === sportIdOrName.toLowerCase() ||
          s.name.toLowerCase() === sportIdOrName.toLowerCase()
   );
@@ -194,10 +315,11 @@ export function getSportName(sportIdOrName: string): string {
 
 export function getSportMeta(sportIdOrName: string): SportMeta | undefined {
   if (!sportIdOrName) return undefined;
-  return SPORTS_CATALOG.find(
+  const all = getAllSports();
+  return all.find(
     s => s.id.toLowerCase() === sportIdOrName.toLowerCase() ||
          s.name.toLowerCase() === sportIdOrName.toLowerCase()
-  ) || SPORTS_CATALOG.find(s => {
+  ) || all.find(s => {
     const q = sportIdOrName.toLowerCase();
     return s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q);
   });
@@ -208,3 +330,8 @@ export function getSportIcon(sportIdOrName: string, size = 18, color?: string): 
   if (meta) return meta.icon(color, size);
   return <TrophyIcon size={size} color={color} />;
 }
+
+export const OFFICIAL_SPORTS = SPORTS_CATALOG;
+export const getSportIconComponent = (sportIdOrName: string, size = 18, color?: string) =>
+  getSportIcon(sportIdOrName, size, color);
+

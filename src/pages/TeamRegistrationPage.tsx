@@ -90,8 +90,9 @@ function PlayerCard({ player, department, team }: {
               color: player.medicalCleared ? '#34d399' : '#f87171',
               background: player.medicalCleared ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
               padding: '2px 8px', borderRadius: '20px', letterSpacing: '0.04em',
+              display: 'inline-flex', alignItems: 'center', gap: 3,
             }}>
-              {player.medicalCleared ? '✓ CLEARED' : '✗ PENDING'}
+              {player.medicalCleared ? <><CheckIcon size={10} color="#34d399" /> CLEARED</> : 'PENDING'}
             </span>
           </div>
         </div>

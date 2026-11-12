@@ -3,14 +3,17 @@
 // Used when a list or table has no data to show.
 // ============================================================
 
+import React from 'react';
+import { ClipboardIcon } from '../Icons';
+
 interface EmptyStateProps {
-  icon?: string;
+  icon?: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
 }
 
-export function EmptyState({ icon = '📭', title, description, action }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div style={{
       display: 'flex',
@@ -22,7 +25,9 @@ export function EmptyState({ icon = '📭', title, description, action }: EmptyS
       gap: '10px',
       color: 'var(--text-muted)',
     }}>
-      <div style={{ fontSize: '36px', marginBottom: '4px' }}>{icon}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' }}>
+        {icon ?? <ClipboardIcon size={38} color="var(--text-muted)" />}
+      </div>
       <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-secondary)' }}>{title}</div>
       {description && (
         <div style={{ fontSize: '13px', maxWidth: '340px', lineHeight: 1.5 }}>{description}</div>

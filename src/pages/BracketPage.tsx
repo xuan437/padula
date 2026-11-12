@@ -1,8 +1,20 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { MapPinIcon, TrophyIcon } from '../components/Icons';
+import {
+  MapPinIcon,
+  TrophyIcon,
+  CalendarIcon,
+  AlertTriangleIcon,
+  RefreshIcon,
+  PlusIcon,
+  ClockIcon,
+  LayersIcon,
+  BracketsIcon,
+  TrashIcon,
+} from '../components/Icons';
 import TournamentTreeBracket from '../components/TournamentTreeBracket';
 import { isPlaceholder, getRoundName } from '../lib/bracket';
+import { SPORTS_CATALOG, getSportName } from '../lib/sports';
 
 type AppState = ReturnType<typeof useApp>;
 type BracketMatch = AppState['matches'][number];
@@ -14,14 +26,18 @@ function ConflictWarning({ warning }: { warning: string }) {
       background: 'var(--badge-warn-bg)', border: '1px solid var(--badge-warn-border)',
       borderRadius: '6px', padding: '6px 10px', marginTop: '8px',
       fontSize: '12px', color: 'var(--badge-warn-text)', fontWeight: 500,
+      display: 'flex', alignItems: 'center', gap: 6,
     }}>
-      ⚠️ {warning}
+      <AlertTriangleIcon size={13} color="var(--badge-warn-text)" />
+      <span>{warning}</span>
     </div>
   );
 }
 
-function BracketMatchCard({ match, onAssignVenue, venues, onOpenScoringDesk }: {
+function BracketMatchCard({ match, matchNum, isNextUp, onAssignVenue, venues, onOpenScoringDesk }: {
   match: BracketMatch;
+  matchNum: number;
+  isNextUp?: boolean;
   onAssignVenue: (matchId: string, venue: string) => void;
   venues: Venue[];
   onOpenScoringDesk?: (matchId: string) => void;
@@ -31,11 +47,52 @@ function BracketMatchCard({ match, onAssignVenue, venues, onOpenScoringDesk }: {
   const isTBD = isPlaceholder(match.teamA) || isPlaceholder(match.teamB);
 
   return (
-    <div className="glass-card" style={{ padding: '14px 16px', opacity: isTBD ? 0.7 : 1 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-          {match.round}
-        </span>
+    <div
+      className="glass-card"
+      style={{
+        padding: '14px 16px',
+        opacity: isTBD ? 0.7 : 1,
+        border: isLive
+          ? '1.5px solid #ef4444'
+          : isNextUp
+            ? '1.5px solid #0ea5e9'
+            : undefined,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '6px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <span style={{
+            fontSize: '10.5px',
+            fontWeight: 900,
+            padding: '2px 7px',
+            borderRadius: '999px',
+            background: isLive
+              ? '#dc2626'
+              : isNextUp
+                ? '#0ea5e9'
+                : 'rgba(220, 38, 38, 0.14)',
+            color: isLive || isNextUp ? '#ffffff' : 'var(--accent)',
+            border: '1px solid rgba(220, 38, 38, 0.3)',
+            letterSpacing: '0.03em',
+          }}>
+            Match #{matchNum}
+          </span>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            {match.round}
+          </span>
+          {isNextUp && !isLive && (
+            <span style={{
+              fontSize: '9.5px',
+              fontWeight: 800,
+              color: '#0ea5e9',
+              background: 'rgba(14, 165, 233, 0.14)',
+              padding: '2px 6px',
+              borderRadius: '6px',
+            }}>
+              ▶ PLAY NEXT
+            </span>
+          )}
+        </div>
         <span className={`status-badge ${match.status}`}>
           {isLive && <span className="live-dot" />}
           {match.status.toUpperCase()}
@@ -68,14 +125,28 @@ function BracketMatchCard({ match, onAssignVenue, venues, onOpenScoringDesk }: {
         </div>
       </div>
 
-      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)', flexWrap: 'wrap', gap: '4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <MapPinIcon size={12} /> {match.venue || 'No venue yet'}
+          <MapPinIcon size={12} /> {match.venue || 'Main Arena Court 1'}
         </div>
         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          Scorer: {match.scorekeeper || 'Unassigned'}
+          Scorer: {match.scorekeeper || 'Demo Scorekeeper'}
         </div>
       </div>
+
+      {match.scheduledTime && (
+        <div style={{ marginTop: '4px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            <CalendarIcon size={11} color="var(--text-muted)" />
+            {new Date(match.scheduledTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+          <span>·</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            <ClockIcon size={11} color="var(--text-muted)" />
+            {new Date(match.scheduledTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      )}
 
       {!isFinished && !isTBD && (
         <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -110,31 +181,86 @@ function BracketMatchCard({ match, onAssignVenue, venues, onOpenScoringDesk }: {
 export default function BracketPage() {
   const {
     events, matches, venues, teams,
-    assignMatchOfficials, startMatch, generateBracket, computeStandings,
+    assignMatchOfficials, startMatch, createEvent, generateBracket, deleteBracket, computeStandings,
     setActiveView, currentUser,
   } = useApp();
 
   const [selectedEventId, setSelectedEventId] = useState<string>(() => events[0]?.id || '');
+  const [selectedSportId, setSelectedSportId] = useState<string>(() => {
+    if (events[0]?.sport) return events[0].sport;
+    if (matches[0]?.sport) return matches[0].sport;
+    if (teams[0]?.sport) return teams[0].sport;
+    return 's1';
+  });
   const [bracketStyle, setBracketStyle] = useState<'symmetrical' | 'column'>('symmetrical');
+  const [selectedFormat, setSelectedFormat] = useState<'single_elimination' | 'round_robin'>('single_elimination');
+  const [selectedVenue, setSelectedVenue] = useState<string>(() => venues[0]?.name || 'Main Arena Court 1');
   const [tab, setTab] = useState<'bracket' | 'standings' | 'schedule'>('bracket');
   const [venueError, setVenueError] = useState('');
 
-  const event = events.find(e => e.id === selectedEventId) || events[0];
+  const event = useMemo(() => {
+    return events.find(e => e.id === selectedEventId && e.sport === selectedSportId)
+      || events.find(e => e.sport === selectedSportId && !e.archived)
+      || events.find(e => e.id === selectedEventId)
+      || events[0];
+  }, [events, selectedEventId, selectedSportId]);
+
+  const currentSport = selectedSportId || event?.sport || 's1';
+  const sportName = getSportName(currentSport);
+  const sportNameLower = sportName.toLowerCase();
+
   const eventMatches: BracketMatch[] = useMemo(() => {
-    if (!event) return matches;
-    return matches.filter(m => m.eventId === event.id || (!m.eventId && m.sport === event.sport));
-  }, [matches, event]);
+    const filtered = matches.filter(m =>
+      m.sport === currentSport ||
+      getSportName(m.sport).toLowerCase() === sportNameLower ||
+      (event && event.sport === currentSport && m.eventId === event.id)
+    );
+    return [...filtered].sort(
+      (a, b) => (a.matchNumber ?? 999) - (b.matchNumber ?? 999) || (a.roundNumber ?? 1) - (b.roundNumber ?? 1) || (a.slot ?? 1) - (b.slot ?? 1)
+    );
+  }, [matches, event, currentSport, sportNameLower]);
   const hasMatches = eventMatches.length > 0;
+
+  // Map each match ID to its sequential Match # (1, 2, 3...) and identify the next match to play
+  const matchSeqMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    eventMatches.forEach((m, idx) => {
+      map[m.id] = m.matchNumber || (idx + 1);
+    });
+    return map;
+  }, [eventMatches]);
+
+  const nextUpMatchId = useMemo(() => {
+    const ready = eventMatches.find(
+      m => m.status === 'scheduled' && !isPlaceholder(m.teamA) && !isPlaceholder(m.teamB)
+    );
+    if (ready) return ready.id;
+    return eventMatches.find(m => m.status === 'scheduled')?.id;
+  }, [eventMatches]);
 
   const liveMatchesCount = matches.filter(m => m.status === 'live').length;
   const finishedMatchesCount = matches.filter(m => m.status === 'finished').length;
 
-  const activeTeams = teams.filter(t => t.isActive !== false);
-  const canGenerate = !!event && activeTeams.length >= 2;
+  const activeTeams = useMemo(() => {
+    return teams.filter(
+      t => t.isActive !== false && (t.sport === currentSport || getSportName(t.sport).toLowerCase() === sportNameLower)
+    );
+  }, [teams, currentSport, sportNameLower]);
+
+  const isAdmin = currentUser?.role === 'director' || currentUser?.role === 'coordinator';
+  const canGenerate = isAdmin;
 
   const roundGroups = useMemo(() => {
+    const getStageOrder = (m: BracketMatch): number => {
+      const r = (m.round || '').toLowerCase();
+      if (r.includes('16') || r.includes('r16')) return 1;
+      if (r.includes('quarter') || r.includes('qf')) return 2;
+      if (r.includes('semi') || r.includes('sf')) return 3;
+      if (r.includes('final') || r.includes('championship') || r.includes('gold')) return 4;
+      return m.roundNumber ?? 1;
+    };
     return eventMatches.reduce<Record<number, BracketMatch[]>>((acc, m) => {
-      const rn = m.roundNumber ?? 1;
+      const rn = getStageOrder(m);
       (acc[rn] ??= []).push(m);
       return acc;
     }, {});
@@ -143,8 +269,8 @@ export default function BracketPage() {
   const totalRounds = Math.max(0, ...Object.keys(roundGroups).map(Number));
 
   const standings = useMemo(
-    () => (event ? computeStandings(event.sport) : []),
-    [event, computeStandings, matches],
+    () => computeStandings(currentSport),
+    [currentSport, computeStandings, matches],
   );
 
   const conflicts = eventMatches.filter(m => m.conflictWarning);
@@ -168,18 +294,45 @@ export default function BracketPage() {
     }
 
     setVenueError('');
-    // NOTE: assumes assignMatchOfficials accepts a venue field.
-    // If your context has a separate assignMatchVenue(), call that instead.
     assignMatchOfficials(matchId, { venue });
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = (forceRegenerate = false) => {
     if (!canGenerate) return;
-    generateBracket(event.id, activeTeams.map(t => t.id));
+    const formatLabel = selectedFormat === 'round_robin' ? 'Round Robin' : 'Single Elimination';
+    if (forceRegenerate) {
+      const ok = window.confirm(
+        `Rebuild the ${sportName} ${formatLabel} schedule at ${selectedVenue || 'Main Arena Court 1'} using ${activeTeams.length} active teams? Existing ${sportName} matches will be replaced.`
+      );
+      if (!ok) return;
+    }
+    let targetEvent = events.find(e => e.sport === currentSport && !e.archived);
+    let targetEventId = targetEvent?.id;
+    if (!targetEventId) {
+      targetEventId = createEvent({
+        name: `Asian College Padula Intramurals 2026 — ${sportName}`,
+        sport: currentSport,
+        division: 'div1',
+        format: selectedFormat,
+        category: `${sportName} Championship`,
+        dates: 'Nov 10 (08:00 AM) – Nov 18 (05:00 PM), 2026',
+        startDate: '2026-11-10',
+        endDate: '2026-11-18',
+        startTime: '08:00',
+        endTime: '17:00',
+        venue: selectedVenue || venues[0]?.name || 'Main Arena Court 1',
+        status: 'ongoing',
+      });
+      setSelectedEventId(targetEventId);
+    } else {
+      generateBracket(targetEventId, activeTeams.map(t => t.id), forceRegenerate, selectedFormat);
+    }
   };
 
+  const isRoundRobinEvent = event?.format === 'round_robin' || eventMatches.some(m => m.format === 'round_robin');
+
   return (
-    <div>
+    <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
       <div className="page-header">
         <div>
           <div className="brand-pill-tag">Tournament Generation</div>
@@ -200,80 +353,154 @@ export default function BracketPage() {
         </div>
       </div>
 
-      {/* Live Scoring Desk Sync Status Banner */}
-      <div
-        className="glass-card"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-          marginBottom: '16px',
-          background: 'rgba(239, 68, 68, 0.06)',
-          border: '1px solid rgba(239, 68, 68, 0.25)',
-          borderRadius: '12px',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ position: 'relative', display: 'flex', height: '12px', width: '12px' }}>
-            {liveMatchesCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                display: 'inline-flex',
-                height: '100%',
-                width: '100%',
-                borderRadius: '50%',
-                background: '#ef4444',
-                opacity: 0.75,
-                animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
-              }} />
+      {/* Live Scoring Desk Sync & Competition Control Deck */}
+      <div className="sync-deck-card">
+        {/* Header: Live status & Quick actions */}
+        <div className="sync-deck-header">
+          <div className="sync-deck-status-wrap">
+            <div className={`sync-deck-pulse-dot ${liveMatchesCount > 0 ? 'is-live' : 'is-idle'}`}>
+              <span className="pulse-ping" />
+              <span className="pulse-core" />
+            </div>
+            <div className="sync-deck-info">
+              <div className="sync-deck-title">
+                <BracketsIcon size={15} className="sync-deck-zap" color="var(--accent)" />
+                <span>Tournament Bracket Live Sync</span>
+                <span className={`sync-deck-badge ${liveMatchesCount > 0 ? 'badge-live' : 'badge-idle'}`}>
+                  {liveMatchesCount > 0 ? 'Live on Court' : 'Active'}
+                </span>
+              </div>
+              <div className="sync-deck-subtitle">
+                {liveMatchesCount > 0 ? (
+                  <strong style={{ color: '#ef4444' }}>{liveMatchesCount} match(es) currently LIVE on court</strong>
+                ) : (
+                  <span>All courts idle / scheduled</span>
+                )}
+                <span className="sync-deck-divider">•</span>
+                <span>{finishedMatchesCount} finalized match(es)</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="sync-deck-actions">
+            {isAdmin && hasMatches && canGenerate && (
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost sync-action-btn"
+                onClick={() => handleGenerate(true)}
+                title="Rebuild bracket/schedule rounds from registered teams"
+              >
+                <RefreshIcon size={13} />
+                <span>Rebuild ({selectedFormat === 'round_robin' ? 'Round Robin' : 'Single Elim'})</span>
+              </button>
             )}
-            <span style={{
-              position: 'relative',
-              display: 'inline-flex',
-              borderRadius: '50%',
-              height: '12px',
-              width: '12px',
-              background: liveMatchesCount > 0 ? '#ef4444' : '#10b981',
-            }} />
-          </span>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              ⚡ Scoring Desk Live Sync Active
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-              {liveMatchesCount > 0 ? `${liveMatchesCount} match(es) currently LIVE on court` : 'All courts idle / scheduled'} • {finishedMatchesCount} finalized match(es)
-            </div>
+
+            {isAdmin && hasMatches && (
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost sync-action-btn"
+                onClick={() => {
+                  const confirmMsg = `Are you sure you want to delete the tournament bracket for ${sportName}? All ${eventMatches.length} scheduled matches will be permanently deleted and the bracket will be reset.`;
+                  if (window.confirm(confirmMsg)) {
+                    deleteBracket(selectedEventId || currentSport);
+                  }
+                }}
+                title={`Delete ${sportName} tournament bracket and clear all scheduled matches`}
+                style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+              >
+                <TrashIcon size={13} color="#ef4444" />
+                <span>Delete Bracket</span>
+              </button>
+            )}
+
+            {currentUser?.role === 'scorer' && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary sync-action-btn"
+                onClick={() => setActiveView('scorekeeper')}
+              >
+                Open Scoring Desk ↗
+              </button>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {events.length > 1 && (
-            <select
-              className="form-input"
-              style={{ fontSize: '12px', padding: '6px 10px', height: 'auto' }}
-              value={event?.id || ''}
-              onChange={e => setSelectedEventId(e.target.value)}
-            >
-              {events.map(ev => (
-                <option key={ev.id} value={ev.id}>
-                  {ev.name} ({ev.sport})
-                </option>
-              ))}
-            </select>
+        {/* Competition Scope Selectors Toolbar */}
+        <div className="sync-deck-controls-grid">
+          {/* Sport Selector */}
+          <div className="sync-control-pill">
+            <div className="sync-control-icon">
+              <TrophyIcon size={14} color="var(--accent)" />
+            </div>
+            <div className="sync-control-body">
+              <label className="sync-control-label">Sport / Event</label>
+              <select
+                className="sync-control-select"
+                value={currentSport}
+                onChange={e => {
+                  const sp = e.target.value;
+                  setSelectedSportId(sp);
+                  const matchingEv = events.find(ev => ev.sport === sp && !ev.archived);
+                  if (matchingEv) {
+                    setSelectedEventId(matchingEv.id);
+                    if (matchingEv.format) setSelectedFormat(matchingEv.format);
+                    if (matchingEv.venue) setSelectedVenue(matchingEv.venue);
+                  }
+                }}
+              >
+                {SPORTS_CATALOG.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({teams.filter(t => t.isActive !== false && t.sport === s.id).length} teams)
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Format Selector */}
+          {isAdmin && (
+            <div className="sync-control-pill">
+              <div className="sync-control-icon">
+                <LayersIcon size={14} color="#3b82f6" />
+              </div>
+              <div className="sync-control-body">
+                <label className="sync-control-label">Tournament Format</label>
+                <select
+                  className="sync-control-select"
+                  style={{ fontWeight: 700 }}
+                  value={selectedFormat}
+                  onChange={e => setSelectedFormat(e.target.value as 'single_elimination' | 'round_robin')}
+                  title="Choose Tournament Format"
+                >
+                  <option value="single_elimination">Single Elimination (Knockout)</option>
+                  <option value="round_robin">Round Robin (All vs All)</option>
+                </select>
+              </div>
+            </div>
           )}
 
-          {(currentUser?.role === 'director' || currentUser?.role === 'coordinator' || currentUser?.role === 'scorer') && (
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              style={{ fontSize: '12px', padding: '6px 12px' }}
-              onClick={() => setActiveView('scorekeeper')}
-            >
-              Open Scoring Desk ↗
-            </button>
+          {/* Venue Selector */}
+          {isAdmin && (
+            <div className="sync-control-pill">
+              <div className="sync-control-icon">
+                <MapPinIcon size={14} color="#10b981" />
+              </div>
+              <div className="sync-control-body">
+                <label className="sync-control-label">Event Place (Venue)</label>
+                <select
+                  className="sync-control-select"
+                  value={selectedVenue}
+                  onChange={e => setSelectedVenue(e.target.value)}
+                  title="Choose Event Place (Venue)"
+                >
+                  {venues.map(v => (
+                    <option key={v.id} value={v.name}>
+                      {v.name} ({v.location})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -310,105 +537,181 @@ export default function BracketPage() {
       {!hasMatches && tab !== 'standings' && (
         <div className="glass-card" style={{ padding: '32px 24px', textAlign: 'center', marginBottom: 24, border: '1.5px dashed var(--border)', borderRadius: 14 }}>
           <TrophyIcon size={40} color="var(--accent)" />
-          <h3 style={{ fontSize: '18px', margin: '12px 0 6px', color: 'var(--text-primary)' }}>No Bracket Yet</h3>
+          <h3 style={{ fontSize: '18px', margin: '12px 0 6px', color: 'var(--text-primary)' }}>No {sportName} Event / Bracket Yet</h3>
           <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', maxWidth: 460, margin: '0 auto 18px', lineHeight: 1.5 }}>
-            {canGenerate
-              ? `Generate a single-elimination bracket from ${activeTeams.length} registered teams.`
-              : 'Register at least 2 active teams before generating a bracket.'}
+            {activeTeams.length > 0
+              ? `Create the ${sportName} event and automatically generate its single-elimination bracket with ${activeTeams.length} registered team${activeTeams.length === 1 ? '' : 's'}.`
+              : `Create the ${sportName} event and automatically generate its bracket structure (teams registered later will be placed into Round 1 automatically).`}
           </p>
-          <button type="button" className="btn btn-primary" disabled={!canGenerate} onClick={handleGenerate}>
-            ⚡ Generate Tournament Bracket
-          </button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {isAdmin && (
+              <button type="button" className="btn btn-primary" onClick={() => handleGenerate(false)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <PlusIcon size={14} /> Create {sportName} Event &amp; Bracket
+              </button>
+            )}
+            {isAdmin && (
+              <button type="button" className="btn btn-ghost" onClick={() => setActiveView('registration')}>
+                Register {sportName} Teams →
+              </button>
+            )}
+          </div>
         </div>
       )}
 
       {/* Bracket tab */}
-      {tab === 'bracket' && hasMatches && (
-        bracketStyle === 'symmetrical' ? (
-          <TournamentTreeBracket initialSportId={event.sport} showSportSelector={true} />
-        ) : (
-          <div style={{ display: 'flex', gap: '18px', overflowX: 'auto', paddingBottom: '12px' }}>
-            {Object.entries(roundGroups)
-              .sort((a, b) => Number(a[0]) - Number(b[0]))
-              .map(([roundNum, roundMatches]) => (
-                <div key={roundNum} style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', padding: '4px 0' }}>
-                    {roundMatches[0]?.round || getRoundName(Number(roundNum), totalRounds)}
-                  </div>
-                  {roundMatches.map(m => (
-                    <BracketMatchCard
-                      key={m.id}
-                      match={m}
-                      onAssignVenue={handleVenueAssign}
-                      venues={venues}
-                      onOpenScoringDesk={() => setActiveView('scorekeeper')}
-                    />
-                  ))}
+      {tab === 'bracket' && (
+        bracketStyle === 'symmetrical' && !isRoundRobinEvent ? (
+          <TournamentTreeBracket
+            initialSportId={currentSport}
+            showSportSelector={true}
+            onSportChange={sp => {
+              setSelectedSportId(sp);
+              const matchingEv = events.find(ev => ev.sport === sp && !ev.archived);
+              if (matchingEv) setSelectedEventId(matchingEv.id);
+            }}
+          />
+        ) : hasMatches ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {isRoundRobinEvent && (
+              <div className="glass-card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', borderLeft: '4px solid #38bdf8' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <RefreshIcon size={14} color="#38bdf8" />
+                  <span>{sportName} Round Robin Tournament — Every team plays every other team</span>
                 </div>
-              ))}
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <MapPinIcon size={12} color="var(--text-muted)" /> Venue: <strong>{event?.venue || selectedVenue}</strong>
+                  </span>
+                  <span>·</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <CalendarIcon size={12} color="var(--text-muted)" /> {event?.startDate || '2026-11-10'} – {event?.endDate || '2026-11-18'}
+                  </span>
+                </span>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '18px', overflowX: 'auto', paddingBottom: '12px' }}>
+              {Object.entries(roundGroups)
+                .sort((a, b) => Number(a[0]) - Number(b[0]))
+                .map(([roundNum, roundMatches]) => (
+                  <div key={roundNum} style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', padding: '4px 0' }}>
+                      {roundMatches[0]?.round || getRoundName(Number(roundNum), totalRounds)}
+                    </div>
+                    {roundMatches.map(m => (
+                      <BracketMatchCard
+                        key={m.id}
+                        match={m}
+                        matchNum={matchSeqMap[m.id] || m.matchNumber || 1}
+                        isNextUp={m.id === nextUpMatchId}
+                        onAssignVenue={handleVenueAssign}
+                        venues={venues}
+                        onOpenScoringDesk={currentUser?.role === 'scorer' ? () => setActiveView('scorekeeper') : undefined}
+                      />
+                    ))}
+                  </div>
+                ))}
+            </div>
           </div>
-        )
+        ) : null
       )}
 
       {/* Schedule tab */}
       {tab === 'schedule' && hasMatches && (
-        <div className="glass-card" style={{ overflow: 'hidden' }}>
-          <div className="table-header" style={{ gridTemplateColumns: '1fr 2fr 100px 140px 100px' }}>
-            <span>Round</span><span>Matchup</span><span>Score</span><span>Venue</span><span>Status</span>
+        <div className="glass-card" style={{ overflowX: 'auto', padding: '12px' }}>
+          <div style={{ minWidth: '720px' }}>
+            <div className="table-header" style={{ gridTemplateColumns: '110px 1fr 1.8fr 90px 150px 150px 100px' }}>
+              <span>Match #</span><span>Round &amp; Format</span><span>Matchup</span><span>Score</span><span>Date &amp; Time</span><span>Event Place</span><span>Status</span>
+            </div>
+            {eventMatches.map((m, idx) => {
+              const notReady = isPlaceholder(m.teamA) || isPlaceholder(m.teamB);
+              const mNum = matchSeqMap[m.id] || m.matchNumber || (idx + 1);
+              const isNext = m.id === nextUpMatchId;
+              return (
+                <div
+                  key={m.id}
+                  className="table-row"
+                  style={{
+                    gridTemplateColumns: '110px 1fr 1.8fr 90px 150px 150px 100px',
+                    background: isNext ? 'rgba(14, 165, 233, 0.08)' : undefined,
+                  }}
+                >
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start' }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 900,
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      background: m.status === 'live' ? '#dc2626' : isNext ? '#0ea5e9' : 'rgba(220, 38, 38, 0.14)',
+                      color: m.status === 'live' || isNext ? '#fff' : 'var(--accent)',
+                    }}>
+                      Match #{mNum}
+                    </span>
+                    {isNext && m.status === 'scheduled' && (
+                      <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#0ea5e9' }}>
+                        ▶ PLAY FIRST
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {m.round}
+                    <div style={{ fontSize: '10px', color: m.format === 'round_robin' ? '#38bdf8' : '#f59e0b', fontWeight: 700 }}>
+                      {m.format === 'round_robin' ? 'Round Robin' : 'Single Elim'}
+                    </div>
+                  </span>
+                  <span style={{ fontWeight: 600 }}>
+                    {m.teamA || 'TBD'} <span style={{ color: 'var(--text-muted)' }}>vs</span> {m.teamB || 'TBD'}
+                  </span>
+                  <span style={{ fontWeight: 700 }}>{m.scoreA}–{m.scoreB}</span>
+                  <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                    {m.scheduledTime ? new Date(m.scheduledTime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBA'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{m.venue || 'Main Arena Court 1'}</span>
+                  <span>
+                    {m.status === 'scheduled' && currentUser?.role === 'scorer' ? (
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        disabled={notReady}
+                        title={notReady ? 'Waiting for previous round' : undefined}
+                        onClick={() => startMatch(m.id)}
+                      >
+                        Start
+                      </button>
+                    ) : (
+                      <span className={`status-badge ${m.status}`}>{m.status.toUpperCase()}</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
           </div>
-          {eventMatches.map(m => {
-            const notReady = isPlaceholder(m.teamA) || isPlaceholder(m.teamB);
-            return (
-              <div key={m.id} className="table-row" style={{ gridTemplateColumns: '1fr 2fr 100px 140px 100px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{m.round}</span>
-                <span style={{ fontWeight: 600 }}>
-                  {m.teamA || 'TBD'} <span style={{ color: 'var(--text-muted)' }}>vs</span> {m.teamB || 'TBD'}
-                </span>
-                <span style={{ fontWeight: 700 }}>{m.scoreA}–{m.scoreB}</span>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{m.venue || '—'}</span>
-                <span>
-                  {m.status === 'scheduled' ? (
-                    <button
-                      className="btn btn-sm btn-ghost"
-                      disabled={notReady}
-                      title={notReady ? 'Waiting for previous round' : undefined}
-                      onClick={() => startMatch(m.id)}
-                    >
-                      Start
-                    </button>
-                  ) : (
-                    <span className={`status-badge ${m.status}`}>{m.status.toUpperCase()}</span>
-                  )}
-                </span>
-              </div>
-            );
-          })}
         </div>
       )}
 
       {/* Standings tab */}
       {tab === 'standings' && (
-        <div className="glass-card" style={{ overflow: 'hidden' }}>
-          <div className="table-header" style={{ gridTemplateColumns: '40px 2fr 60px 60px 60px 80px 80px' }}>
-            <span>#</span><span>Team</span><span>P</span><span>W</span><span>L</span><span>PF</span><span>Win%</span>
-          </div>
-          {standings.length === 0 && (
-            <div style={{ padding: 20, fontSize: 13, color: 'var(--text-secondary)' }}>No results yet.</div>
-          )}
-          {standings.map((row, idx) => (
-            <div key={row.teamId} className="table-row" style={{ gridTemplateColumns: '40px 2fr 60px 60px 60px 80px 80px' }}>
-              <span style={{ fontWeight: 700, color: idx === 0 ? 'var(--accent)' : 'inherit' }}>{idx + 1}</span>
-              <span>
-                <strong>{row.teamName}</strong>{' '}
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({row.department})</span>
-              </span>
-              <span>{row.played}</span>
-              <span style={{ color: '#10b981', fontWeight: 600 }}>{row.won}</span>
-              <span style={{ color: '#ef4444' }}>{row.lost}</span>
-              <span>{row.pointsFor}</span>
-              <span style={{ fontWeight: 600 }}>{(row.winPct * 100).toFixed(0)}%</span>
+        <div className="glass-card" style={{ overflowX: 'auto', padding: '12px' }}>
+          <div style={{ minWidth: '540px' }}>
+            <div className="table-header" style={{ gridTemplateColumns: '40px 2fr 60px 60px 60px 80px 80px' }}>
+              <span>#</span><span>Team</span><span>P</span><span>W</span><span>L</span><span>PF</span><span>Win%</span>
             </div>
-          ))}
+            {standings.length === 0 && (
+              <div style={{ padding: 20, fontSize: 13, color: 'var(--text-secondary)' }}>No results yet.</div>
+            )}
+            {standings.map((row, idx) => (
+              <div key={row.teamId} className="table-row" style={{ gridTemplateColumns: '40px 2fr 60px 60px 60px 80px 80px' }}>
+                <span style={{ fontWeight: 700, color: idx === 0 ? 'var(--accent)' : 'inherit' }}>{idx + 1}</span>
+                <span>
+                  <strong>{row.teamName}</strong>{' '}
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({row.department})</span>
+                </span>
+                <span>{row.played}</span>
+                <span style={{ color: '#10b981', fontWeight: 600 }}>{row.won}</span>
+                <span style={{ color: '#ef4444' }}>{row.lost}</span>
+                <span>{row.pointsFor}</span>
+                <span style={{ fontWeight: 600 }}>{(row.winPct * 100).toFixed(0)}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

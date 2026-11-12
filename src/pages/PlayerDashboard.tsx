@@ -1,10 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
+import { getSportName, getSportIcon } from '../lib/sports';
+import { SportFilter } from '../components/ui';
 import {
   UsersIcon,
   SearchIcon,
   PlusIcon,
+  CheckIcon,
+  XIcon,
 } from '../components/Icons';
 import type { Player } from '../types';
 
@@ -70,6 +73,14 @@ export default function PlayerDashboard() {
     position: '',
     medicalCleared: true,
   });
+
+  const sportCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const p of players) {
+      acc[p.sport] = (acc[p.sport] || 0) + 1;
+    }
+    return acc;
+  }, [players]);
 
   // Filtered & Sorted Players
   const filteredPlayers = useMemo(() => {
@@ -242,8 +253,11 @@ export default function PlayerDashboard() {
                   background: myPlayerProfile.medicalCleared ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
                   padding: '2px 8px',
                   borderRadius: '20px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
                 }}>
-                  {myPlayerProfile.medicalCleared ? '✓ Cleared' : '✗ Medical Pending'}
+                  {myPlayerProfile.medicalCleared ? <><CheckIcon size={11} color="#10b981" /> Cleared</> : 'Medical Pending'}
                 </span>
               </div>
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
@@ -271,49 +285,13 @@ export default function PlayerDashboard() {
       )}
 
       {/* ── Sport Filter Tabs ── */}
-      <div style={{ overflowX: 'auto', paddingBottom: '4px' }}>
-        <div style={{ display: 'flex', gap: '8px', minWidth: 'max-content' }}>
-          <button
-            className={`btn btn-sm ${selectedSport === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setSelectedSport('all')}
-            style={{ borderRadius: '20px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 600 }}
-          >
-            All Sports ({players.length})
-          </button>
-          {SPORTS_CATALOG.map(sp => {
-            const count = players.filter(p => p.sport === sp.id).length;
-            const isSelected = selectedSport === sp.id;
-            return (
-              <button
-                key={sp.id}
-                className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setSelectedSport(sp.id)}
-                style={{
-                  borderRadius: '20px',
-                  padding: '6px 14px',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <span>{getSportIcon(sp.id, 14, isSelected ? '#fff' : 'var(--text-muted)')}</span>
-                <span>{sp.name}</span>
-                <span style={{
-                  fontSize: '10.5px',
-                  padding: '1px 6px',
-                  borderRadius: '10px',
-                  background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--bg-elevated)',
-                  color: isSelected ? '#fff' : 'var(--text-muted)',
-                }}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
+      <div className="glass-card" style={{ padding: '12px 16px' }}>
+        <SportFilter
+          value={selectedSport}
+          onChange={setSelectedSport}
+          counts={sportCounts}
+          allLabel="All Sports"
+        />
       </div>
 
 
@@ -452,38 +430,38 @@ export default function PlayerDashboard() {
           <div style={{
             display: 'grid',
             gridTemplateColumns: canManage
-              ? '70px 2fr 1.5fr 1.2fr 1.2fr 1fr 100px 80px 80px 140px'
-              : '70px 2fr 1.5fr 1.2fr 1.2fr 1fr 100px 80px 80px',
+              ? '75px 2fr 1.4fr 1.2fr 1.1fr 80px 95px 75px 75px 130px'
+              : '75px 2fr 1.4fr 1.2fr 1.1fr 80px 95px 75px 75px',
             padding: '12px 16px',
             fontSize: '11px',
-            fontWeight: 700,
+            fontWeight: 800,
             color: 'var(--text-muted)',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             borderBottom: '1px solid var(--border)',
             background: 'var(--bg-elevated)',
-            minWidth: '900px',
+            minWidth: '950px',
             alignItems: 'center',
           }}>
-            <span>Jersey #</span>
+            <span style={{ textAlign: 'center' }}>Jersey #</span>
             <span>Name</span>
             <span>Team</span>
             <span>Sport</span>
             <span>Position</span>
-            <span>College</span>
-            <span>Status</span>
-            <span style={{ textAlign: 'right' }}>Points</span>
+            <span style={{ textAlign: 'center' }}>College</span>
+            <span style={{ textAlign: 'center' }}>Status</span>
+            <span style={{ textAlign: 'center' }}>Points</span>
             <span style={{ textAlign: 'center' }}>Matches</span>
             {canManage && <span style={{ textAlign: 'right' }}>Actions</span>}
           </div>
 
 
-          <div style={{ minWidth: '900px' }}>
+          <div style={{ minWidth: '950px' }}>
             {filteredPlayers.map(p => {
               const team = teams.find(t => t.id === p.teamId);
               const dept = departments.find(d => d.id === p.department);
               const points = p.currentSeasonGoals ?? p.intGoals ?? 0;
-              const matches = p.intMatches ?? (p.matchStats?.length || 1);
+              const matches = p.intMatches ?? p.matchStats?.length ?? 0;
 
               return (
                 <div
@@ -491,8 +469,8 @@ export default function PlayerDashboard() {
                   style={{
                     display: 'grid',
                     gridTemplateColumns: canManage
-                      ? '70px 2fr 1.5fr 1.2fr 1.2fr 1fr 100px 80px 80px 140px'
-                      : '70px 2fr 1.5fr 1.2fr 1.2fr 1fr 100px 80px 80px',
+                      ? '75px 2fr 1.4fr 1.2fr 1.1fr 80px 95px 75px 75px 130px'
+                      : '75px 2fr 1.4fr 1.2fr 1.1fr 80px 95px 75px 75px',
                     padding: '12px 16px',
                     borderBottom: '1px solid var(--border-light)',
                     alignItems: 'center',
@@ -502,7 +480,7 @@ export default function PlayerDashboard() {
                   className="player-table-row"
                 >
                   {/* Jersey */}
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <span style={{
                       fontWeight: 700,
                       fontSize: '12px',
@@ -510,6 +488,7 @@ export default function PlayerDashboard() {
                       padding: '3px 8px',
                       borderRadius: '4px',
                       border: '1px solid var(--border)',
+                      display: 'inline-block',
                     }}>
                       #{p.jerseyNumber}
                     </span>
@@ -582,14 +561,15 @@ export default function PlayerDashboard() {
 
 
                   {/* College */}
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <span style={{
                       fontSize: '11px',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       padding: '2px 7px',
                       borderRadius: '4px',
                       background: `${dept?.color || '#3b82f6'}18`,
                       color: dept?.color || 'var(--accent)',
+                      display: 'inline-block',
                     }}>
                       {dept?.shortName || 'ATH'}
                     </span>
@@ -597,21 +577,21 @@ export default function PlayerDashboard() {
 
 
                   {/* Status */}
-                  <div>
-                    <span className={`status-badge ${p.medicalCleared ? 'live' : 'scheduled'}`} style={{ fontSize: '10.5px', padding: '2px 8px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <span className={`status-badge ${p.medicalCleared ? 'live' : 'scheduled'}`} style={{ fontSize: '10.5px', padding: '2px 8px', display: 'inline-block' }}>
                       {p.medicalCleared ? 'Eligible' : 'Pending'}
                     </span>
                   </div>
 
 
                   {/* Points */}
-                  <div style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
+                  <div style={{ textAlign: 'center', fontWeight: 700, color: 'var(--accent)' }}>
                     {points}
                   </div>
 
 
                   {/* Matches */}
-                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600 }}>
                     {matches}
                   </div>
 
@@ -811,12 +791,14 @@ export default function PlayerDashboard() {
                 top: '16px',
                 background: 'none',
                 border: 'none',
-                fontSize: '20px',
                 color: 'var(--text-muted)',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              ✕
+              <XIcon size={18} />
             </button>
 
             {/* Profile Header */}
@@ -858,8 +840,8 @@ export default function PlayerDashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
               <div style={{ background: 'var(--bg-elevated)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Eligibility Status</div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: activeProfilePlayer.medicalCleared ? '#10b981' : '#f59e0b', marginTop: '2px' }}>
-                  {activeProfilePlayer.medicalCleared ? '✓ Medically Cleared' : 'Pending Physical Exam'}
+                <div style={{ fontSize: '13px', fontWeight: 700, color: activeProfilePlayer.medicalCleared ? '#10b981' : '#f59e0b', marginTop: '2px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {activeProfilePlayer.medicalCleared ? <><CheckIcon size={12} color="#10b981" /> Medically Cleared</> : 'Pending Physical Exam'}
                 </div>
 
               </div>

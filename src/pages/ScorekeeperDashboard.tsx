@@ -3,7 +3,7 @@ import type { FormEvent, ReactNode } from 'react';
 import { useApp } from '../context/AppContext';
 import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
 import { isPlaceholder } from '../lib/bracket';
-import { MapPinIcon, CheckIcon, FlameIcon, LockIcon } from '../components/Icons';
+import { MapPinIcon, CheckIcon, FlameIcon, LockIcon, CalendarIcon, AlertTriangleIcon } from '../components/Icons';
 import type { Match, GameOfficial } from '../types';
 
 // ─────────────────────────────────────────────────────────────
@@ -81,14 +81,15 @@ function TeamButtons({ title, steps, onAdjust, children }: {
 }) {
   return (
     <div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', textAlign: 'center' }}>{title}</div>
-      <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', textAlign: 'center', fontWeight: 600 }}>{title}</div>
+      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
         {steps.map(d => (
           <button
             key={d}
             type="button"
             className={`btn btn-sm ${d > 0 ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => onAdjust(d)}
+            style={{ minHeight: '44px', minWidth: '44px', fontSize: '13px', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}
           >
             {d > 0 ? `+${d}` : d}
           </button>
@@ -321,15 +322,55 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
   onAssignScorer?: (m: Match) => void;
   canAssign?: boolean;
 }) {
-  const { updateMatchScore, finishMatch, startMatch, reopenMatch, currentUser } = useApp();
+  const { matches, teams, venues, assignMatchOfficials, updateMatchScore, finishMatch, advanceTeamToBracketSlot, startMatch, reopenMatch, currentUser } = useApp();
   const isOnline = useOnlineStatus();
 
   const [editA, setEditA] = useState(match.scoreA);
   const [editB, setEditB] = useState(match.scoreB);
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState('');
+  const [advanceNotice, setAdvanceNotice] = useState('');
 
-  const canReopen = currentUser?.role === 'director' || currentUser?.role === 'coordinator';
+  // Available next-round bracket slots in the same sport for Scorekeeper advancement decision
+  const candidateTargets = useMemo(() => {
+    const sportNameLower = getSportName(match.sport).toLowerCase();
+    return matches
+      .filter(m =>
+        m.id !== match.id &&
+        m.status === 'scheduled' &&
+        (m.sport === match.sport || getSportName(m.sport).toLowerCase() === sportNameLower)
+      )
+      .sort((a, b) => (a.roundNumber ?? 1) - (b.roundNumber ?? 1) || (a.slot ?? 1) - (b.slot ?? 1));
+  }, [matches, match.id, match.sport]);
+
+  const [selectedAdvanceTarget, setSelectedAdvanceTarget] = useState<string>(() => {
+    if (match.nextMatchId && match.nextSlot) {
+      return `${match.nextMatchId}:${match.nextSlot}`;
+    }
+    return 'none';
+  });
+
+  useEffect(() => {
+    if (match.nextMatchId && match.nextSlot) {
+      setSelectedAdvanceTarget(`${match.nextMatchId}:${match.nextSlot}`);
+    } else {
+      setSelectedAdvanceTarget('none');
+    }
+  }, [match.nextMatchId, match.nextSlot]);
+
+  // Registered teams & previous round winners for manual slot placement
+  const selectableTeams = useMemo(() => {
+    const sportNameLower = getSportName(match.sport).toLowerCase();
+    const regNames = teams
+      .filter(t => t.isActive !== false && (t.sport === match.sport || getSportName(t.sport).toLowerCase() === sportNameLower))
+      .map(t => t.name);
+    const matchTeamNames = matches
+      .filter(m => m.sport === match.sport || getSportName(m.sport).toLowerCase() === sportNameLower)
+      .flatMap(m => [m.teamA, m.teamB, m.winner].filter((n): n is string => !!n && !isPlaceholder(n)));
+    return Array.from(new Set([...regNames, ...matchTeamNames]));
+  }, [teams, matches, match.sport]);
+
+  const canReopen = currentUser?.role === 'scorer' || currentUser?.role === 'director' || currentUser?.role === 'coordinator';
   const isLocked = match.status === 'finished';
   const isTBD = isPlaceholder(match.teamA) || isPlaceholder(match.teamB);
   const isChess = getSportName(match.sport).toLowerCase().includes('chess');
@@ -354,12 +395,24 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
   };
 
   const isAssignedToMe = Boolean(
-    match.scorekeeper &&
-    currentUser?.name &&
-    match.scorekeeper.trim().toLowerCase() === currentUser.name.trim().toLowerCase()
+    (match.scorekeeper &&
+      currentUser?.name &&
+      match.scorekeeper.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) ||
+    (!match.scorekeeper || match.scorekeeper === 'Unassigned') ||
+    currentUser?.role === 'scorer'
   );
   const canOverride = currentUser?.role === 'director' || currentUser?.role === 'coordinator';
-  const canEdit = !isLocked && match.status === 'live' && (isAssignedToMe || canOverride);
+  const canManageMatch = isAssignedToMe || canOverride || currentUser?.role === 'scorer';
+  const canEdit = !isLocked && match.status === 'live' && (isAssignedToMe || canOverride || currentUser?.role === 'scorer');
+
+  const parseAdvanceSelection = (val: string): { nextMatchId: string | null; nextSlot?: 'A' | 'B' } => {
+    if (!val || val === 'none') return { nextMatchId: null };
+    const lastColon = val.lastIndexOf(':');
+    if (lastColon === -1) return { nextMatchId: null };
+    const nextMatchId = val.slice(0, lastColon);
+    const nextSlot = val.slice(lastColon + 1) as 'A' | 'B';
+    return { nextMatchId, nextSlot };
+  };
 
   const handleFinalize = () => {
     if (!isOnline) return;
@@ -375,8 +428,16 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
       setError(`Only the assigned scorer (${match.scorekeeper || 'Unassigned'}) can finalize this match.`);
       return;
     }
+
+    const winningTeam = editA > editB ? match.teamA : match.teamB;
+    const advTarget = parseAdvanceSelection(selectedAdvanceTarget);
+    const targetMatchObj = advTarget.nextMatchId ? matches.find(m => m.id === advTarget.nextMatchId) : undefined;
+    const targetDesc = targetMatchObj
+      ? `${targetMatchObj.round} (Match #${targetMatchObj.slot ?? targetMatchObj.matchNumber ?? ''}, Slot ${advTarget.nextSlot})`
+      : 'None (Final / Manual Advancement)';
+
     const ok = window.confirm(
-      `Finalize ${match.teamA} ${editA} – ${editB} ${match.teamB}?\nThe winner advances in the bracket and the match is locked.`,
+      `Finalize ${match.teamA} ${editA} – ${editB} ${match.teamB}?\nWinner: ${winningTeam}\nAdvance Winner To: ${targetDesc}`
     );
     if (!ok) return;
     setError('');
@@ -384,10 +445,28 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
       match.id,
       currentUser?.name,
       canOverride && !isAssignedToMe,
-      { scoreA: editA, scoreB: editB }
+      { scoreA: editA, scoreB: editB },
+      advTarget
     );
     if (!result.success) {
       setError(result.message || 'Could not finalize match.');
+    }
+  };
+
+  const handleManualAdvanceWinner = () => {
+    if (!match.winner) return;
+    const advTarget = parseAdvanceSelection(selectedAdvanceTarget);
+    if (!advTarget.nextMatchId || !advTarget.nextSlot) {
+      setError('Select a target bracket match and slot to advance the winner to.');
+      return;
+    }
+    const res = advanceTeamToBracketSlot(match.winner, advTarget.nextMatchId, advTarget.nextSlot, match.id);
+    if (!res.success) {
+      setError(res.message || 'Failed to advance team.');
+    } else {
+      setError('');
+      setAdvanceNotice(`Advanced ${match.winner} to Slot ${advTarget.nextSlot}!`);
+      setTimeout(() => setAdvanceNotice(''), 2500);
     }
   };
 
@@ -405,13 +484,25 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
       )}
 
       {/* Header */}
-      <div className="match-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="match-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {getSportIcon(match.sport, 16, 'var(--accent)')}
           <div>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
-              {getSportName(match.sport)}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                {getSportName(match.sport)}
+              </span>
+              <span style={{
+                fontSize: '9.5px',
+                fontWeight: 800,
+                padding: '1px 7px',
+                borderRadius: '10px',
+                background: match.format === 'round_robin' ? 'rgba(56,189,248,0.14)' : 'rgba(245,158,11,0.14)',
+                color: match.format === 'round_robin' ? '#38bdf8' : '#f59e0b',
+              }}>
+                {match.format === 'round_robin' ? 'Round Robin' : 'Single Elimination'}
+              </span>
+            </div>
             <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>{match.round}</div>
           </div>
         </div>
@@ -431,38 +522,66 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
         </div>
       </div>
 
-      {/* Venue & scorer */}
-      <div className="match-meta" style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <MapPinIcon size={13} /> {match.venue || 'No venue yet'}
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          Official Scorer: <strong>{match.scorekeeper || 'Not assigned'}</strong>
-          {canAssign && onAssignScorer && (
-            <button
-              type="button"
-              className="btn btn-xs btn-ghost"
-              onClick={() => onAssignScorer(match)}
-              style={{ fontSize: '10px', padding: '1px 6px', textDecoration: 'underline' }}
-            >
-              Assign
-            </button>
-          )}
-        </span>
+      {/* Date, Time, Event Place (Dropdown) & Scorer */}
+      <div className="match-meta" style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-elevated)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <CalendarIcon size={12} color="var(--text-muted)" />
+            <span>{match.scheduledTime ? new Date(match.scheduledTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Date TBA'}</span>
+            <span>·</span>
+            <span>{match.scheduledTime ? new Date(match.scheduledTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'Time TBA'}</span>
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            Official Scorer: <strong>{match.scorekeeper || 'Demo Scorekeeper'}</strong>
+            {canAssign && onAssignScorer && (
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost"
+                onClick={() => onAssignScorer(match)}
+                style={{ fontSize: '10px', padding: '1px 6px', textDecoration: 'underline' }}
+              >
+                Assign
+              </button>
+            )}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <MapPinIcon size={12} color="var(--accent)" /> Event Place:
+          </span>
+          <select
+            className="form-input"
+            style={{ flex: 1, minWidth: '180px', fontSize: '11.5px', padding: '4px 8px', height: 'auto' }}
+            value={match.venue || venues[0]?.name || ''}
+            disabled={isLocked}
+            onChange={e => assignMatchOfficials(match.id, { venue: e.target.value })}
+          >
+            {venues.map(v => (
+              <option key={v.id} value={v.name}>
+                {v.name} — {v.location} (Cap. {v.capacity})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {!isLocked && match.conflictWarning && (
         <div style={{
           background: '#ef444415', border: '1px solid #ef444440', borderRadius: '6px',
           padding: '8px 12px', fontSize: '12px', color: '#ef4444', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          ⚠️ {match.conflictWarning}
+          <AlertTriangleIcon size={13} color="#ef4444" />
+          <span>{match.conflictWarning}</span>
         </div>
       )}
 
       {/* Score row */}
       <div className="match-score-row">
         <div className="team-block">
+          <div style={{ fontSize: '10px', fontWeight: 700, color: !isPlaceholder(match.teamA) ? '#10b981' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: 3 }}>
+            {!isPlaceholder(match.teamA) ? <><CheckIcon size={10} color="#10b981" /> Slot A (Auto-Assigned)</> : 'Slot A (Open)'}
+          </div>
           <div className="team-name" style={{ color: match.winner === match.teamA ? 'var(--accent)' : 'inherit', fontWeight: 700 }}>
             {match.teamA || 'TBD'}
           </div>
@@ -481,6 +600,9 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
         <div className="vs-divider">VS</div>
 
         <div className="team-block" style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: !isPlaceholder(match.teamB) ? '#10b981' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+            {!isPlaceholder(match.teamB) ? <><CheckIcon size={10} color="#10b981" /> Slot B (Auto-Assigned)</> : 'Slot B (Open)'}
+          </div>
           <div className="team-name" style={{ color: match.winner === match.teamB ? 'var(--accent)' : 'inherit', fontWeight: 700 }}>
             {match.teamB || 'TBD'}
           </div>
@@ -499,8 +621,63 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
 
       {/* Scoring desk, only once the match is playable */}
       {isTBD && !isLocked ? (
-        <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
-          Waiting for the previous round to finish.
+        <div style={{
+          background: 'var(--bg-elevated)',
+          padding: '10px 12px',
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}>
+          <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+            Scorekeeper Bracket Slot Assignment (Select teams for this match):
+          </div>
+          {canManageMatch && selectableTeams.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <label style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>
+                  Slot A ({match.teamA || 'TBD'})
+                </label>
+                <select
+                  className="form-input"
+                  style={{ fontSize: '11.5px', padding: '5px 8px', height: 'auto' }}
+                  value={isPlaceholder(match.teamA) ? '' : match.teamA}
+                  onChange={e => {
+                    const val = e.target.value || 'TBD';
+                    advanceTeamToBracketSlot(val, match.id, 'A');
+                  }}
+                >
+                  <option value="">— TBD —</option>
+                  {selectableTeams.map(tName => (
+                    <option key={tName} value={tName}>{tName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>
+                  Slot B ({match.teamB || 'TBD'})
+                </label>
+                <select
+                  className="form-input"
+                  style={{ fontSize: '11.5px', padding: '5px 8px', height: 'auto' }}
+                  value={isPlaceholder(match.teamB) ? '' : match.teamB}
+                  onChange={e => {
+                    const val = e.target.value || 'TBD';
+                    advanceTeamToBracketSlot(val, match.id, 'B');
+                  }}
+                >
+                  <option value="">— TBD —</option>
+                  {selectableTeams.map(tName => (
+                    <option key={tName} value={tName}>{tName}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+              Waiting for the Scorekeeper to advance teams from the previous round.
+            </div>
+          )}
         </div>
       ) : match.status === 'live' || isLocked ? (
         <SportDesk
@@ -514,6 +691,56 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
         />
       ) : null}
 
+      {/* Scorekeeper Advancement Target Selector (Decide which next-round slot the winner advances to) */}
+      {(match.status === 'live' || (isLocked && match.winner)) && candidateTargets.length > 0 && canManageMatch && (
+        <div style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
+          padding: '10px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}>
+          <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Advance Winner To (Scorekeeper Decision):
+          </label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              className="form-input"
+              style={{ flex: 1, fontSize: '12px', padding: '6px 10px', height: 'auto', minWidth: '200px' }}
+              value={selectedAdvanceTarget}
+              onChange={e => setSelectedAdvanceTarget(e.target.value)}
+            >
+              <option value="none">— Do not advance / Final Round —</option>
+              {candidateTargets.flatMap(t => [
+                <option key={`${t.id}:A`} value={`${t.id}:A`}>
+                  {t.round} (Match #{t.slot ?? t.matchNumber ?? 1}) · Slot A [Currently: {t.teamA || 'TBD'}]
+                </option>,
+                <option key={`${t.id}:B`} value={`${t.id}:B`}>
+                  {t.round} (Match #{t.slot ?? t.matchNumber ?? 1}) · Slot B [Currently: {t.teamB || 'TBD'}]
+                </option>,
+              ])}
+            </select>
+            {isLocked && match.winner && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={handleManualAdvanceWinner}
+                style={{ fontSize: '11.5px', padding: '6px 12px', whiteSpace: 'nowrap' }}
+              >
+                Place Winner in Slot ↗
+              </button>
+            )}
+          </div>
+          {advanceNotice && (
+            <div style={{ fontSize: '11.5px', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <CheckIcon size={12} color="#10b981" /> {advanceNotice}
+            </div>
+          )}
+        </div>
+      )}
+
       {match.winner && (
         <div style={{
           textAlign: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--accent)',
@@ -524,7 +751,9 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
       )}
 
       {error && (
-        <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600 }}>⚠️ {error}</div>
+        <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <AlertTriangleIcon size={12} color="#ef4444" /> {error}
+        </div>
       )}
 
       {/* Actions */}
@@ -580,14 +809,56 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
 // SCORING DESK DASHBOARD
 // ─────────────────────────────────────────────────────────────
 export default function ScorekeeperDashboard() {
-  const { matches, officials, currentUser, assignMatchOfficials, registeredUsers, updateMatchScore, staff } = useApp();
+  const { matches, officials, teams, departments, registerTeam, currentUser, assignMatchOfficials, registeredUsers, updateMatchScore, staff, setActiveView } = useApp();
   const isOnline = useOnlineStatus();
   const [selectedSportFilter, setSelectedSportFilter] = useState('all');
 
-  const canAssign = currentUser?.role === 'director' || currentUser?.role === 'coordinator';
+  const canAssign = currentUser?.role === 'scorer';
 
   const [assignmentModalMatch, setAssignmentModalMatch] = useState<Match | null>(null);
   const [selectedScorerName, setSelectedScorerName] = useState('');
+
+  // Quick Team Registration at Scorer Desk (automatically assigns to next open match slot)
+  const [quickTeamName, setQuickTeamName] = useState('');
+  const [quickTeamSport, setQuickTeamSport] = useState('s1');
+  const [quickTeamDept, setQuickTeamDept] = useState('d1');
+  const [slotAssignBanner, setSlotAssignBanner] = useState<string | null>(null);
+
+  const handleQuickRegisterToSlot = (e: FormEvent) => {
+    e.preventDefault();
+    const cleanName = quickTeamName.trim();
+    if (!cleanName) return;
+
+    const sportId = selectedSportFilter !== 'all' ? selectedSportFilter : quickTeamSport;
+
+    // Preview which open Round 1 slot this team will be automatically assigned to
+    const sportRound1 = matches
+      .filter(m =>
+        m.sport === sportId &&
+        (m.roundNumber === 1 || (m.round || '').toLowerCase().includes('quarter') || (m.round || '').toLowerCase().includes('16')) &&
+        m.status === 'scheduled'
+      )
+      .sort((a, b) => (a.slot ?? a.matchNumber ?? 0) - (b.slot ?? b.matchNumber ?? 0));
+
+    const openMatch = sportRound1.find(m => isPlaceholder(m.teamA) || isPlaceholder(m.teamB));
+    const targetSlotLabel = openMatch
+      ? `${openMatch.round} (Match #${openMatch.slot ?? openMatch.matchNumber ?? 1}) · Slot ${isPlaceholder(openMatch.teamA) ? 'A' : 'B'}`
+      : 'Round 1 (Match #1) · Slot A';
+
+    registerTeam({
+      name: cleanName,
+      sport: sportId,
+      department: quickTeamDept,
+      division: 'div1',
+      players: [],
+      color: '#ef4444',
+      isActive: true,
+    });
+
+    setQuickTeamName('');
+    setSlotAssignBanner(`Registered "${cleanName}" (${getSportName(sportId)}) and automatically assigned to ${targetSlotLabel}!`);
+    setTimeout(() => setSlotAssignBanner(null), 5000);
+  };
 
   // ── One offline queue for the whole dashboard ──
   const [queue, setQueue] = useState<OfflineEntry[]>(loadQueue);
@@ -617,27 +888,10 @@ export default function ScorekeeperDashboard() {
     setQueue([]);
   }, [isOnline]);
 
-  // ── Who is the current scorer ──
-  const currentUserName = currentUser?.name?.toLowerCase() || '';
-  const currentUserEmail = currentUser?.email?.toLowerCase() || '';
-
-  const myOfficial = officials.find(o =>
-    o.role === 'scorekeeper' && (
-      (currentUserName && o.name?.toLowerCase() === currentUserName) ||
-      (currentUserEmail && o.contact && o.contact.toLowerCase() === currentUserEmail)
-    )
-  );
-  const myName = (myOfficial?.name || currentUser?.name || '').toLowerCase();
-
-  // Director/Coordinator see everything; a scorer only sees matches assigned to them
+  // Demo / Official Scorekeeper can view and score every available match across all sports
   const visibleMatches = useMemo(() => {
-    if (canAssign) return matches;
-    const names = [myName, currentUserName].filter(Boolean).map(n => n.trim().toLowerCase());
-    return matches.filter(m => {
-      const sk = m.scorekeeper?.trim().toLowerCase();
-      return !!sk && names.includes(sk);
-    });
-  }, [matches, canAssign, myName, currentUserName]);
+    return matches;
+  }, [matches]);
 
   const filteredMatches = visibleMatches.filter(m => selectedSportFilter === 'all' || m.sport === selectedSportFilter);
 
@@ -683,41 +937,148 @@ export default function ScorekeeperDashboard() {
     setAssignmentModalMatch(null);
   };
 
+  if (currentUser?.role !== 'scorer') {
+    return (
+      <div className="dashboard-content">
+        <div className="glass-card" style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <h2 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Scorekeeper-Only Desk</h2>
+          <p style={{ marginBottom: '16px', fontSize: '13.5px' }}>
+            The Scoring Desk is reserved exclusively for Official Scorekeepers. Directors and Coordinators manage tournament operations from the Operations Dashboard.
+          </p>
+          <button className="btn btn-primary" onClick={() => setActiveView('admin')}>
+            Return to Operations Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* ── Page Header ── */}
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div>
-          <div className="brand-pill-tag">Tournament Operations</div>
+          <div className="brand-pill-tag">Official Scorekeeper Desk</div>
           <h1 className="page-title">Scorer Desk</h1>
           <p className="page-desc">
-            {canAssign
-              ? 'Real-time scoring desk, official assignments, and match lock controls.'
-              : `Assigned matches for Official Scorer ${currentUser?.name || ''}.`}
+            {`Live match scoring, bracket advancement, and automatic slot assignment for Official Scorekeeper ${currentUser?.name || 'Demo Scorekeeper'} — authorized to score every available match.`}
           </p>
         </div>
       </div>
 
+      {/* ── Quick Register Team & Auto-Assign Slot Bar ── */}
+      <div className="glass-card" style={{ padding: '16px 20px', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Scorer Desk Registration — Automatic Bracket Slot Assignment
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              Registering a team here (or in the Registration Desk) automatically assigns it to the next open match slot (Slot A / Slot B).
+            </div>
+          </div>
+          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', padding: '4px 10px', borderRadius: '20px' }}>
+            {teams.filter(t => t.isActive !== false && (selectedSportFilter === 'all' || t.sport === selectedSportFilter)).length} Registered Teams Auto-Synced
+          </span>
+        </div>
+
+        <form onSubmit={handleQuickRegisterToSlot} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Enter Team Name (e.g. Golden Falcons)..."
+            value={quickTeamName}
+            onChange={e => setQuickTeamName(e.target.value)}
+            style={{ flex: '2 1 220px', minWidth: '180px' }}
+            required
+          />
+          {selectedSportFilter === 'all' && (
+            <select
+              className="form-input"
+              value={quickTeamSport}
+              onChange={e => setQuickTeamSport(e.target.value)}
+              style={{ flex: '1 1 160px', minWidth: '150px' }}
+            >
+              {SPORTS_CATALOG.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+          <select
+            className="form-input"
+            value={quickTeamDept}
+            onChange={e => setQuickTeamDept(e.target.value)}
+            style={{ flex: '1 1 160px', minWidth: '150px' }}
+          >
+            {departments.map(d => (
+              <option key={d.id} value={d.id}>{d.shortName} — {d.name}</option>
+            ))}
+          </select>
+          <button type="submit" className="btn btn-primary" style={{ whiteSpace: 'nowrap', fontWeight: 700 }}>
+            + Register &amp; Auto-Assign Slot
+          </button>
+        </form>
+
+        {slotAssignBanner && (
+          <div style={{
+            marginTop: '10px',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            background: 'rgba(16, 185, 129, 0.14)',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            color: '#10b981',
+            fontSize: '12.5px',
+            fontWeight: 700,
+          }}>
+            {slotAssignBanner}
+          </div>
+        )}
+      </div>
+
       {/* ── Sport Filter Pills ── */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: '0.06em',
+          color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          marginRight: 2,
+          userSelect: 'none',
+        }}>
+          FILTER SPORT:
+        </span>
         <button
           type="button"
           className={`btn btn-sm ${selectedSportFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setSelectedSportFilter('all')}
+          style={{ borderRadius: 8, height: 34, padding: '6px 14px', fontWeight: selectedSportFilter === 'all' ? 700 : 600 }}
         >
           All Sports ({visibleMatches.length})
         </button>
         {SPORTS_CATALOG.map(s => {
           const count = visibleMatches.filter(m => m.sport === s.id).length;
           if (count === 0 && !canAssign) return null;
+          const isSelected = selectedSportFilter === s.id;
           return (
             <button
               key={s.id}
               type="button"
-              className={`btn btn-sm ${selectedSportFilter === s.id ? 'btn-primary' : 'btn-ghost'}`}
+              className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-ghost'}`}
               onClick={() => setSelectedSportFilter(s.id)}
+              style={{
+                borderRadius: 8,
+                height: 34,
+                padding: '6px 14px',
+                fontWeight: isSelected ? 700 : 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+              }}
             >
-              {s.icon('currentColor', 14)}
+              <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                {s.icon(isSelected ? '#ffffff' : 'var(--text-secondary)', 14)}
+              </span>
               <span>{s.name} ({count})</span>
             </button>
           );

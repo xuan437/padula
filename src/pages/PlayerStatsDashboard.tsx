@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { CheckIcon } from '../components/Icons';
 import type { Player } from '../types';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -270,8 +271,8 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
                 {activePlayer.name}
               </h1>
               {activePlayer.medicalCleared && (
-                <span style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', color: C.green, fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px' }}>
-                  ✓ ELIGIBLE
+                <span style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', color: C.green, fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <CheckIcon size={11} color={C.green} /> ELIGIBLE
                 </span>
               )}
             </div>

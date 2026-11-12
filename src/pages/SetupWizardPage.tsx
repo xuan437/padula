@@ -3,7 +3,6 @@ import { useApp } from '../context/AppContext';
 import { SPORTS_CATALOG } from '../lib/sports';
 import {
   TrophyIcon,
-  MapPinIcon,
   CheckIcon,
   UsersIcon,
   CalendarIcon,
@@ -13,10 +12,13 @@ import {
   ShieldIcon,
   EyeIcon,
   EyeOffIcon,
-  HomeIcon,
+  MapPinIcon,
+  RefreshIcon,
+  PlusIcon,
 } from '../components/Icons';
 import padulaTitleImg from '../assets/padula-title.png';
 import schoolLogo from '../assets/logo.png';
+import TournamentTreeBracket from '../components/TournamentTreeBracket';
 
 // ─── Sport catalog ────────────────────────────────────────────────────────────
 const SPORTS = SPORTS_CATALOG.map(s => ({
@@ -24,7 +26,6 @@ const SPORTS = SPORTS_CATALOG.map(s => ({
   name: s.name,
   type: 'bracket' as const,
   subtitle: s.rulesSummary,
-  icon: '🏆',
   iconComp: (c?: string) => s.icon(c, 24),
 }));
 
@@ -33,17 +34,17 @@ type SetupStep = 'accounts' | 'sport' | 'event' | 'teams' | 'bracket' | 'scoreke
 const STEPS: { id: SetupStep; label: string; desc: string; icon: (c?: string) => React.ReactNode }[] = [
   { id: 'accounts', label: 'User Accounts', desc: 'Admin, manager, coach, scorer', icon: (c) => <UsersIcon size={18} color={c} /> },
   { id: 'sport', label: 'Sport & Category', desc: 'From sports catalog', icon: (c) => <TrophyIcon size={18} color={c} /> },
-  { id: 'event', label: 'Create Event', desc: 'Dates, venue, tournament rules', icon: (c) => <CalendarIcon size={18} color={c} /> },
+  { id: 'event', label: 'Create Event & Bracket', desc: 'Auto-creates event & bracket', icon: (c) => <CalendarIcon size={18} color={c} /> },
   { id: 'teams', label: 'Register Teams', desc: 'Collegiate roster validation', icon: (c) => <MedalIcon size={18} color={c} /> },
-  { id: 'bracket', label: 'Generate Bracket', desc: 'Auto-seeding and match pairing', icon: (c) => <FlameIcon size={18} color={c} /> },
+  { id: 'bracket', label: 'Bracket Structure', desc: 'Live bracket & scorer advancement', icon: (c) => <FlameIcon size={18} color={c} /> },
   { id: 'scorekeepers', label: 'Assign Scorekeepers', desc: 'Per match & court assignment', icon: (c) => <ClipboardIcon size={18} color={c} /> },
   { id: 'publish', label: 'Publish Schedule', desc: 'Broadcast live to portal', icon: (c) => <ShieldIcon size={18} color={c} /> },
 ];
 
 export default function SetupWizardPage() {
   const {
-    matches, officials, teams, registeredUsers,
-    events, createEvent, generateBracket, setActiveView,
+    matches, officials, teams, departments, registeredUsers, venues,
+    events, createEvent, generateBracket, assignMatchOfficials, setActiveView,
   } = useApp();
 
   const [activeStep, setActiveStep] = useState<SetupStep>('accounts');
@@ -52,8 +53,13 @@ export default function SetupWizardPage() {
   const [entriesValid, setEntriesValid] = useState<boolean | null>(null);
   const [eventForm, setEventForm] = useState({
     name: 'Asian College Padula Intramurals 2026 — Basketball',
+    format: 'single_elimination' as 'single_elimination' | 'round_robin',
     dates: 'Nov 10 – Nov 18, 2026',
-    venue: 'Padula Sports Arena',
+    startDate: '2026-11-10',
+    startTime: '08:00',
+    endDate: '2026-11-18',
+    endTime: '17:00',
+    venue: venues[0]?.name || 'Main Arena Court 1',
     rules: 'Official Inter-Collegiate Basketball Rules',
   });
 
@@ -88,31 +94,38 @@ export default function SetupWizardPage() {
   const goNext = () => { if (stepIdx < STEPS.length - 1) setActiveStep(STEPS[stepIdx + 1].id); };
   const goPrev = () => { if (stepIdx > 0) setActiveStep(STEPS[stepIdx - 1].id); };
 
-  const handleConfirmAndGenerateBracket = () => {
-    setEntriesValid(true);
+  const ensureEventAndBracketCreated = (forceRebuild = false) => {
     const sportId = selectedSport?.id || 's1';
+    const sportTeams = teams.filter(t => t.isActive !== false && t.sport === sportId);
+    const teamIds = sportTeams.map(t => t.id);
+
     let targetEvent = events.find(e => e.sport === sportId && !e.archived);
     let eventId = targetEvent?.id;
     if (!eventId) {
+      // createEvent automatically generates the bracket / round-robin schedule for this event and posts an announcement
       eventId = createEvent({
         name: eventForm.name || `Asian College Padula Intramurals 2026 — ${selectedSport?.name || 'Basketball'}`,
         sport: sportId,
         division: 'div1',
+        format: eventForm.format,
         category: `${selectedSport?.name || 'Basketball'} Championship`,
-        dates: eventForm.dates || 'Nov 10 – Nov 18, 2026',
-        startDate: '2026-11-10',
-        endDate: '2026-11-18',
-        venue: eventForm.venue || 'Padula Sports Arena',
+        dates: `${eventForm.startDate} (${eventForm.startTime}) – ${eventForm.endDate} (${eventForm.endTime})`,
+        startDate: eventForm.startDate || '2026-11-10',
+        endDate: eventForm.endDate || '2026-11-18',
+        startTime: eventForm.startTime || '08:00',
+        endTime: eventForm.endTime || '17:00',
+        venue: eventForm.venue || venues[0]?.name || 'Main Arena Court 1',
+        rules: eventForm.rules,
         status: 'ongoing',
       });
+    } else {
+      generateBracket(eventId, teamIds, forceRebuild, eventForm.format);
     }
+  };
 
-    const sportTeams = teams.filter(t => t.isActive !== false && (t.sport === sportId || !t.sport));
-    const teamIdsToSeed = sportTeams.length >= 2 
-      ? sportTeams.map(t => t.id) 
-      : teams.slice(0, 6).map(t => t.id);
-
-    generateBracket(eventId, teamIdsToSeed.length >= 2 ? teamIdsToSeed : ['t1', 't2', 't3', 't4', 't5', 't6']);
+  const handleConfirmAndGenerateBracket = () => {
+    setEntriesValid(true);
+    ensureEventAndBracketCreated(true);
     goNext();
   };
 
@@ -229,106 +242,174 @@ export default function SetupWizardPage() {
                 </select>
               </div>
 
-              {[
-                { label: 'Tournament Title', key: 'name', placeholder: 'e.g. Asian College Padula Cup 2026' },
-                { label: 'Tournament Dates', key: 'dates', placeholder: 'e.g. Oct 28 – Nov 5' },
-                { label: 'Venue / Court', key: 'venue', placeholder: 'e.g. Padula Sports Complex Court A' },
-                { label: 'Regulatory Ruleset', key: 'rules', placeholder: 'e.g. Official NCAA / FIBA Standard Rules' },
-              ].map(f => (
-                <div key={f.key} className="form-group">
-                  <label>{f.label}</label>
-                  <input
-                    className="form-input"
-                    placeholder={f.placeholder}
-                    value={(eventForm as Record<string, string>)[f.key]}
-                    onChange={e => setEventForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                  />
-                </div>
-              ))}
+              <div className="form-group">
+                <label>Tournament Title</label>
+                <input
+                  className="form-input"
+                  placeholder="e.g. Asian College Padula Cup 2026"
+                  value={eventForm.name}
+                  onChange={e => setEventForm(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Game / Tournament Format</label>
+                <select
+                  className="form-input"
+                  style={{ fontWeight: 700 }}
+                  value={eventForm.format}
+                  onChange={e => setEventForm(prev => ({ ...prev, format: e.target.value as 'single_elimination' | 'round_robin' }))}
+                >
+                  <option value="single_elimination">Single Elimination (Knockout Bracket)</option>
+                  <option value="round_robin">Round Robin (Every Team Plays Every Team)</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Event Place (Venue / Court)</label>
+                <select
+                  className="form-input"
+                  style={{ fontWeight: 600 }}
+                  value={eventForm.venue || venues[0]?.name || ''}
+                  onChange={e => setEventForm(prev => ({ ...prev, venue: e.target.value }))}
+                >
+                  {venues.map(v => (
+                    <option key={v.id} value={v.name}>
+                      {v.name} — {v.location} (Cap. {v.capacity})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Regulatory Ruleset</label>
+                <input
+                  className="form-input"
+                  placeholder="e.g. Official NCAA / FIBA Standard Rules"
+                  value={eventForm.rules}
+                  onChange={e => setEventForm(prev => ({ ...prev, rules: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Start Date</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={eventForm.startDate}
+                  onChange={e => setEventForm(prev => ({ ...prev, startDate: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>Start Time (Event Opens)</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  value={eventForm.startTime}
+                  onChange={e => setEventForm(prev => ({ ...prev, startTime: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>End Date</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={eventForm.endDate}
+                  onChange={e => setEventForm(prev => ({ ...prev, endDate: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>End Time (Event Concludes)</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  value={eventForm.endTime}
+                  onChange={e => setEventForm(prev => ({ ...prev, endTime: e.target.value }))}
+                />
+              </div>
             </div>
             <div className="step-nav">
               <button className="btn btn-ghost" onClick={goPrev}>← Back</button>
-              <button className="btn btn-primary" onClick={goNext}>Next: Team Roster →</button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  ensureEventAndBracketCreated(false);
+                  goNext();
+                }}
+              >
+                Create Event &amp; Auto-Generate Bracket →
+              </button>
             </div>
           </div>
         );
 
-      case 'teams':
+      case 'teams': {
+        const sportId = selectedSport?.id || 's1';
+        const sportTeams = teams.filter(t => t.isActive !== false && t.sport === sportId);
         return (
           <div className="step-content">
-            <h3 className="step-section-heading">Register Teams &amp; Athlete Rosters</h3>
-            <p className="step-section-sub">Validate coach submissions for eligibility and physical fitness certification.</p>
+            <h3 className="step-section-heading">Registered Teams &amp; Athlete Rosters {selectedSport && `— ${selectedSport.name}`}</h3>
+            <p className="step-section-sub">Validate coach submissions for eligibility and physical fitness certification. No automatic seeding is applied.</p>
             <div className="teams-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[
-                { name: 'Padula Eagles', division: 'Business Administration & Accountancy (BAA)', seed: '#1' },
-                { name: 'Red Lions', division: 'Computer Studies & Engineering (CSE)', seed: '#2' },
-                { name: 'Blue Sharks', division: 'Hospitality & Tourism Management (HTM)', seed: '#3' },
-                { name: 'Padula Tigers', division: 'Department of Public Development (DPD)', seed: '#4' },
-                { name: 'Panthers', division: 'Senior Department', seed: '#5' },
-                { name: 'Silver Wolves', division: 'Business Administration & Accountancy (BAA)', seed: '#6' },
-              ].map(team => (
-                <div
-                  key={team.name}
-                  className="team-row glass-card"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 18px',
-                    gap: '14px',
-                    borderRadius: '12px',
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
-                    <span
+              {sportTeams.length === 0 ? (
+                <div className="glass-card" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <p style={{ margin: '0 0 12px', fontSize: '13.5px' }}>
+                    No teams registered for {selectedSport?.name || 'this sport'} yet.
+                  </p>
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => setActiveView('registration')}>
+                    Open Team Registration →
+                  </button>
+                </div>
+              ) : (
+                sportTeams.map(team => {
+                  const dept = departments.find(d => d.id === team.department);
+                  return (
+                    <div
+                      key={team.id}
+                      className="team-row glass-card"
                       style={{
-                        minWidth: '38px',
-                        height: '30px',
-                        display: 'inline-flex',
+                        display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '16px',
-                        background: 'rgba(220, 38, 38, 0.12)',
-                        color: 'var(--accent)',
-                        fontWeight: 800,
-                        fontSize: '12px',
-                        flexShrink: 0,
-                        border: '1px solid rgba(220, 38, 38, 0.25)',
+                        justifyContent: 'space-between',
+                        padding: '12px 18px',
+                        gap: '14px',
+                        borderRadius: '12px',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
                       }}
                     >
-                      {team.seed}
-                    </span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
-                      <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-                        {team.name}
-                      </span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        {team.division}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
+                          <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                            {team.name}
+                          </span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                            {dept ? `${dept.name} (${dept.shortName})` : team.division}
+                          </span>
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          color: '#10b981',
+                          border: '1px solid rgba(16, 185, 129, 0.25)',
+                          borderRadius: '20px',
+                          padding: '5px 12px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          flexShrink: 0,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <CheckIcon size={14} color="#10b981" /> Certified Eligible
                       </span>
                     </div>
-                  </div>
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'rgba(16, 185, 129, 0.12)',
-                      color: '#10b981',
-                      border: '1px solid rgba(16, 185, 129, 0.25)',
-                      borderRadius: '20px',
-                      padding: '5px 12px',
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      flexShrink: 0,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <CheckIcon size={14} color="#10b981" /> Certified Eligible
-                  </span>
-                </div>
-              ))}
+                  );
+                })
+              )}
             </div>
             <div className="validation-question glass-card" style={{ marginTop: '20px' }}>
               <div className="validation-question-header">
@@ -337,108 +418,45 @@ export default function SetupWizardPage() {
               </div>
               <div className="validation-btns">
                 <button className={`btn ${entriesValid === false ? 'btn-danger' : 'btn-ghost'}`} onClick={() => setEntriesValid(false)}>Flag Incomplete Entries</button>
-                <button className="btn btn-primary" onClick={handleConfirmAndGenerateBracket}>Confirm &amp; Generate Bracket</button>
+                <button className="btn btn-primary" onClick={handleConfirmAndGenerateBracket}>Confirm &amp; Sync Bracket</button>
               </div>
             </div>
             <div className="step-nav">
               <button className="btn btn-ghost" onClick={goPrev}>← Back</button>
-              <button className="btn btn-primary" onClick={goNext}>Next: Bracket Seeding →</button>
+              <button className="btn btn-primary" onClick={goNext}>Next: Bracket Structure →</button>
             </div>
           </div>
         );
+      }
 
       case 'bracket':
         const currentSportMatches = matches.filter(m => !selectedSport || m.sport === selectedSport.id);
-        const displayMatches = currentSportMatches.length > 0 ? currentSportMatches : matches;
+        const displayMatches = currentSportMatches;
 
         return (
           <div className="step-content">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
               <div>
-                <h3 className="step-section-heading">Automated Tournament Bracket Seeding {selectedSport && `— ${selectedSport.name}`}</h3>
-                <p className="step-section-sub" style={{ margin: 0 }}>Single-elimination championship bracket mapped to active court venues.</p>
+                <h3 className="step-section-heading">Tournament Bracket Structure {selectedSport && `— ${selectedSport.name}`}</h3>
+                <p className="step-section-sub" style={{ margin: 0 }}>Single-elimination championship bracket. Official Scorekeepers decide which team advances to which next-round slot.</p>
               </div>
-              {displayMatches.length === 0 && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary"
-                  onClick={handleConfirmAndGenerateBracket}
-                >
-                  ⚡ Generate Bracket Now
-                </button>
-              )}
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={handleConfirmAndGenerateBracket}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                {displayMatches.length === 0 ? (
+                  <><PlusIcon size={14} /> Generate Bracket Now</>
+                ) : (
+                  <><RefreshIcon size={13} /> Rebuild Bracket</>
+                )}
+              </button>
             </div>
 
-            {displayMatches.length > 0 ? (
-              <div className="bracket-preview">
-                <div className="bracket-round">
-                  <div className="bracket-label">Round 1 / Quarter-Finals</div>
-                  {displayMatches.filter(m => (m.roundNumber ?? 1) === 1).map(m => (
-                    <div key={m.id} className="bracket-match glass-card">
-                      <span style={{ fontWeight: 600 }}>{m.teamA}</span>
-                      <span className="bracket-vs">VS</span>
-                      <span style={{ fontWeight: 600 }}>{m.teamB}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bracket-round">
-                  <div className="bracket-label">Semi-Finals</div>
-                  {displayMatches.filter(m => (m.roundNumber ?? 1) === 2).map(m => (
-                    <div key={m.id} className="bracket-match glass-card tbd">
-                      <span>{m.teamA}</span><span className="bracket-vs">VS</span><span>{m.teamB}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bracket-round">
-                  <div className="bracket-label">Padula Championship Final</div>
-                  {(() => {
-                    const champ = displayMatches.find(m => {
-                      if (m.roundNumber === 3) return true;
-                      const r = m.round ? m.round.toLowerCase() : '';
-                      if (r.includes('quarter') || r.includes('semi')) return false;
-                      return r.includes('championship') || r.includes('gold') || r === 'final';
-                    });
-                    if (!champ) {
-                      return (
-                        <div className="bracket-match glass-card tbd final">
-                          <TrophyIcon size={18} color="#fbbf24" />
-                          <span>TBD — Winner of Semi-Finals</span>
-                        </div>
-                      );
-                    }
-                    const isFin = champ.status === 'finished';
-                    const isLiv = champ.status === 'live';
-                    const winner = isFin ? champ.winner : undefined;
-                    return (
-                      <div
-                        className={`bracket-match glass-card ${isFin && winner ? 'final-winner' : 'tbd final'}`}
-                        style={{
-                          border: isFin && winner ? '1.5px solid #f59e0b' : isLiv ? '1.5px solid #ef4444' : undefined,
-                          background: isFin && winner ? 'rgba(245, 158, 11, 0.08)' : isLiv ? 'rgba(239, 68, 68, 0.08)' : undefined,
-                        }}
-                      >
-                        <TrophyIcon size={18} color={isFin && winner ? '#f59e0b' : isLiv ? '#ef4444' : '#fbbf24'} />
-                        <span style={{ fontWeight: isFin && winner ? 800 : 600, color: isFin && winner ? '#f59e0b' : isLiv ? '#ef4444' : undefined }}>
-                          {isFin && winner ? `🏆 Champion: ${winner}` : isLiv ? `⚡ Live: ${champ.teamA} ${champ.scoreA} - ${champ.scoreB} ${champ.teamB}` : `${champ.teamA} vs ${champ.teamB} (Awaiting Final)`}
-                        </span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            ) : (
-              <div className="empty-state glass-card" style={{ padding: '36px', textAlign: 'center' }}>
-                <TrophyIcon size={36} color="var(--accent)" />
-                <div style={{ fontWeight: 700, fontSize: '15px', marginTop: 10, color: 'var(--text-primary)' }}>No Bracket Matches Generated Yet</div>
-                <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: 4, marginBottom: 16 }}>
-                  Click below to generate an official single-elimination bracket for {selectedSport ? selectedSport.name : 'the tournament'}.
-                </div>
-                <button type="button" className="btn btn-primary" onClick={handleConfirmAndGenerateBracket}>
-                  ⚡ Generate Bracket for {selectedSport ? selectedSport.name : 'Tournament'}
-                </button>
-              </div>
-            )}
-            <div className="step-nav">
+            <TournamentTreeBracket initialSportId={selectedSport?.id || 's1'} showSportSelector={false} />
+
+            <div className="step-nav" style={{ marginTop: 18 }}>
               <button className="btn btn-ghost" onClick={goPrev}>← Back</button>
               <button className="btn btn-primary" onClick={goNext}>Next: Assign Scorekeepers →</button>
             </div>
@@ -448,15 +466,39 @@ export default function SetupWizardPage() {
       case 'scorekeepers':
         return (
           <div className="step-content">
-            <h3 className="step-section-heading">Official Scorekeeper &amp; Referee Game Assignment</h3>
-            <p className="step-section-sub">Assign certified staff and game officials to active competition courts.</p>
+            <h3 className="step-section-heading">Official Scorekeeper, Referee &amp; Event Place Assignment</h3>
+            <p className="step-section-sub">Assign certified staff, game officials, and court venues to scheduled tournament matches.</p>
             <div className="assign-grid">
               {matches.map(m => (
-                <div key={m.id} className="assign-card glass-card">
-                  <div className="assign-match" style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{m.teamA} vs {m.teamB}</div>
-                  <div className="assign-venue" style={{ color: 'var(--text-muted)' }}><MapPinIcon size={14} color="var(--text-muted)" /> {m.venue} ({m.sport})</div>
-                  <div className="assign-scorer" style={{ marginTop: '8px', color: 'var(--text-secondary)' }}><ClipboardIcon size={14} color="#10b981" /> Scorer: <strong>{m.scorekeeper || 'Unassigned'}</strong></div>
-                  <div className="assign-scorer" style={{ marginTop: '4px', color: 'var(--text-secondary)' }}><FlameIcon size={14} color="var(--accent)" /> Referee: <strong>{m.referee || 'Unassigned'}</strong></div>
+                <div key={m.id} className="assign-card glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <div className="assign-match" style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{m.teamA} vs {m.teamB}</div>
+                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '10px', background: m.format === 'round_robin' ? 'rgba(56,189,248,0.14)' : 'rgba(245,158,11,0.14)', color: m.format === 'round_robin' ? '#38bdf8' : '#f59e0b' }}>
+                      {m.format === 'round_robin' ? 'Round Robin' : 'Single Elimination'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                    {m.round} · {m.scheduledTime ? new Date(m.scheduledTime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Date/Time TBA'}
+                  </div>
+                  <div style={{ marginTop: '4px' }}>
+                    <label style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: '3px', textTransform: 'uppercase' }}>
+                      <MapPinIcon size={11} color="var(--text-muted)" /> Event Place (Venue):
+                    </label>
+                    <select
+                      className="form-input"
+                      style={{ padding: '5px 8px', fontSize: '12px', height: 'auto' }}
+                      value={m.venue || venues[0]?.name || ''}
+                      onChange={e => assignMatchOfficials(m.id, { venue: e.target.value })}
+                    >
+                      {venues.map(v => (
+                        <option key={v.id} value={v.name}>
+                          {v.name} ({v.location})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="assign-scorer" style={{ marginTop: '4px', color: 'var(--text-secondary)', fontSize: '12px' }}><ClipboardIcon size={13} color="#10b981" /> Scorer: <strong>{m.scorekeeper || 'Demo Scorekeeper'}</strong></div>
+                  <div className="assign-scorer" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}><FlameIcon size={13} color="var(--accent)" /> Referee: <strong>{m.referee || 'Unassigned'}</strong></div>
                 </div>
               ))}
             </div>
@@ -541,15 +583,6 @@ export default function SetupWizardPage() {
               Step-by-step tournament configuration, team verification, and automated bracket generation.
             </p>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-sm btn-ghost" onClick={() => setActiveView('admin')} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <HomeIcon size={14} /> Dashboard
-          </button>
-          <button className="btn btn-sm btn-ghost" onClick={() => setActiveView('officials')} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <ShieldIcon size={14} /> Officials Hub
-          </button>
         </div>
       </div>
 

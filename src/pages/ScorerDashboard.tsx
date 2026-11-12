@@ -27,22 +27,10 @@ export default function ScorerDashboard() {
     );
   }, [officials, currentUser]);
 
-  // Filter matches assigned to this scorer or in their sport
+  // Demo / Official Scorekeeper can view and score every available match across all sports
   const myMatches = useMemo(() => {
-    return matches.filter(m => {
-      // Check if specifically assigned to this scorer
-      if (m.scorekeeper && currentUser?.name && m.scorekeeper.toLowerCase() === currentUser.name.toLowerCase()) {
-        return true;
-      }
-      // Or matches in their assigned sport discipline
-      if (myOfficial?.sport && myOfficial.sport !== 'All Sports') {
-        const officialSport = myOfficial.sport.toLowerCase();
-        const matchSport = getSportName(m.sport).toLowerCase();
-        return matchSport === officialSport || m.sport.toLowerCase() === officialSport;
-      }
-      return true;
-    });
-  }, [matches, currentUser, myOfficial]);
+    return matches;
+  }, [matches]);
 
   const liveMatches = myMatches.filter(m => m.status === 'live');
   const scheduledMatches = myMatches.filter(m => m.status === 'scheduled');

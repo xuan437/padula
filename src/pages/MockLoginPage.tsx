@@ -5,50 +5,9 @@ import schoolLogo from '../assets/logo.png';
 import { ShieldIcon, ClipboardIcon, FlameIcon } from '../components/Icons';
 
 export default function MockLoginPage() {
-  const { isMockMode, signInMockAccount, setActiveView } = useApp();
+  const { signInMockAccount, setActiveView } = useApp();
   const [errorMessage, setErrorMessage] = useState('');
   const [loadingEmail, setLoadingEmail] = useState<string | null>(null);
-
-  if (!isMockMode) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: '#080d1a',
-          color: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '24px',
-        }}
-      >
-        <div
-          className="glass-card"
-          style={{
-            maxWidth: '480px',
-            textAlign: 'center',
-            padding: '36px',
-            background: 'var(--bg-card)',
-          }}
-        >
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔒</div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 8px' }}>
-            Mock Test Mode is Disabled
-          </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-            Mock test mode is not enabled in this environment or is prohibited on production live domains.
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setActiveView('public')}
-          >
-            Back to Public View
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   const handleSignIn = async (email: string) => {
     setErrorMessage('');
@@ -121,9 +80,9 @@ export default function MockLoginPage() {
 
           <span
             style={{
-              background: 'rgba(220, 38, 38, 0.2)',
-              color: '#f87171',
-              border: '1px solid rgba(220, 38, 38, 0.4)',
+              background: 'rgba(16, 185, 129, 0.16)',
+              color: '#34d399',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
               padding: '4px 10px',
               borderRadius: '20px',
               fontSize: '11px',
@@ -131,16 +90,16 @@ export default function MockLoginPage() {
               letterSpacing: '0.04em',
             }}
           >
-            MOCK TEST PORTAL
+            OFFICIAL DEMO ACCOUNTS
           </span>
         </div>
 
         <div>
           <h1 style={{ fontSize: '22px', fontWeight: 800, margin: '0 0 6px', color: '#ffffff' }}>
-            Simulated Role Authentication
+            Demo Role Accounts (1 Per Role)
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-            Test each system role without requiring an active Google session. Accounts undergo standard staff table lookup and role permission checks.
+            Sign in with any of the 3 official demo accounts for Sports Director, Sports Coordinator, or Official Scorekeeper.
           </p>
         </div>
 
@@ -160,9 +119,9 @@ export default function MockLoginPage() {
           </div>
         )}
 
-        {/* 3 Mock Role Cards */}
+        {/* 3 Demo Role Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* 1. Mock Director */}
+          {/* 1. Demo Director */}
           <div
             style={{
               padding: '16px',
@@ -193,13 +152,13 @@ export default function MockLoginPage() {
               </div>
               <div>
                 <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
-                  1. Sports Director
+                  1. Mr. John Eric Samane (Sports Director)
                 </div>
                 <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 700 }}>
-                  Mr. John Eric Samane (john.samane@asiancollege.edu.ph)
+                  jsamane@asiancollege.edu.ph
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Full Access: Manage sports, coordinators, audit trail, reports, and events.
+                  Full Access: Manage sports, events, brackets, coordinators, audit trail, and reports.
                 </div>
               </div>
             </div>
@@ -208,14 +167,14 @@ export default function MockLoginPage() {
               type="button"
               className="btn btn-primary"
               disabled={loadingEmail !== null}
-              onClick={() => handleSignIn('mock.director@mock.test')}
+              onClick={() => handleSignIn('jsamane@asiancollege.edu.ph')}
               style={{ fontWeight: 800, padding: '9px 18px', fontSize: '13px' }}
             >
-              {loadingEmail === 'mock.director@mock.test' ? 'Signing in...' : 'Sign in as Director'}
+              {loadingEmail === 'jsamane@asiancollege.edu.ph' ? 'Signing in...' : 'Sign in as Director'}
             </button>
           </div>
 
-          {/* 2. Mock Coordinator */}
+          {/* 2. Demo Coordinator */}
           <div
             style={{
               padding: '16px',
@@ -246,13 +205,13 @@ export default function MockLoginPage() {
               </div>
               <div>
                 <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
-                  2. Mock Coordinator
+                  2. Demo Coordinator (Sports Coordinator)
                 </div>
                 <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 700 }}>
-                  mock.coordinator@mock.test
+                  demo.coordinator@asiancollege.edu.ph
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Basketball Only: Schedule, assign scorers, review submitted scores, and finalize.
+                  Coordinator Access: Register teams, generate brackets, schedule matches, and assign scorekeepers.
                 </div>
               </div>
             </div>
@@ -261,14 +220,14 @@ export default function MockLoginPage() {
               type="button"
               className="btn btn-primary"
               disabled={loadingEmail !== null}
-              onClick={() => handleSignIn('mock.coordinator@mock.test')}
+              onClick={() => handleSignIn('demo.coordinator@asiancollege.edu.ph')}
               style={{ fontWeight: 800, padding: '9px 18px', fontSize: '13px', background: '#2563eb' }}
             >
-              {loadingEmail === 'mock.coordinator@mock.test' ? 'Signing in...' : 'Sign in as Coordinator'}
+              {loadingEmail === 'demo.coordinator@asiancollege.edu.ph' ? 'Signing in...' : 'Sign in as Coordinator'}
             </button>
           </div>
 
-          {/* 3. Mock Scorer */}
+          {/* 3. Demo Scorekeeper */}
           <div
             style={{
               padding: '16px',
@@ -299,13 +258,13 @@ export default function MockLoginPage() {
               </div>
               <div>
                 <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
-                  3. Mock Scorer
+                  3. Demo Scorekeeper (Official Scorer)
                 </div>
                 <div style={{ fontSize: '12px', color: '#34d399', fontWeight: 700 }}>
-                  mock.scorer@mock.test
+                  demo.scorer@asiancollege.edu.ph
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Assigned Matches Only: Live digital scoring desk for the 2 sample basketball games.
+                  Scoring Desk Access: Start assigned matches, record live scores, finalize results, and advance winners.
                 </div>
               </div>
             </div>
@@ -314,10 +273,10 @@ export default function MockLoginPage() {
               type="button"
               className="btn btn-primary"
               disabled={loadingEmail !== null}
-              onClick={() => handleSignIn('mock.scorer@mock.test')}
+              onClick={() => handleSignIn('demo.scorer@asiancollege.edu.ph')}
               style={{ fontWeight: 800, padding: '9px 18px', fontSize: '13px', background: '#059669' }}
             >
-              {loadingEmail === 'mock.scorer@mock.test' ? 'Signing in...' : 'Sign in as Scorer'}
+              {loadingEmail === 'demo.scorer@asiancollege.edu.ph' ? 'Signing in...' : 'Sign in as Scorekeeper'}
             </button>
           </div>
         </div>

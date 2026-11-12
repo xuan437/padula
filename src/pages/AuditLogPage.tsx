@@ -31,10 +31,20 @@ const ACTION_COLORS: Record<AuditAction, string> = {
   account_deactivate: '#f59e0b',
   sensitive_action:   '#f43f5e',
   announcement_post:  '#ec4899',
+  email_dispatch:     '#2563eb',
   department_add:     '#3b82f6',
   venue_add:          '#38bdf8',
   division_add:       '#a78bfa',
   delete_mock_data:   '#dc2626',
+  failed_login:       '#ef4444',
+  denied_access:      '#dc2626',
+  request_access:     '#f59e0b',
+  approve_access:     '#10b981',
+  decline_access:     '#dc2626',
+  settings_update:    '#8b5cf6',
+  settings_reset:     '#f97316',
+  settings_import:    '#06b6d4',
+  settings_export:    '#10b981',
 };
 
 const ROLE_COLOR: Record<string, string> = {
