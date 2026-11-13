@@ -570,16 +570,16 @@ export default function RegistrationPage() {
                 style={{ maxWidth: '220px', padding: '6px 12px', fontSize: '12.5px' }}
               />
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+              <table style={{ width: '100%', minWidth: '860px', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '10px 12px' }}>Team Name</th>
-                    <th style={{ padding: '10px 12px' }}>Department</th>
-                    <th style={{ padding: '10px 12px' }}>Sport</th>
-                    <th style={{ padding: '10px 12px' }}>Scorer Desk Slot</th>
-                    <th style={{ padding: '10px 12px' }}>Status</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
+                    <th style={{ padding: '12px 14px', minWidth: '220px', whiteSpace: 'nowrap' }}>Team Name</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Department</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Sport</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: '160px' }}>Scorer Desk Slot</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Status</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: '220px' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -596,44 +596,69 @@ export default function RegistrationPage() {
                     return (
                       <React.Fragment key={t.id}>
                         <tr style={{ borderBottom: isExpanded ? 'none' : '1px solid var(--border)' }}>
-                          <td style={{ padding: '12px', fontWeight: 700 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span>{t.name}</span>
+                          <td style={{ padding: '12px 14px', fontWeight: 700, verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+                              <span style={{ whiteSpace: 'nowrap' }}>{t.name}</span>
                               <span style={{
                                 fontSize: '10.5px',
                                 fontWeight: 700,
                                 color: 'var(--text-muted)',
                                 background: 'var(--bg-elevated)',
                                 border: '1px solid var(--border)',
-                                borderRadius: '10px',
-                                padding: '1px 7px',
+                                borderRadius: '999px',
+                                padding: '2px 8px',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                                lineHeight: 1.2,
+                                display: 'inline-block',
                               }}>
                                 {teamPlayers.length} player{teamPlayers.length === 1 ? '' : 's'}
                               </span>
                             </div>
                           </td>
-                          <td style={{ padding: '12px' }}>{dept?.shortName || t.department}</td>
-                          <td style={{ padding: '12px' }}>{getSportName(t.sport)}</td>
-                          <td style={{ padding: '12px' }}>
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
+                            <span style={{ fontWeight: 600 }}>{dept?.shortName || t.department}</span>
+                          </td>
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
+                            <span>{getSportName(t.sport)}</span>
+                          </td>
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
                             <span style={{
-                              padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700,
-                              background: 'rgba(59,130,246,0.12)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)',
-                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              padding: '3px 9px',
+                              borderRadius: '999px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              background: 'rgba(59, 130, 246, 0.12)',
+                              color: '#3b82f6',
+                              border: '1px solid rgba(59, 130, 246, 0.3)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              whiteSpace: 'nowrap',
+                              lineHeight: 1.2,
                             }}>
-                              <CheckIcon size={11} color="#3b82f6" /> {assignedSlotLabel}
+                              <CheckIcon size={11} color="#3b82f6" />
+                              <span>{assignedSlotLabel}</span>
                             </span>
                           </td>
-                          <td style={{ padding: '12px' }}>
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
                             <span style={{
-                              padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700,
-                              background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)',
+                              padding: '3px 9px',
+                              borderRadius: '999px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.1)',
                               color: isActive ? '#059669' : '#dc2626',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              whiteSpace: 'nowrap',
+                              lineHeight: 1.2,
                             }}>
                               {isActive ? 'Active' : 'Deactivated'}
                             </span>
                           </td>
-                          <td style={{ padding: '12px', textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <td style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                               <button
                                 type="button"
                                 className="btn btn-ghost btn-sm"
