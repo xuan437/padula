@@ -181,8 +181,11 @@ export default function FloatingDepartmentCards({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '8px',
-        marginBottom: '6px',
+        width: '100%',
+        maxWidth: '1004px',
+        margin: '0 auto 6px',
         padding: '0 4px',
+        boxSizing: 'border-box',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{

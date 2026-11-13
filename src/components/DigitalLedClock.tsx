@@ -161,17 +161,20 @@ export default function DigitalLedClock() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '6px',
           width: '100%',
           maxWidth: '780px',
-          padding: '0 8px 6px 8px',
+          padding: '0 4px 6px 4px',
           fontSize: '11px',
           fontWeight: 800,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
           color: 'var(--text-muted)',
+          boxSizing: 'border-box',
         }}
       >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           <span
             style={{
               width: 7,
@@ -180,9 +183,10 @@ export default function DigitalLedClock() {
               background: '#ef4444',
               boxShadow: '0 0 8px #ef4444',
               animation: 'pulse 1.4s infinite',
+              flexShrink: 0,
             }}
           />
-          Padula 2026 Arena Clock · Dumaguete City (PST)
+          <span>Padula 2026 Arena Clock · Dumaguete City (PST)</span>
         </span>
         <button
           type="button"
@@ -196,6 +200,8 @@ export default function DigitalLedClock() {
             padding: '2px 8px',
             cursor: 'pointer',
             fontWeight: 700,
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
           title="Toggle 12-hour or 24-hour time format"
         >
