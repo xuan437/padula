@@ -87,8 +87,13 @@ function BracketMatchCard({ match, matchNum, isNextUp, onAssignVenue, venues, on
               fontWeight: 800,
               color: '#0ea5e9',
               background: 'rgba(14, 165, 233, 0.14)',
-              padding: '2px 6px',
-              borderRadius: '6px',
+              padding: '2.5px 7px',
+              borderRadius: '999px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              letterSpacing: '0.03em',
             }}>
               ▶ PLAY NEXT
             </span>

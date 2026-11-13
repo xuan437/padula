@@ -1093,8 +1093,8 @@ export default function TournamentTreeBracket({
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
-              gap: '8px',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              gap: '10px',
               width: '100%',
             }}>
               {treeData.orderedMatches.map(item => {
@@ -1104,52 +1104,99 @@ export default function TournamentTreeBracket({
                   <div
                     key={item.num}
                     style={{
-                      padding: '8px 10px',
-                      borderRadius: '8px',
+                      padding: '9px 12px',
+                      borderRadius: '10px',
                       background: isLive
                         ? 'rgba(220, 38, 38, 0.12)'
                         : item.isNextUp
-                        ? 'rgba(14, 165, 233, 0.12)'
+                        ? 'rgba(2, 132, 199, 0.12)'
                         : 'var(--bg-elevated)',
                       border: isLive
-                        ? '1.5px solid rgba(220, 38, 38, 0.5)'
+                        ? '1.5px solid rgba(220, 38, 38, 0.55)'
                         : item.isNextUp
-                        ? '1.5px solid rgba(14, 165, 233, 0.6)'
+                        ? '1.5px solid rgba(2, 132, 199, 0.65)'
                         : '1px solid var(--border-light)',
+                      boxShadow: item.isNextUp
+                        ? '0 4px 14px rgba(2, 132, 199, 0.18)'
+                        : 'none',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '3px',
+                      gap: '5px',
+                      minWidth: 0,
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: 900,
-                        color: isLive ? '#ef4444' : item.isNextUp ? '#0ea5e9' : isFin ? '#10b981' : 'var(--accent)',
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      minWidth: 0,
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        minWidth: 0,
+                        overflow: 'hidden',
                       }}>
-                        Match #{item.num} · {item.round}
-                      </span>
+                        <span style={{
+                          fontSize: '11.5px',
+                          fontWeight: 900,
+                          color: isLive ? '#ef4444' : item.isNextUp ? '#38bdf8' : isFin ? '#10b981' : 'var(--accent)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          letterSpacing: '0.02em',
+                        }}>
+                          Match #{item.num} <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span> {item.round}
+                        </span>
+                      </div>
                       <span style={{
-                        fontSize: '9.5px',
+                        fontSize: '9px',
                         fontWeight: 800,
-                        padding: '1px 6px',
+                        padding: '2.5px 7px',
                         borderRadius: '999px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        lineHeight: 1.2,
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
                         background: isLive
-                          ? '#dc2626'
+                          ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)'
                           : item.isNextUp
-                          ? '#0ea5e9'
+                          ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
                           : isFin
-                          ? 'rgba(16,185,129,0.16)'
-                          : 'rgba(148,163,184,0.16)',
-                        color: isLive || item.isNextUp ? '#fff' : isFin ? '#10b981' : 'var(--text-muted)',
+                          ? 'rgba(16, 185, 129, 0.16)'
+                          : 'rgba(148, 163, 184, 0.12)',
+                        color: isLive || item.isNextUp ? '#ffffff' : isFin ? '#10b981' : 'var(--text-muted)',
+                        boxShadow: item.isNextUp
+                          ? '0 0 10px rgba(2, 132, 199, 0.4)'
+                          : isLive
+                          ? '0 0 10px rgba(239, 68, 68, 0.4)'
+                          : 'none',
                       }}>
-                        {isLive ? 'LIVE' : item.isNextUp ? '▶ PLAY NEXT' : isFin ? 'FINAL' : 'QUEUED'}
+                        {isLive ? '● LIVE' : item.isNextUp ? '▶ PLAY NEXT' : isFin ? '✓ FINAL' : 'QUEUED'}
                       </span>
                     </div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {item.teamA} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>vs</span> {item.teamB}
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.teamA}</span>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '11px', flexShrink: 0 }}>vs</span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.teamB}</span>
                       {(isLive || isFin) && item.scoreA !== undefined && item.scoreB !== undefined && (
-                        <span style={{ marginLeft: '6px', color: 'var(--accent)', fontWeight: 800 }}>
+                        <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontWeight: 800, flexShrink: 0 }}>
                           ({item.scoreA}–{item.scoreB})
                         </span>
                       )}
