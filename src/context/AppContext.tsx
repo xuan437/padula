@@ -124,6 +124,8 @@ interface AppContextType {
   }) => AccessRequest;
   approveAccessRequest: (requestId: string) => Promise<{ success: boolean; error?: string; password?: string }>;
   declineAccessRequest: (requestId: string, reason?: string) => void;
+  removeAccessRequest: (requestId: string) => void;
+  clearAllAccessRequests: () => void;
 
   // Settings
   settings: AppSettings;
@@ -257,7 +259,6 @@ import {
   INITIAL_USERS,
   INITIAL_STAFF,
   INITIAL_STAFF_INVITATIONS,
-  INITIAL_ACCESS_REQUESTS,
   MOCK_VENUE,
   MOCK_DEPARTMENTS,
   PUBLIC_GUEST_USER,
@@ -500,10 +501,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const stored = localStorage.getItem('padula_access_requests');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          // Permanently eliminate seed placeholders
+          return parsed.filter((r: any) => !r.id?.startsWith('req-seed-'));
+        }
       }
     } catch {}
-    return INITIAL_ACCESS_REQUESTS;
+    return [];
   });
 
   useEffect(() => {
@@ -1725,6 +1729,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       'Director'
     );
   }, [accessRequests, currentUser, addAuditLog]);
+
+  const removeAccessRequest = useCallback((requestId: string) => {
+    setAccessRequests(prev => {
+      const updated = prev.filter(r => r.id !== requestId);
+      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+    addAuditLog(
+      'delete_mock_data',
+      `Removed portal access request: ${requestId}`,
+      requestId,
+      'Director'
+    );
+  }, [addAuditLog]);
+
+  const clearAllAccessRequests = useCallback(() => {
+    setAccessRequests([]);
+    try { localStorage.removeItem('padula_access_requests'); } catch {}
+    addAuditLog(
+      'delete_mock_data',
+      'Cleared all portal access requests',
+      'bulk',
+      'Director'
+    );
+  }, [addAuditLog]);
 
   const seedDemoData = useCallback(() => {
     setEvents(INITIAL_EVENTS);
@@ -3276,6 +3305,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    if (updates.teamId !== undefined) {
+      setTeams(prev => prev.map(t => {
+        const hasPid = (t.players || []).includes(id);
+        if (t.id === updates.teamId && !hasPid) {
+          return { ...t, players: [...(t.players || []), id] };
+        } else if (t.id !== updates.teamId && hasPid) {
+          return { ...t, players: (t.players || []).filter(pid => pid !== id) };
+        }
+        return t;
+      }));
+    }
     const target = players.find(p => p.id === id);
     addAuditLog('player_register', `Updated player: ${target?.name || id}`, id, 'Player');
     supabase.from('players').update({
@@ -3448,7 +3488,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       staff, staffInvitations, latestInvitation, clearLatestInvitation, respondToInvitation, dispatchInvitationViaApi,
       verifyAndSignInStaff,
       addCoordinator, addScorer, deactivateStaff, removeStaff,
-      accessRequests, submitAccessRequest, approveAccessRequest, declineAccessRequest,
+      accessRequests, submitAccessRequest, approveAccessRequest, declineAccessRequest, removeAccessRequest, clearAllAccessRequests,
       registeredUsers, registerUser,
       toggleUserStatus, removeUser,
       toggleOfficialStatus, removeOfficial,

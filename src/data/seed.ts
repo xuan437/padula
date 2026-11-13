@@ -218,41 +218,7 @@ export const INITIAL_STAFF_INVITATIONS: StaffInvitation[] = [
   },
 ];
 
-export const INITIAL_ACCESS_REQUESTS: AccessRequest[] = [
-  {
-    id: 'req-seed-1',
-    name: 'Prof. Ronald De La Cruz',
-    email: 'rdelacruz@asiancollege.edu.ph',
-    role: 'coordinator',
-    sportOrDept: 'Volleyball',
-    note: 'Appointed by CSE Dean to coordinate department teams for collegiate volleyball tournament.',
-    requestedAt: '2026-11-12T14:30:00Z',
-    status: 'pending',
-  },
-  {
-    id: 'req-seed-2',
-    name: 'Bea Clarisse Mendoza',
-    email: 'bmendoza@asiancollege.edu.ph',
-    role: 'scorer',
-    sportOrDept: 'Table Tennis',
-    note: 'Certified student scorekeeper with experience in Dumaguete inter-collegiate tournaments.',
-    requestedAt: '2026-11-12T16:15:00Z',
-    status: 'pending',
-  },
-  {
-    id: 'req-seed-3',
-    name: 'Coach Dennis Santos',
-    email: 'dsantos@asiancollege.edu.ph',
-    role: 'coordinator',
-    sportOrDept: 'Football',
-    note: 'Athletic coordinator endorsement for BAA Falcons soccer lineup management.',
-    requestedAt: '2026-11-11T09:20:00Z',
-    status: 'approved',
-    reviewedAt: '2026-11-11T11:00:00Z',
-    reviewedBy: 'Mr. John Eric Samane',
-    generatedPassword: 'Padula2026!CO-8812',
-  },
-];
+export const INITIAL_ACCESS_REQUESTS: AccessRequest[] = [];
 
 export const PUBLIC_GUEST_USER: User = {
   id: 'guest',

@@ -152,7 +152,7 @@ export default function TeamRegistrationPage() {
 
   const filteredPlayers = players.filter(p =>
     (filterSport === 'all' || p.sport === filterSport) &&
-    (filterTeam  === 'all' || p.teamId === filterTeam)
+    (filterTeam === 'all' || p.teamId === filterTeam)
   );
 
   return (

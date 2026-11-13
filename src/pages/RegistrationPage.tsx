@@ -8,10 +8,29 @@ import {
   XIcon,
   CopyIcon,
   UsersIcon,
+  UserIcon,
+  PlusIcon,
+  ShieldIcon,
+  TrophyIcon,
 } from '../components/Icons';
-import { SPORTS_CATALOG, getSportName } from '../lib/sports';
+import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
 import { buildGmailComposeUrl } from '../lib/emailApi';
-import type { StaffInvitation, Team } from '../types';
+import type { StaffInvitation, Team, Player } from '../types';
+
+const POSITIONS_BY_SPORT: Record<string, string[]> = {
+  Basketball: ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'],
+  Volleyball: ['Setter', 'Outside Hitter', 'Middle Blocker', 'Libero', 'Opposite Hitter'],
+  Football: ['Goalkeeper', 'Defender', 'Midfielder', 'Forward', 'Striker'],
+  'Sepak Takraw': ['Tekong (Server)', 'Killer (Spiker)', 'Feeder (Setter)'],
+  Badminton: ['Singles Specialist', 'Doubles Front', 'Doubles Back'],
+  'Table Tennis': ['Offensive Attacker', 'Defensive Chopper', 'All-Rounder'],
+  'Frisbee (Ultimate)': ['Handler', 'Cutter', 'Deep Receiver'],
+  Chess: ['Board 1', 'Board 2', 'Board 3', 'Alternate'],
+  Scrabble: ['Player', 'Alternate'],
+  'Mobile Legends': ['Mid Lane', 'Jungler', 'Exp Lane', 'Gold Lane', 'Roamer'],
+  'DOTA 2': ['Carry (Pos 1)', 'Mid (Pos 2)', 'Offlane (Pos 3)', 'Soft Support (Pos 4)', 'Hard Support (Pos 5)'],
+  Valorant: ['Duelist', 'Initiator', 'Controller', 'Sentinel'],
+};
 
 export function formatPlayerInitialLastName(fullName: string): string {
   if (!fullName || !fullName.trim()) return '';
@@ -48,6 +67,7 @@ export default function RegistrationPage() {
     removeOfficial,
     players,
     registerPlayer,
+    updatePlayer,
     togglePlayerStatus,
     removePlayer,
     teams,
@@ -112,7 +132,7 @@ export default function RegistrationPage() {
 
   // Form states
   const [teamForm, setTeamForm] = useState({ name: '', sport: 's1', department: 'd1', division: 'div1', color: '#3b82f6' });
-  const [playerForm, setPlayerForm] = useState({ name: '', studentId: '', department: 'd1', sport: 's1', jerseyNumber: '', position: '', email: '', medicalCleared: true });
+  const [playerForm, setPlayerForm] = useState({ name: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', email: '', medicalCleared: true });
   const [officialForm, setOfficialForm] = useState({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '' });
   const [coordForm, setCoordForm] = useState({ name: '', email: '', department: 'd1' });
 
@@ -147,6 +167,7 @@ export default function RegistrationPage() {
       studentId: cleanStudentId,
       department: playerForm.department,
       sport: playerForm.sport,
+      teamId: playerForm.teamId || undefined,
       jerseyNumber: playerForm.jerseyNumber.trim() || '00',
       position: playerForm.position.trim() || 'Player',
       email: cleanEmail,
@@ -155,14 +176,99 @@ export default function RegistrationPage() {
       currentSeasonGoals: 0,
     });
 
-    setSuccessBanner(`Athlete "${playerForm.name}" (${cleanStudentId}) registered successfully.`);
+    const assignedTeam = teams.find(t => t.id === playerForm.teamId);
+    const teamNotice = assignedTeam ? ` and assigned to team "${assignedTeam.name}"` : '';
+    setSuccessBanner(`Athlete "${playerForm.name}" (${cleanStudentId}) registered successfully${teamNotice}.`);
     setRegisteredPlayerNotice(true);
-    setPlayerForm({ name: '', studentId: '', department: 'd1', sport: 's1', jerseyNumber: '', position: '', email: '', medicalCleared: true });
+    setPlayerForm({ name: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', email: '', medicalCleared: true });
     setTimeout(() => {
       setRegisteredPlayerNotice(false);
       setSuccessBanner(null);
     }, 5000);
   };
+
+  // Player Edit & Reassign State
+  const [editingAthlete, setEditingAthlete] = useState<Player | null>(null);
+  const [editAthleteForm, setEditAthleteForm] = useState<{
+    teamId: string;
+    jerseyNumber: string;
+    position: string;
+    medicalCleared: boolean;
+  }>({ teamId: '', jerseyNumber: '', position: '', medicalCleared: true });
+
+  const startEditAthlete = (p: Player) => {
+    setEditingAthlete(p);
+    setEditAthleteForm({
+      teamId: p.teamId || '',
+      jerseyNumber: p.jerseyNumber || '',
+      position: p.position || '',
+      medicalCleared: p.medicalCleared !== false,
+    });
+  };
+
+  const handleSaveAthleteEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAthlete) return;
+    updatePlayer(editingAthlete.id, {
+      teamId: editAthleteForm.teamId || undefined,
+      jerseyNumber: editAthleteForm.jerseyNumber.trim() || '00',
+      position: editAthleteForm.position.trim() || 'Player',
+      medicalCleared: editAthleteForm.medicalCleared,
+    });
+    const assignedTeam = teams.find(t => t.id === editAthleteForm.teamId);
+    showBanner(`Athlete "${editingAthlete.name}" updated successfully${assignedTeam ? ` and assigned to ${assignedTeam.name}` : ''}.`);
+    setEditingAthlete(null);
+  };
+
+  const handlePlayerTeamSelect = (selectedId: string) => {
+    if (!selectedId) {
+      setPlayerForm(p => ({ ...p, teamId: '' }));
+      return;
+    }
+    const chosenTeam = teams.find(t => t.id === selectedId);
+    if (chosenTeam) {
+      setPlayerForm(p => ({
+        ...p,
+        teamId: chosenTeam.id,
+        department: chosenTeam.department || p.department,
+        sport: chosenTeam.sport || p.sport,
+      }));
+    }
+  };
+
+  const currentSportName = useMemo(() => getSportName(playerForm.sport), [playerForm.sport]);
+  const sportPresetPositions = useMemo(() => POSITIONS_BY_SPORT[currentSportName] || [], [currentSportName]);
+
+  const playerMatchingTeams = useMemo(() => {
+    return teams.filter(t => {
+      if (t.isActive === false) return false;
+      const tSport = getSportName(t.sport).toLowerCase();
+      const curSport = currentSportName.toLowerCase();
+      return (t.sport === playerForm.sport || tSport === curSport) && t.department === playerForm.department;
+    });
+  }, [teams, playerForm.sport, playerForm.department, currentSportName]);
+
+  const playerOtherSportTeams = useMemo(() => {
+    return teams.filter(t => {
+      if (t.isActive === false) return false;
+      const tSport = getSportName(t.sport).toLowerCase();
+      const curSport = currentSportName.toLowerCase();
+      return (t.sport === playerForm.sport || tSport === curSport) && t.department !== playerForm.department;
+    });
+  }, [teams, playerForm.sport, playerForm.department, currentSportName]);
+
+  const playerOtherActiveTeams = useMemo(() => {
+    return teams.filter(t => {
+      if (t.isActive === false) return false;
+      const tSport = getSportName(t.sport).toLowerCase();
+      const curSport = currentSportName.toLowerCase();
+      return t.sport !== playerForm.sport && tSport !== curSport;
+    });
+  }, [teams, playerForm.sport, currentSportName]);
+
+  const selectedTeamDetails = useMemo(() => {
+    return teams.find(t => t.id === playerForm.teamId);
+  }, [teams, playerForm.teamId]);
 
   // Handle Official Submit (referee, scorekeeper, coach, manager)
   const handleOfficialSubmit = (role: 'referee' | 'scorekeeper' | 'coach' | 'manager') => (e: React.FormEvent) => {
@@ -641,168 +747,655 @@ export default function RegistrationPage() {
       {/* TAB 2: PLAYERS REGISTRATION                                   */}
       {/* ───────────────────────────────────────────────────────────── */}
       {activeTab === 'players' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="glass-card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 16px' }}>Register Player</h3>
-            <form onSubmit={handlePlayerSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-              <div className="form-group">
-                <label className="form-label">Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Maria Clara Santos"
-                  value={playerForm.name}
-                  onChange={e => setPlayerForm(p => ({ ...p, name: e.target.value }))}
-                  className="form-input"
-                />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Main Registration Card with Upgraded Styling */}
+          <div
+            className="glass-card"
+            style={{
+              position: 'relative',
+              overflow: 'hidden',
+              padding: '28px',
+              borderRadius: '16px',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-card)',
+              boxShadow: 'var(--shadow-md)',
+            }}
+          >
+            {/* Top Accent Gradient Bar */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: 'linear-gradient(90deg, #dc2626 0%, #f59e0b 50%, #3b82f6 100%)',
+              }}
+            />
+
+            {/* Header with Badges & Metadata */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '22px', borderBottom: '1px solid var(--border-light)', paddingBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(59, 130, 246, 0.15))',
+                  border: '1px solid var(--accent-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent)',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.1)',
+                  flexShrink: 0,
+                }}>
+                  <UserIcon size={24} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'var(--accent)',
+                      background: 'var(--accent-light)',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--accent-border)',
+                    }}>
+                      Official Roster Management
+                    </span>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                      Padula 2026 Season
+                    </span>
+                  </div>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                    Register Player & Squad Assignment
+                  </h2>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '4px 0 0', maxWidth: '640px' }}>
+                    Enroll student athletes, assign official jersey numbers, designate sport positions, and link directly to active collegiate squads.
+                  </p>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Student ID *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="2024-101"
-                  value={playerForm.studentId}
-                  onChange={e => setPlayerForm(p => ({ ...p, studentId: e.target.value }))}
-                  className="form-input"
-                />
+              {/* Quick Counts Pill */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  padding: '8px 14px',
+                  textAlign: 'right',
+                }}>
+                  <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Active Athletes
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                    {players.length} <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>registered</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Registration Form */}
+            <form onSubmit={handlePlayerSubmit}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '16px',
+                marginBottom: '18px',
+              }}>
+                {/* 1. Full Name */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <UserIcon size={13} color="var(--accent)" />
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Maria Clara Santos"
+                    value={playerForm.name}
+                    onChange={e => setPlayerForm(p => ({ ...p, name: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px' }}
+                  />
+                </div>
+
+                {/* 2. Student ID */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <ClipboardIcon size={13} color="var(--accent)" />
+                    Student ID *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="2024-101"
+                    value={playerForm.studentId}
+                    onChange={e => setPlayerForm(p => ({ ...p, studentId: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', fontFamily: 'monospace' }}
+                  />
+                </div>
+
+                {/* 3. Gmail Address */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <MailIcon size={13} color="var(--accent)" />
+                    Institutional Gmail
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="player@asiancollege.edu.ph"
+                    value={playerForm.email}
+                    onChange={e => setPlayerForm(p => ({ ...p, email: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '8px', fontSize: '13px' }}
+                  />
+                </div>
+
+                {/* 4. Department */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <TrophyIcon size={13} color="var(--accent)" />
+                    Department / College
+                  </label>
+                  <select
+                    value={playerForm.department}
+                    onChange={e => setPlayerForm(p => ({ ...p, department: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px' }}
+                  >
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.shortName} – {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 5. Sport */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <TrophyIcon size={13} color="var(--accent)" />
+                    Sport / Discipline
+                  </label>
+                  <select
+                    value={playerForm.sport}
+                    onChange={e => setPlayerForm(p => ({ ...p, sport: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px' }}
+                  >
+                    {SPORTS_CATALOG.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.format})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 6. Assign to Team (Requested Feature) */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', margin: 0 }}>
+                      <UsersIcon size={13} color="var(--accent)" />
+                      Assign to Team *
+                    </label>
+                    {selectedTeamDetails && (
+                      <span style={{ fontSize: '10.5px', color: '#10b981', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <CheckIcon size={11} color="#10b981" /> Assigned
+                      </span>
+                    )}
+                  </div>
+                  <select
+                    value={playerForm.teamId}
+                    onChange={e => handlePlayerTeamSelect(e.target.value)}
+                    className="form-input"
+                    style={{
+                      height: '42px',
+                      borderRadius: '8px',
+                      fontSize: '13.5px',
+                      borderColor: playerForm.teamId ? 'var(--accent)' : 'var(--border)',
+                      fontWeight: playerForm.teamId ? 600 : 400,
+                    }}
+                  >
+                    <option value="">— No Team Assigned (Draft Pool / Reserves) —</option>
+
+                    {playerMatchingTeams.length > 0 && (
+                      <optgroup label={`Matching Squads (${currentSportName} · ${departments.find(d => d.id === playerForm.department)?.shortName || 'Dept'})`}>
+                        {playerMatchingTeams.map(t => (
+                          <option key={t.id} value={t.id}>
+                            ★ {t.name} ({(t.players || []).length} rostered)
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+
+                    {playerOtherSportTeams.length > 0 && (
+                      <optgroup label={`Other Teams in ${currentSportName}`}>
+                        {playerOtherSportTeams.map(t => {
+                          const dept = departments.find(d => d.id === t.department);
+                          return (
+                            <option key={t.id} value={t.id}>
+                              {t.name} ({dept?.shortName || t.department} · {(t.players || []).length} rostered)
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    )}
+
+                    {playerOtherActiveTeams.length > 0 && (
+                      <optgroup label="Other Active Tournament Teams">
+                        {playerOtherActiveTeams.map(t => {
+                          const dept = departments.find(d => d.id === t.department);
+                          return (
+                            <option key={t.id} value={t.id}>
+                              {t.name} ({getSportName(t.sport)} · {dept?.shortName || t.department})
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    )}
+                  </select>
+
+                  {/* Team Preview Pill / Context */}
+                  {selectedTeamDetails ? (
+                    <div style={{
+                      marginTop: '6px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '11.5px',
+                      background: 'rgba(59, 130, 246, 0.08)',
+                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                    }}>
+                      <span style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: selectedTeamDetails.color || 'var(--accent)',
+                        display: 'inline-block',
+                      }} />
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selectedTeamDetails.name}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>• {(selectedTeamDetails.players || []).length} players on roster</span>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: '5px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Athlete will be registered into the open department pool.
+                    </div>
+                  )}
+                </div>
+
+                {/* 7. Jersey Number */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent)' }}>#</span>
+                    Jersey Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="10"
+                    value={playerForm.jerseyNumber}
+                    onChange={e => setPlayerForm(p => ({ ...p, jerseyNumber: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', fontWeight: 700 }}
+                  />
+                </div>
+
+                {/* 8. Position with Smart Suggestions */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', margin: 0 }}>
+                      <UserIcon size={13} color="var(--accent)" />
+                      Position
+                    </label>
+                    {sportPresetPositions.length > 0 && (
+                      <span style={{ fontSize: '10.5px', color: 'var(--accent)', fontWeight: 600 }}>
+                        {currentSportName} Presets
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    list="player-reg-positions-list"
+                    placeholder={sportPresetPositions[0] || 'e.g. Point Guard / Carry'}
+                    value={playerForm.position}
+                    onChange={e => setPlayerForm(p => ({ ...p, position: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px' }}
+                  />
+                  <datalist id="player-reg-positions-list">
+                    {sportPresetPositions.map(pos => (
+                      <option key={pos} value={pos} />
+                    ))}
+                  </datalist>
+
+                  {/* Quick-click position suggestions */}
+                  {sportPresetPositions.length > 0 && !playerForm.position && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                      {sportPresetPositions.slice(0, 4).map(pos => (
+                        <button
+                          key={pos}
+                          type="button"
+                          onClick={() => setPlayerForm(p => ({ ...p, position: pos }))}
+                          style={{
+                            fontSize: '10.5px',
+                            padding: '2px 7px',
+                            borderRadius: '5px',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-elevated)',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            fontWeight: 500,
+                          }}
+                        >
+                          + {pos}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Department</label>
-                <select
-                  value={playerForm.department}
-                  onChange={e => setPlayerForm(p => ({ ...p, department: e.target.value }))}
-                  className="form-input"
+              {/* Medical Clearance Verification Box */}
+              <div
+                onClick={() => setPlayerForm(p => ({ ...p, medicalCleared: !p.medicalCleared }))}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '14px 18px',
+                  borderRadius: '12px',
+                  border: `1px solid ${playerForm.medicalCleared ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                  background: playerForm.medicalCleared ? 'rgba(16, 185, 129, 0.06)' : 'rgba(245, 158, 11, 0.06)',
+                  cursor: 'pointer',
+                  marginBottom: '20px',
+                  transition: 'all 0.15s ease',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <input
+                    type="checkbox"
+                    id="medClear"
+                    checked={playerForm.medicalCleared}
+                    onChange={e => {
+                      e.stopPropagation();
+                      setPlayerForm(p => ({ ...p, medicalCleared: e.target.checked }));
+                    }}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#10b981' }}
+                  />
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ShieldIcon size={15} color={playerForm.medicalCleared ? '#10b981' : '#f59e0b'} />
+                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Athletic & Medical Clearance Approved
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Certified by Asian College Sports Health & Clinic. Eligible for tournament matches.
+                    </div>
+                  </div>
+                </div>
+
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  background: playerForm.medicalCleared ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                  color: playerForm.medicalCleared ? '#059669' : '#d97706',
+                  border: `1px solid ${playerForm.medicalCleared ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                }}>
+                  {playerForm.medicalCleared ? '✓ Eligible for Play' : 'Pending Physical Exam'}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{
+                    padding: '12px 26px',
+                    fontWeight: 800,
+                    fontSize: '13.5px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                  }}
                 >
-                  {departments.map(d => <option key={d.id} value={d.id}>{d.shortName} – {d.name}</option>)}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Sport</label>
-                <select
-                  value={playerForm.sport}
-                  onChange={e => setPlayerForm(p => ({ ...p, sport: e.target.value }))}
-                  className="form-input"
+                  <PlusIcon size={16} />
+                  Register Athlete & Assign Team
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setPlayerForm({
+                    name: '',
+                    studentId: '',
+                    department: 'd1',
+                    sport: 's1',
+                    teamId: '',
+                    jerseyNumber: '',
+                    position: '',
+                    email: '',
+                    medicalCleared: true,
+                  })}
+                  style={{ padding: '12px 20px', fontSize: '13px' }}
                 >
-                  {SPORTS_CATALOG.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Jersey Number</label>
-                <input
-                  type="text"
-                  placeholder="10"
-                  value={playerForm.jerseyNumber}
-                  onChange={e => setPlayerForm(p => ({ ...p, jerseyNumber: e.target.value }))}
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Position</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Point Guard"
-                  value={playerForm.position}
-                  onChange={e => setPlayerForm(p => ({ ...p, position: e.target.value }))}
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Gmail Address</label>
-                <input
-                  type="email"
-                  placeholder="player@asiancollege.edu.ph"
-                  value={playerForm.email}
-                  onChange={e => setPlayerForm(p => ({ ...p, email: e.target.value }))}
-                  className="form-input"
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '24px' }}>
-                <input
-                  type="checkbox"
-                  id="medClear"
-                  checked={playerForm.medicalCleared}
-                  onChange={e => setPlayerForm(p => ({ ...p, medicalCleared: e.target.checked }))}
-                />
-                <label htmlFor="medClear" style={{ fontSize: '13px', cursor: 'pointer' }}>
-                  Medical Clearance Approved
-                </label>
-              </div>
-
-              <div style={{ gridColumn: '1 / -1', marginTop: '6px' }}>
-                <button type="submit" className="btn btn-primary" style={{ padding: '11px 24px', fontWeight: 700 }}>
-                  Register Player
+                  Reset Form
                 </button>
               </div>
             </form>
           </div>
 
           {/* Quick Recent Registrations Table */}
-          <div className="glass-card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0 }}>Registered Athletes ({players.length})</h3>
-              <input
-                type="text"
-                placeholder="Search athlete…"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="form-input"
-                style={{ maxWidth: '220px', padding: '6px 12px', fontSize: '12.5px' }}
-              />
+          <div className="glass-card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                  Registered Athletes ({players.length})
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                  Manage team assignments, clearances, and roster statuses
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="text"
+                  placeholder="Search athlete or ID…"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="form-input"
+                  style={{ width: '220px', padding: '7px 12px', fontSize: '12.5px', height: '36px' }}
+                />
+              </div>
             </div>
+
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '10px 12px' }}>Name</th>
-                    <th style={{ padding: '10px 12px' }}>Student ID</th>
+                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <th style={{ padding: '10px 12px', textAlign: 'center', width: '70px' }}>Jersey #</th>
+                    <th style={{ padding: '10px 12px' }}>Athlete Name & ID</th>
                     <th style={{ padding: '10px 12px' }}>Dept</th>
-                    <th style={{ padding: '10px 12px' }}>Jersey</th>
+                    <th style={{ padding: '10px 12px' }}>Sport</th>
+                    <th style={{ padding: '10px 12px' }}>Team / Squad</th>
+                    <th style={{ padding: '10px 12px' }}>Position</th>
                     <th style={{ padding: '10px 12px' }}>Clearance</th>
                     <th style={{ padding: '10px 12px' }}>Status</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {players.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.studentId.includes(searchQuery)).map(p => {
                     const dept = departments.find(d => d.id === p.department);
+                    const team = teams.find(t => t.id === p.teamId);
                     const isActive = p.isActive !== false;
                     return (
-                      <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '12px', fontWeight: 700 }}>{p.name}</td>
-                        <td style={{ padding: '12px' }}>{p.studentId}</td>
-                        <td style={{ padding: '12px' }}>{dept?.shortName || p.department}</td>
-                        <td style={{ padding: '12px' }}>#{p.jerseyNumber}</td>
+                      <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                        {/* Jersey */}
+                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                          <span style={{
+                            fontWeight: 800,
+                            fontSize: '11.5px',
+                            background: 'var(--bg-elevated)',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid var(--border)',
+                            display: 'inline-block',
+                            fontFamily: 'monospace',
+                          }}>
+                            #{p.jerseyNumber || '00'}
+                          </span>
+                        </td>
+
+                        {/* Athlete Name & ID */}
                         <td style={{ padding: '12px' }}>
-                          <span style={{ color: p.medicalCleared ? '#059669' : '#ea580c', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              background: 'var(--accent)',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              flexShrink: 0,
+                            }}>
+                              {p.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{p.name}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                                ID: {p.studentId}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Dept */}
+                        <td style={{ padding: '12px' }}>
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: 'var(--bg-elevated)',
+                            border: '1px solid var(--border)',
+                          }}>
+                            {dept?.shortName || p.department}
+                          </span>
+                        </td>
+
+                        {/* Sport */}
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                            {getSportIcon(p.sport, 13, 'var(--accent)')}
+                            <span>{getSportName(p.sport)}</span>
+                          </div>
+                        </td>
+
+                        {/* Assigned Team */}
+                        <td style={{ padding: '12px' }}>
+                          {team ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '3px 9px',
+                              borderRadius: '12px',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              background: 'rgba(59, 130, 246, 0.1)',
+                              color: 'var(--text-primary)',
+                              border: '1px solid rgba(59, 130, 246, 0.25)',
+                            }}>
+                              <span style={{
+                                width: '7px',
+                                height: '7px',
+                                borderRadius: '50%',
+                                background: team.color || 'var(--accent)',
+                              }} />
+                              {team.name}
+                            </span>
+                          ) : (
+                            <span style={{
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              background: 'var(--bg-elevated)',
+                              color: 'var(--text-muted)',
+                              border: '1px dashed var(--border)',
+                            }}>
+                              Unassigned
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Position */}
+                        <td style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          {p.position || 'Player'}
+                        </td>
+
+                        {/* Clearance */}
+                        <td style={{ padding: '12px' }}>
+                          <span style={{
+                            color: p.medicalCleared ? '#059669' : '#ea580c',
+                            fontWeight: 700,
+                            fontSize: '11.5px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}>
                             {p.medicalCleared ? <><CheckIcon size={12} color="#059669" /> Cleared</> : 'Pending'}
                           </span>
                         </td>
+
+                        {/* Status */}
                         <td style={{ padding: '12px' }}>
                           <span style={{
-                            padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: 700,
                             background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)',
                             color: isActive ? '#059669' : '#dc2626',
                           }}>
                             {isActive ? 'Active' : 'Deactivated'}
                           </span>
                         </td>
+
+                        {/* Actions */}
                         <td style={{ padding: '12px', textAlign: 'right' }}>
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                             <button
                               type="button"
                               className="btn btn-ghost btn-sm"
+                              onClick={() => startEditAthlete(p)}
+                              style={{ fontSize: '11.5px', color: 'var(--text-primary)', padding: '3px 8px' }}
+                            >
+                              Edit / Assign
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
                               onClick={() => togglePlayerStatus(p.id, !isActive)}
-                              style={{ fontSize: '11.5px', color: isActive ? '#dc2626' : '#059669' }}
+                              style={{ fontSize: '11.5px', color: isActive ? '#dc2626' : '#059669', padding: '3px 8px' }}
                             >
                               {isActive ? 'Deactivate' : 'Activate'}
                             </button>
@@ -815,7 +1408,7 @@ export default function RegistrationPage() {
                                   showBanner(`Athlete "${p.name}" deleted.`);
                                 }
                               }}
-                              style={{ fontSize: '11.5px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)' }}
+                              style={{ fontSize: '11.5px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)', padding: '3px 8px' }}
                             >
                               Delete
                             </button>
@@ -1919,6 +2512,202 @@ export default function RegistrationPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Edit Athlete & Squad Assignment Modal ── */}
+      {editingAthlete && (() => {
+        const athleteSportName = getSportName(editingAthlete.sport);
+        const athletePositions = POSITIONS_BY_SPORT[athleteSportName] || [];
+        const athleteDept = departments.find(d => d.id === editingAthlete.department);
+        const matchingSportTeams = teams.filter(t => {
+          if (t.isActive === false) return false;
+          const sName = getSportName(t.sport).toLowerCase();
+          return t.sport === editingAthlete.sport || sName === athleteSportName.toLowerCase();
+        });
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(5px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+            }}
+            onClick={() => setEditingAthlete(null)}
+          >
+            <div
+              className="glass-card"
+              style={{
+                width: '100%',
+                maxWidth: '520px',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+                position: 'relative',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '14px' }}>
+                <div>
+                  <span style={{
+                    fontSize: '10.5px',
+                    fontWeight: 800,
+                    letterSpacing: '0.06em',
+                    color: 'var(--accent)',
+                    background: 'var(--accent-light)',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    textTransform: 'uppercase',
+                  }}>
+                    Roster Assignment
+                  </span>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '4px 0 2px', color: 'var(--text-primary)' }}>
+                    Edit {editingAthlete.name}
+                  </h3>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    ID: {editingAthlete.studentId} • {athleteDept?.shortName || editingAthlete.department} • {athleteSportName}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setEditingAthlete(null)}
+                  style={{ padding: '6px' }}
+                >
+                  <XIcon size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveAthleteEdit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Team Selection */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '5px' }}>
+                    Assigned Team / Competing Squad
+                  </label>
+                  <select
+                    className="form-input"
+                    value={editAthleteForm.teamId}
+                    onChange={e => setEditAthleteForm(prev => ({ ...prev, teamId: e.target.value }))}
+                    style={{ height: '40px', borderRadius: '8px' }}
+                  >
+                    <option value="">— No Team Assigned (Draft Pool / Unassigned) —</option>
+                    <optgroup label={`Teams in ${athleteSportName}`}>
+                      {matchingSportTeams.map(t => {
+                        const dept = departments.find(d => d.id === t.department);
+                        return (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({dept?.shortName || t.department})
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                    <optgroup label="All Other Active Teams">
+                      {teams.filter(t => !matchingSportTeams.includes(t) && t.isActive !== false).map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({getSportName(t.sport)})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+
+                {/* Jersey & Position Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '5px' }}>
+                      Jersey #
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={editAthleteForm.jerseyNumber}
+                      onChange={e => setEditAthleteForm(prev => ({ ...prev, jerseyNumber: e.target.value }))}
+                      required
+                      style={{ height: '40px', borderRadius: '8px', fontWeight: 700 }}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '5px' }}>
+                      Position
+                    </label>
+                    <input
+                      type="text"
+                      list="edit-athlete-positions-list"
+                      className="form-input"
+                      value={editAthleteForm.position}
+                      onChange={e => setEditAthleteForm(prev => ({ ...prev, position: e.target.value }))}
+                      placeholder="e.g. Point Guard, Carry"
+                      style={{ height: '40px', borderRadius: '8px' }}
+                    />
+                    <datalist id="edit-athlete-positions-list">
+                      {athletePositions.map(pos => (
+                        <option key={pos} value={pos} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+
+                {/* Medical Clearance Toggle */}
+                <div
+                  onClick={() => setEditAthleteForm(p => ({ ...p, medicalCleared: !p.medicalCleared }))}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    border: `1px solid ${editAthleteForm.medicalCleared ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                    background: editAthleteForm.medicalCleared ? 'rgba(16, 185, 129, 0.06)' : 'rgba(245, 158, 11, 0.06)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldIcon size={14} color={editAthleteForm.medicalCleared ? '#10b981' : '#f59e0b'} />
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Medical Clearance Status
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    background: editAthleteForm.medicalCleared ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                    color: editAthleteForm.medicalCleared ? '#059669' : '#d97706',
+                  }}>
+                    {editAthleteForm.medicalCleared ? '✓ Cleared' : 'Pending'}
+                  </span>
+                </div>
+
+                {/* Modal Actions */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px', borderTop: '1px solid var(--border-light)', paddingTop: '14px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setEditingAthlete(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ fontWeight: 700 }}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         );
