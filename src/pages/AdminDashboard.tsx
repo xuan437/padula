@@ -500,57 +500,260 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
         {/* ── Quick Actions ───────────────────────────────────────────────── */}
         <div>
           <SectionDivider label="Quick Actions" />
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
+          <div
+            className="glass-card"
+            style={{
+              marginTop: 14,
+              padding: '14px 18px',
+              borderRadius: '14px',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-card)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+            }}
+          >
             {isDirector ? (
               <>
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('setup-wizard')}>
-                  <CalendarIcon size={15} /> Setup Wizard
-                </button>
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('officials')}>
-                  <ShieldIcon size={15} /> Officials Hub
-                </button>
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('event-setup')}>
-                  <PlusIcon size={15} /> Add Sport
-                </button>
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('event-setup')}>
-                  <HomeIcon size={15} /> Add Venue
-                </button>
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('registration')}>
-                  <ShieldIcon size={15} /> Add Coordinator
-                </button>
-                <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('announcements')}>
-                  <FileTextIcon size={15} /> Announcements Hub
-                </button>
-                {matches.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {/* Lead Action: Setup Wizard */}
                   <button
-                    className="btn btn-ghost"
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                    onClick={() => {
-                      if (window.confirm('Remove all current matches? This allows you to test generating a new bracket from scratch.')) {
-                        clearAllMatches();
-                      }
+                    type="button"
+                    className="btn btn-primary"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, var(--accent) 0%, #b91c1c 100%)',
+                      boxShadow: '0 2px 8px rgba(220, 38, 38, 0.28)',
+                      border: 'none',
                     }}
-                    title="Clear all matches to test bracket registration from scratch"
+                    onClick={() => setActiveView('setup-wizard')}
                   >
-                    <XIcon size={15} /> Remove Current Matches
+                    <CalendarIcon size={15} /> Setup Wizard
                   </button>
+
+                  {/* Secondary Management Actions */}
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                    onClick={() => setActiveView('officials')}
+                  >
+                    <ShieldIcon size={15} color="#3b82f6" /> Officials Hub
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                    onClick={() => setActiveView('event-setup')}
+                  >
+                    <PlusIcon size={15} color="#10b981" /> Add Sport
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                    onClick={() => setActiveView('event-setup')}
+                  >
+                    <HomeIcon size={15} color="#8b5cf6" /> Add Venue
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                    onClick={() => setActiveView('registration')}
+                  >
+                    <ShieldIcon size={15} color="#06b6d4" /> Add Coordinator
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                    onClick={() => setActiveView('announcements')}
+                  >
+                    <FileTextIcon size={15} color="#f59e0b" /> Post Announcement
+                  </button>
+                </div>
+
+                {/* Maintenance / Danger Action cleanly separated */}
+                {matches.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        padding: '7px 12px',
+                        borderRadius: '8px',
+                        color: '#ef4444',
+                        background: 'rgba(239, 68, 68, 0.06)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onClick={() => {
+                        if (window.confirm('Remove all current matches? This allows you to test generating a new bracket from scratch.')) {
+                          clearAllMatches();
+                        }
+                      }}
+                      title="Clear all matches to test bracket registration from scratch"
+                    >
+                      <XIcon size={14} color="#ef4444" /> Remove Current Matches
+                    </button>
+                  </div>
                 )}
               </>
             ) : (
-              <>
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('registration')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', width: '100%' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, var(--accent) 0%, #b91c1c 100%)',
+                    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.28)',
+                    border: 'none',
+                  }}
+                  onClick={() => setActiveView('registration')}
+                >
                   <PlusIcon size={15} /> Register Player
                 </button>
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('registration')}>
-                  <UsersIcon size={15} /> Register Team
+
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                  onClick={() => setActiveView('registration')}
+                >
+                  <UsersIcon size={15} color="#3b82f6" /> Register Team
                 </button>
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('officials')}>
-                  <ClipboardIcon size={15} /> Assign Scorer
+
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                  onClick={() => setActiveView('officials')}
+                >
+                  <ClipboardIcon size={15} color="#10b981" /> Assign Scorer
                 </button>
-                <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} onClick={() => setActiveView('announcements')}>
-                  <FileTextIcon size={15} /> Announcements Hub
+
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                  onClick={() => setActiveView('announcements')}
+                >
+                  <FileTextIcon size={15} color="#f59e0b" /> Post Announcement
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
