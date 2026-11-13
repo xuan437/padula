@@ -809,7 +809,7 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
 // SCORING DESK DASHBOARD
 // ─────────────────────────────────────────────────────────────
 export default function ScorekeeperDashboard() {
-  const { matches, officials, teams, departments, registerTeam, currentUser, assignMatchOfficials, registeredUsers, updateMatchScore, staff, setActiveView } = useApp();
+  const { matches, officials, currentUser, assignMatchOfficials, registeredUsers, updateMatchScore, staff, setActiveView } = useApp();
   const isOnline = useOnlineStatus();
   const [selectedSportFilter, setSelectedSportFilter] = useState('all');
 
@@ -817,48 +817,6 @@ export default function ScorekeeperDashboard() {
 
   const [assignmentModalMatch, setAssignmentModalMatch] = useState<Match | null>(null);
   const [selectedScorerName, setSelectedScorerName] = useState('');
-
-  // Quick Team Registration at Scorer Desk (automatically assigns to next open match slot)
-  const [quickTeamName, setQuickTeamName] = useState('');
-  const [quickTeamSport, setQuickTeamSport] = useState('s1');
-  const [quickTeamDept, setQuickTeamDept] = useState('d1');
-  const [slotAssignBanner, setSlotAssignBanner] = useState<string | null>(null);
-
-  const handleQuickRegisterToSlot = (e: FormEvent) => {
-    e.preventDefault();
-    const cleanName = quickTeamName.trim();
-    if (!cleanName) return;
-
-    const sportId = selectedSportFilter !== 'all' ? selectedSportFilter : quickTeamSport;
-
-    // Preview which open Round 1 slot this team will be automatically assigned to
-    const sportRound1 = matches
-      .filter(m =>
-        m.sport === sportId &&
-        (m.roundNumber === 1 || (m.round || '').toLowerCase().includes('quarter') || (m.round || '').toLowerCase().includes('16')) &&
-        m.status === 'scheduled'
-      )
-      .sort((a, b) => (a.slot ?? a.matchNumber ?? 0) - (b.slot ?? b.matchNumber ?? 0));
-
-    const openMatch = sportRound1.find(m => isPlaceholder(m.teamA) || isPlaceholder(m.teamB));
-    const targetSlotLabel = openMatch
-      ? `${openMatch.round} (Match #${openMatch.slot ?? openMatch.matchNumber ?? 1}) · Slot ${isPlaceholder(openMatch.teamA) ? 'A' : 'B'}`
-      : 'Round 1 (Match #1) · Slot A';
-
-    registerTeam({
-      name: cleanName,
-      sport: sportId,
-      department: quickTeamDept,
-      division: 'div1',
-      players: [],
-      color: '#ef4444',
-      isActive: true,
-    });
-
-    setQuickTeamName('');
-    setSlotAssignBanner(`Registered "${cleanName}" (${getSportName(sportId)}) and automatically assigned to ${targetSlotLabel}!`);
-    setTimeout(() => setSlotAssignBanner(null), 5000);
-  };
 
   // ── One offline queue for the whole dashboard ──
   const [queue, setQueue] = useState<OfflineEntry[]>(loadQueue);
@@ -961,78 +919,9 @@ export default function ScorekeeperDashboard() {
           <div className="brand-pill-tag">Official Scorekeeper Desk</div>
           <h1 className="page-title">Scorer Desk</h1>
           <p className="page-desc">
-            {`Live match scoring, bracket advancement, and automatic slot assignment for Official Scorekeeper ${currentUser?.name || 'Demo Scorekeeper'} — authorized to score every available match.`}
+            {`Live match scoring, period updates, and bracket progression for Official Scorekeeper ${currentUser?.name || 'Demo Scorekeeper'} — authorized to score every available match.`}
           </p>
         </div>
-      </div>
-
-      {/* ── Quick Register Team & Auto-Assign Slot Bar ── */}
-      <div className="glass-card" style={{ padding: '16px 20px', border: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-          <div>
-            <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Scorer Desk Registration — Automatic Bracket Slot Assignment
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              Registering a team here (or in the Registration Desk) automatically assigns it to the next open match slot (Slot A / Slot B).
-            </div>
-          </div>
-          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', padding: '4px 10px', borderRadius: '20px' }}>
-            {teams.filter(t => t.isActive !== false && (selectedSportFilter === 'all' || t.sport === selectedSportFilter)).length} Registered Teams Auto-Synced
-          </span>
-        </div>
-
-        <form onSubmit={handleQuickRegisterToSlot} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Enter Team Name (e.g. Golden Falcons)..."
-            value={quickTeamName}
-            onChange={e => setQuickTeamName(e.target.value)}
-            style={{ flex: '2 1 220px', minWidth: '180px' }}
-            required
-          />
-          {selectedSportFilter === 'all' && (
-            <select
-              className="form-input"
-              value={quickTeamSport}
-              onChange={e => setQuickTeamSport(e.target.value)}
-              style={{ flex: '1 1 160px', minWidth: '150px' }}
-            >
-              {SPORTS_CATALOG.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          )}
-          <select
-            className="form-input"
-            value={quickTeamDept}
-            onChange={e => setQuickTeamDept(e.target.value)}
-            style={{ flex: '1 1 160px', minWidth: '150px' }}
-          >
-            {departments.map(d => (
-              <option key={d.id} value={d.id}>{d.shortName} — {d.name}</option>
-            ))}
-          </select>
-          <button type="submit" className="btn btn-primary" style={{ whiteSpace: 'nowrap', fontWeight: 700 }}>
-            + Register &amp; Auto-Assign Slot
-          </button>
-        </form>
-
-        {slotAssignBanner && (
-          <div style={{
-            marginTop: '10px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            background: 'rgba(16, 185, 129, 0.14)',
-            border: '1px solid rgba(16, 185, 129, 0.35)',
-            color: '#10b981',
-            fontSize: '12.5px',
-            fontWeight: 700,
-          }}>
-            {slotAssignBanner}
-          </div>
-        )}
       </div>
 
       {/* ── Sport Filter Pills ── */}
