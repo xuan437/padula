@@ -561,13 +561,32 @@ export default function TournamentTreeBracket({
       isLive: isLiv,
     };
 
-    // Build deterministic match numbers and play sequence for every slot on the bracket
-    const r16Nums = [1, 2, 3, 4, 5, 6, 7, 8].map(s => r16Slots[s]?.matchNumber || s);
+    // Build deterministic, collision-free match numbers and play sequence for every slot on the bracket
+    const usedNums = new Set<number>();
+    const collectNum = (m?: Match) => {
+      if (m?.matchNumber && m.matchNumber > 0) usedNums.add(m.matchNumber);
+    };
+    if (hasR16) {
+      for (let s = 1; s <= 8; s++) collectNum(r16Slots[s]);
+    }
+    for (let s = 1; s <= 4; s++) collectNum(qfSlots[s]);
+    for (let s = 1; s <= 2; s++) collectNum(sfSlots[s]);
+    collectNum(finalMatch);
+
+    const allocNum = (preferred: number, m?: Match): number => {
+      if (m?.matchNumber && m.matchNumber > 0) return m.matchNumber;
+      let candidate = preferred;
+      while (usedNums.has(candidate)) candidate++;
+      usedNums.add(candidate);
+      return candidate;
+    };
+
+    const r16Nums = [1, 2, 3, 4, 5, 6, 7, 8].map(s => allocNum(s, r16Slots[s]));
     const qfBaseOffset = hasR16 ? 8 : 0;
-    const qfNums = [1, 2, 3, 4].map(s => qfSlots[s]?.matchNumber || (qfBaseOffset + s));
+    const qfNums = [1, 2, 3, 4].map(s => allocNum(qfBaseOffset + s, qfSlots[s]));
     const sfBaseOffset = hasR16 ? 12 : 4;
-    const sfNums = [1, 2].map(s => sfSlots[s]?.matchNumber || (sfBaseOffset + s));
-    const finalNum = finalMatch?.matchNumber || (hasR16 ? 15 : 7);
+    const sfNums = [1, 2].map(s => allocNum(sfBaseOffset + s, sfSlots[s]));
+    const finalNum = allocNum(hasR16 ? 15 : 7, finalMatch);
 
     // Build ordered list of bracket matches from Match #1 to Final
     const stageList: { num: number; round: string; match?: Match }[] = [];
@@ -1097,12 +1116,12 @@ export default function TournamentTreeBracket({
               gap: '10px',
               width: '100%',
             }}>
-              {treeData.orderedMatches.map(item => {
+              {treeData.orderedMatches.map((item, idx) => {
                 const isLive = item.status === 'live';
                 const isFin = item.status === 'finished';
                 return (
                   <div
-                    key={item.num}
+                    key={item.id ?? `${item.round}-${item.num}-${idx}`}
                     style={{
                       padding: '9px 12px',
                       borderRadius: '10px',
