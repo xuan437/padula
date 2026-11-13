@@ -104,7 +104,7 @@ function PerformanceChart({ currentPts }: { currentPts: number }) {
         </g>
       )}
       {/* X-axis labels */}
-      {['Pre-Season', 'Intramurals QF', 'Current Semis'].map((lbl, i) => (
+      {['Pre-Season', 'Tournament QF', 'Current Semis'].map((lbl, i) => (
         <text key={i} x={xs[i]} y={H + 14} textAnchor="middle"
           fill={C.textM} fontSize={9}>{lbl}</text>
       ))}
@@ -113,7 +113,7 @@ function PerformanceChart({ currentPts }: { currentPts: number }) {
 }
 
 // ── SVG Donut/Gauge for season points ────────────────────────────────────────
-function SeasonGauge({ total, intramurals, exhibition }: { total: number; intramurals: number; exhibition: number }) {
+function SeasonGauge({ total, tournament, exhibition }: { total: number; tournament: number; exhibition: number }) {
   const r = 48; const cx = 70; const cy = 70;
   const circ = 2 * Math.PI * r;
   const fraction = Math.min(total / 60, 1); // 60 is a rough max
@@ -137,8 +137,8 @@ function SeasonGauge({ total, intramurals, exhibition }: { total: number; intram
       </div>
       <div style={{ display: 'flex', gap: '16px', textAlign: 'center' }}>
         <div>
-          <div style={{ fontSize: '20px', fontWeight: 800, color: C.textP }}>{intramurals}</div>
-          <div style={{ fontSize: '11px', color: C.textM }}>Intramurals</div>
+          <div style={{ fontSize: '20px', fontWeight: 800, color: C.textP }}>{tournament}</div>
+          <div style={{ fontSize: '11px', color: C.textM }}>Tournament</div>
         </div>
         <div style={{ width: '1px', background: C.border }} />
         <div>
@@ -172,8 +172,8 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
   const team = teams.find(t => t.id === activePlayer.teamId);
 
   const currentSeasonGoals = activePlayer.currentSeasonGoals ?? activePlayer.intGoals ?? 0;
-  const intramuralsGoals   = activePlayer.intGoals ?? 0;
-  const exhibitionGoals    = Math.max(0, currentSeasonGoals - intramuralsGoals);
+  const tournamentGoals    = activePlayer.intGoals ?? 0;
+  const exhibitionGoals    = Math.max(0, currentSeasonGoals - tournamentGoals);
 
   const careerHistory = activePlayer.careerHistory || [];
   const matchStats = activePlayer.matchStats || [];
@@ -351,7 +351,7 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
           {/* Points in Current Season */}
           <div style={card({ display: 'flex', flexDirection: 'column', alignItems: 'center' })}>
             <div style={{ ...label(), marginBottom: '16px', textAlign: 'center', width: '100%' }}>Points in Current Season</div>
-            <SeasonGauge total={currentSeasonGoals} intramurals={intramuralsGoals} exhibition={exhibitionGoals} />
+            <SeasonGauge total={currentSeasonGoals} tournament={tournamentGoals} exhibition={exhibitionGoals} />
           </div>
 
         </div>
@@ -407,7 +407,7 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
           <div style={card()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ fontSize: '14px', fontWeight: 700, color: C.textP }}>Top Scorers Leaderboard</div>
-              <span style={{ fontSize: '11px', color: C.accent, fontWeight: 600 }}>Intramurals 2026</span>
+              <span style={{ fontSize: '11px', color: C.accent, fontWeight: 600 }}>Padula 2026</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {topScorers.length === 0 ? (

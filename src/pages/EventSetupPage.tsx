@@ -57,7 +57,7 @@ export default function EventSetupPage() {
       name: sportForm.name.trim(),
       category: sportForm.category,
       unit: sportForm.unit.trim() || 'Points',
-      rulesSummary: sportForm.rulesSummary.trim() || `${sportForm.name.trim()} Intramural Tournament Regulations`,
+      rulesSummary: sportForm.rulesSummary.trim() || `${sportForm.name.trim()} Tournament Regulations`,
       format: sportForm.format,
       iconKey: sportForm.iconKey,
     });
@@ -120,7 +120,7 @@ export default function EventSetupPage() {
 
   // Event form
   const [eventForm, setEventForm] = useState({
-    name: 'Asian College Padula Intramurals 2026',
+    name: 'Asian College Padula 2026',
     sport: 's1',
     division: 'div1',
     format: 'single_elimination' as 'single_elimination' | 'round_robin',
@@ -651,7 +651,7 @@ export default function EventSetupPage() {
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <FileTextIcon size={13} color="var(--accent)" /> Event Name
                   </label>
-                  <input className="form-input" placeholder="Asian College Padula Intramurals 2026" value={eventForm.name} onChange={e => setEventForm(p => ({ ...p, name: e.target.value }))} required />
+                  <input className="form-input" placeholder="Asian College Padula 2026" value={eventForm.name} onChange={e => setEventForm(p => ({ ...p, name: e.target.value }))} required />
                 </div>
                 <div className="form-group">
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

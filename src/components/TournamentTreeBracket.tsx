@@ -735,7 +735,7 @@ export default function TournamentTreeBracket({
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
             <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Official Padula Intramurals Bracket
+              Official Padula Tournament Bracket
             </span>
           </div>
           <h2 style={{

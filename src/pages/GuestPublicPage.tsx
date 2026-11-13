@@ -141,7 +141,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
           marginBottom: '16px',
         }}>
           <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-            Asian College Padula Intramurals
+            Asian College Padula Sports
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '6px' }}>
             {getSportName(match.sport)} · {match.round} ({formatLabel})
@@ -240,7 +240,7 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
           Asian College Athletics • Dumaguete
         </div>
         <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#0a1128', margin: '6px 0 2px' }}>
-          Padula Intramurals 2026
+          Padula 2026
         </h2>
         <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 24px' }}>
           Live Scores, Brackets, Schedules & Standings

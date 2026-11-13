@@ -20,7 +20,7 @@ import type {
 
 export const DEFAULT_SPORTS_COMPETITION: SportsCompetitionSettings = {
   eventSetup: {
-    eventName: 'Asian College Padula Intramurals 2026',
+    eventName: 'Asian College Padula 2026',
     academicYear: '2026–2027',
     seasonName: 'Season 42 · Padula Championship',
     startDate: '2026-11-10',

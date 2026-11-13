@@ -329,7 +329,7 @@ export default function BracketPage() {
     let targetEventId = targetEvent?.id;
     if (!targetEventId) {
       targetEventId = createEvent({
-        name: `Asian College Padula Intramurals 2026 — ${sportName}`,
+        name: `Asian College Padula 2026 — ${sportName}`,
         sport: currentSport,
         division: 'div1',
         format: selectedFormat,

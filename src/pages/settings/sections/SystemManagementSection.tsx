@@ -74,7 +74,7 @@ export default function SystemManagementSection({
 
   const handleTriggerArchive = () => {
     setArchiveSuccess(true);
-    addAuditLog('event_archive', `Padula Intramurals 2026 season archived into historical analytics records.`);
+    addAuditLog('event_archive', `Padula 2026 season archived into historical analytics records.`);
     setTimeout(() => setArchiveSuccess(false), 4000);
   };
 
@@ -184,7 +184,7 @@ export default function SystemManagementSection({
                 cursor: 'pointer',
               }}
             >
-              {archiveSuccess ? '✓ Season Successfully Archived' : '📦 Archive Finished Intramurals Event'}
+              {archiveSuccess ? '✓ Season Successfully Archived' : '📦 Archive Finished Tournament Event'}
             </button>
           </div>
         </div>

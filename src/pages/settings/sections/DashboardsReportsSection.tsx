@@ -172,7 +172,7 @@ export default function DashboardsReportsSection({
                 onChange={e => onChange({ ...settings, enableSeasonComparison: e.target.checked })}
                 style={{ accentColor: 'var(--accent)', width: '16px', height: '16px' }}
               />
-              <span><strong>Historical Season Trends:</strong> Compare Padula 2026 vs previous intramural records.</span>
+              <span><strong>Historical Season Trends:</strong> Compare Padula 2026 vs previous tournament records.</span>
             </label>
           </div>
         </div>

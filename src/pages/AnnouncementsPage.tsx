@@ -234,7 +234,7 @@ export default function AnnouncementsPage() {
                   value={formSport}
                   onChange={e => setFormSport(e.target.value)}
                 >
-                  <option value="all">All Sports / General Intramurals</option>
+                  <option value="all">All Sports / General Athletics</option>
                   {SPORTS_CATALOG.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}

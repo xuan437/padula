@@ -59,8 +59,8 @@ function createStaffInvitationRecord(params: {
     `Greetings from the Asian College Padula Athletics Governance Board!`,
     ``,
     params.role === 'director'
-      ? `You have been officially commissioned by the Board of Trustees and Office of the President to serve as Sports Director for the Asian College Padula Intramurals 2026.`
-      : `You have been officially registered and appointed by Sports Director ${params.sentBy} (${params.sentByEmail}) to serve as ${roleTitle} (${params.assignedSportOrDept}) for the Asian College Padula Intramurals 2026.`,
+      ? `You have been officially commissioned by the Board of Trustees and Office of the President to serve as Sports Director for the Asian College Padula 2026.`
+      : `You have been officially registered and appointed by Sports Director ${params.sentBy} (${params.sentByEmail}) to serve as ${roleTitle} (${params.assignedSportOrDept}) for the Asian College Padula 2026.`,
     ``,
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
     `OFFICIAL PORTAL LOGIN CREDENTIALS`,

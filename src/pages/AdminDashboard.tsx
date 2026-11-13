@@ -977,7 +977,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
               </h2>
             </div>
             <p style={{ margin: '0 0 18px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Verify health certificates and grant official Padula 2026 intramurals tournament eligibility.
+              Verify health certificates and grant official Padula 2026 tournament eligibility.
             </p>
 
             {pendingPlayersList.length === 0 ? (

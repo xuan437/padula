@@ -411,7 +411,7 @@ export default function PlayerDashboard() {
           </h3>
           <p style={{ fontSize: '13px', margin: '0 0 16px' }}>
             {players.length === 0
-              ? 'Get started by registering student athletes into the intramural roster.'
+              ? 'Get started by registering student athletes into the athletic roster.'
               : 'No players match your selected filters. Try clearing your search.'}
           </p>
           {canManage && (
@@ -1074,7 +1074,7 @@ export default function PlayerDashboard() {
               Remove Athlete?
             </h3>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 20px', lineHeight: 1.5 }}>
-              Are you sure you want to remove <strong>{playerToRemove.name}</strong> from the intramural roster? This will remove all associated tournament records.
+              Are you sure you want to remove <strong>{playerToRemove.name}</strong> from the athletic roster? This will remove all associated tournament records.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
               <button

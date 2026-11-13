@@ -52,7 +52,7 @@ export default function SetupWizardPage() {
   const [selectedSport, setSelectedSport] = useState<typeof SPORTS[0] | null>(SPORTS[0]);
   const [entriesValid, setEntriesValid] = useState<boolean | null>(null);
   const [eventForm, setEventForm] = useState({
-    name: 'Asian College Padula Intramurals 2026 — Basketball',
+    name: 'Asian College Padula 2026 — Basketball',
     format: 'single_elimination' as 'single_elimination' | 'round_robin',
     dates: 'Nov 10 – Nov 18, 2026',
     startDate: '2026-11-10',
@@ -104,7 +104,7 @@ export default function SetupWizardPage() {
     if (!eventId) {
       // createEvent automatically generates the bracket / round-robin schedule for this event and posts an announcement
       eventId = createEvent({
-        name: eventForm.name || `Asian College Padula Intramurals 2026 — ${selectedSport?.name || 'Basketball'}`,
+        name: eventForm.name || `Asian College Padula 2026 — ${selectedSport?.name || 'Basketball'}`,
         sport: sportId,
         division: 'div1',
         format: eventForm.format,
@@ -177,7 +177,7 @@ export default function SetupWizardPage() {
                       setSelectedSport(sport);
                       setEventForm(prev => ({
                         ...prev,
-                        name: `Asian College Padula Intramurals 2026 — ${sport.name}`,
+                        name: `Asian College Padula 2026 — ${sport.name}`,
                         rules: sport.subtitle || prev.rules,
                       }));
                     }}
@@ -228,7 +228,7 @@ export default function SetupWizardPage() {
                       setSelectedSport(sp);
                       setEventForm(prev => ({
                         ...prev,
-                        name: `Asian College Padula Intramurals 2026 — ${sp.name}`,
+                        name: `Asian College Padula 2026 — ${sp.name}`,
                         rules: sp.subtitle || prev.rules,
                       }));
                     }

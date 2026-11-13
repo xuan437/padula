@@ -1,5 +1,5 @@
 -- ==============================================================================
--- ASIAN COLLEGE PADULA INTRAMURALS — COMPLETE SUPABASE DATABASE SCHEMA & SEED
+-- ASIAN COLLEGE PADULA SPORTS — COMPLETE SUPABASE DATABASE SCHEMA & SEED
 -- Asian College Athletics, Dumaguete City
 --
 -- Instructions to run in Supabase:
@@ -657,7 +657,7 @@ INSERT INTO tournament_events (
   id, name, sport, division, category, dates, start_date, end_date, venue, status, archived
 ) VALUES
   (
-    'ev-1', 'Asian College Padula Intramurals 2026', 's1', 'div1',
+    'ev-1', 'Asian College Padula 2026', 's1', 'div1',
     'Inter-Collegiate Championship', 'Nov 10 – Nov 18, 2026', '2026-11-10', '2026-11-18',
     'Main Arena Court 1', 'published', false
   ),
