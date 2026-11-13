@@ -571,15 +571,15 @@ export default function RegistrationPage() {
               />
             </div>
             <div style={{ overflowX: 'auto', width: '100%' }}>
-              <table style={{ width: '100%', minWidth: '860px', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <table style={{ width: '100%', minWidth: '980px', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '12px 14px', minWidth: '220px', whiteSpace: 'nowrap' }}>Team Name</th>
+                    <th style={{ padding: '12px 14px', minWidth: '230px', whiteSpace: 'nowrap' }}>Team Name</th>
                     <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Department</th>
                     <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Sport</th>
-                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: '160px' }}>Scorer Desk Slot</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: '185px' }}>Scorer Desk Slot</th>
                     <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Status</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: '220px' }}>Action</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: '280px' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -675,6 +675,8 @@ export default function RegistrationPage() {
                                   alignItems: 'center',
                                   gap: 5,
                                   fontWeight: 700,
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0,
                                 }}
                                 title={`View players registered for ${t.name}`}
                               >
@@ -685,7 +687,12 @@ export default function RegistrationPage() {
                                 type="button"
                                 className="btn btn-ghost btn-sm"
                                 onClick={() => toggleTeamStatus(t.id, !isActive)}
-                                style={{ fontSize: '11.5px', color: isActive ? '#dc2626' : '#059669' }}
+                                style={{
+                                  fontSize: '11.5px',
+                                  color: isActive ? '#dc2626' : '#059669',
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0,
+                                }}
                               >
                                 {isActive ? 'Deactivate' : 'Activate'}
                               </button>
@@ -698,7 +705,13 @@ export default function RegistrationPage() {
                                     showBanner(`Team "${t.name}" deleted.`);
                                   }
                                 }}
-                                style={{ fontSize: '11.5px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)' }}
+                                style={{
+                                  fontSize: '11.5px',
+                                  color: '#ef4444',
+                                  borderColor: 'rgba(239,68,68,0.28)',
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0,
+                                }}
                               >
                                 Delete
                               </button>
