@@ -363,7 +363,7 @@ export default function GuestPublicPage() {
     const next = myTeam === teamName ? '' : teamName;
     setMyTeam(next);
     setSearchTeam(next);
-    try { localStorage.setItem('padula_my_team', next); } catch {}
+    try { localStorage.setItem('padula_my_team', next); } catch { }
   };
 
   // Update URL params when tab or filter changes
@@ -394,7 +394,7 @@ export default function GuestPublicPage() {
     const next = isDark ? 'light' : 'dark';
     setIsDark(!isDark);
     document.documentElement.setAttribute('data-theme', next);
-    try { localStorage.setItem('padula_theme', next); } catch {}
+    try { localStorage.setItem('padula_theme', next); } catch { }
   };
 
   // Canonical public URL
@@ -492,25 +492,45 @@ export default function GuestPublicPage() {
         borderBottom: '1px solid var(--border)',
       }}>
         {/* Left: Branding & Event */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', minWidth: 0, flex: '1 1 auto' }}>
+          <div style={{ minWidth: 0, width: '100%' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '6px 10px',
+              marginBottom: '8px',
+            }}>
               <span style={{
                 fontSize: '11px',
                 fontWeight: 800,
                 color: 'var(--accent)',
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.06em',
+                whiteSpace: 'nowrap',
               }}>
-                Asian College Athletics • Dumaguete
+                Asian College Athletics · Dumaguete
               </span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>•</span>
-              <span style={{ fontSize: '11px', color: isOnline ? 'var(--text-secondary)' : '#f59e0b', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: isOnline ? '#10b981' : '#f59e0b' }} />
-                {isOnline ? `Live Sync · ${lastUpdated}` : 'Offline · Cached View'}
+              <span style={{
+                fontSize: '11px',
+                color: isOnline ? '#059669' : '#d97706',
+                background: isOnline ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.12)',
+                border: isOnline ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(245, 158, 11, 0.3)',
+                borderRadius: '999px',
+                padding: '2px 8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                lineHeight: 1.25,
+              }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: isOnline ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
+                <span>{isOnline ? `Live Sync · ${lastUpdated}` : 'Offline · Cached View'}</span>
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px 14px', flexWrap: 'wrap' }}>
               <img
                 src={padulaTitleImg}
                 alt="PADULA 2026"
@@ -743,14 +763,14 @@ export default function GuestPublicPage() {
           minWidth: 0,
         }}>
           {([
-            { id: 'live',          label: 'Live',          icon: <FlameIcon size={14} />,    count: liveMatches.length },
-            { id: 'results',       label: 'Results',       icon: <TrophyIcon size={14} />,   count: finishedMatches.length },
-            { id: 'standings',     label: 'Standings',     icon: <MedalIcon size={14} />,    count: undefined },
-            { id: 'brackets',      label: 'Brackets',      icon: <BracketsIcon size={14} />, count: undefined },
-            { id: 'schedule',      label: 'Schedule',      icon: <CalendarIcon size={14} />, count: scheduledMatches.length },
-            { id: 'tally',         label: 'Medal Tally',   icon: <MedalIcon size={14} />,    count: undefined },
+            { id: 'live', label: 'Live', icon: <FlameIcon size={14} />, count: liveMatches.length },
+            { id: 'results', label: 'Results', icon: <TrophyIcon size={14} />, count: finishedMatches.length },
+            { id: 'standings', label: 'Standings', icon: <MedalIcon size={14} />, count: undefined },
+            { id: 'brackets', label: 'Brackets', icon: <BracketsIcon size={14} />, count: undefined },
+            { id: 'schedule', label: 'Schedule', icon: <CalendarIcon size={14} />, count: scheduledMatches.length },
+            { id: 'tally', label: 'Medal Tally', icon: <MedalIcon size={14} />, count: undefined },
             { id: 'announcements', label: 'Announcements', icon: <FileTextIcon size={14} />, count: announcements.length },
-            { id: 'predictions',   label: 'Predictions',   icon: <SparklesIcon size={14} />, count: undefined },
+            { id: 'predictions', label: 'Predictions', icon: <SparklesIcon size={14} />, count: undefined },
           ]).map(t => {
             const isActive = tab === t.id;
             return (
@@ -1014,7 +1034,7 @@ export default function GuestPublicPage() {
                         {m.sport === 's5' && 'Map 1 · 14m · Towers: 4–2'}
                         {m.sport === 's6' && 'Round 5 · Standard Time Control'}
                         {m.sport === 's7' && 'Judges Evaluation Scoring in Progress'}
-                        {!['s1','s2','s3','s4','s5','s6','s7'].includes(m.sport) && 'Regulation Play Active'}
+                        {!['s1', 's2', 's3', 's4', 's5', 's6', 's7'].includes(m.sport) && 'Regulation Play Active'}
                       </span>
                       <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Active</span>
                     </div>
