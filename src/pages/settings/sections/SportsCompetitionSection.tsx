@@ -269,7 +269,6 @@ export default function SportsCompetitionSection({
             </label>
             <input
               type="number"
-              placeholder="e.g. 21 or 25 (blank for clock/highest)"
               value={currentSportRule.targetScoreToWin ?? ''}
               onChange={e => handleUpdateSport('targetScoreToWin', e.target.value ? parseInt(e.target.value, 10) : undefined)}
               className="form-input"

@@ -281,7 +281,6 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
               disabled={lockoutSeconds !== null}
               value={email}
               onChange={e => { setEmail(e.target.value); setErrorMessage(''); }}
-              placeholder="jsamane@asiancollege.edu.ph"
               style={{
                 width: '100%',
                 background: lockoutSeconds !== null ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
@@ -319,7 +318,6 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
               onCopy={(e) => e.preventDefault()}
               onCut={(e) => e.preventDefault()}
               autoComplete="off"
-              placeholder={lockoutSeconds !== null ? `Locked (${lockoutSeconds}s remaining)` : "••••••••••••"}
               style={{
                 width: '100%',
                 background: lockoutSeconds !== null ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.05)',

@@ -207,7 +207,6 @@ export default function AnnouncementsPage() {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Court 1 Schedule Adjustment for Volleyball Semi-Finals"
                   value={formTitle}
                   onChange={e => setFormTitle(e.target.value)}
                   required
@@ -247,7 +246,6 @@ export default function AnnouncementsPage() {
               <textarea
                 className="form-input"
                 rows={4}
-                placeholder="Write the full announcement text, instructions, court advisories, or timeline details…"
                 value={formBody}
                 onChange={e => setFormBody(e.target.value)}
                 required
@@ -308,7 +306,6 @@ export default function AnnouncementsPage() {
             <input
               type="text"
               className="form-input"
-              placeholder="Search announcements by headline, keyword, or author…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{ paddingLeft: '32px', fontSize: '12.5px' }}

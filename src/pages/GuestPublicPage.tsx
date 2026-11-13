@@ -817,7 +817,6 @@ export default function GuestPublicPage() {
               className="form-input"
               value={searchTeam}
               onChange={e => setSearchTeam(e.target.value)}
-              placeholder="Search teams..."
               style={{
                 paddingLeft: '32px',
                 paddingRight: '26px',

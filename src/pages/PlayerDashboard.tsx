@@ -306,7 +306,6 @@ export default function PlayerDashboard() {
           <input
             type="text"
             className="form-input"
-            placeholder={isGuest ? 'Search by athlete name, jersey #, position...' : 'Search by athlete name, student ID, jersey #, position...'}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             style={{ paddingLeft: '34px', fontSize: '13px' }}
@@ -1005,7 +1004,6 @@ export default function PlayerDashboard() {
                     className="form-input"
                     value={editForm.position}
                     onChange={e => setEditForm(prev => ({ ...prev, position: e.target.value }))}
-                    placeholder="e.g. Point Guard, Libero"
                   />
                 </div>
 

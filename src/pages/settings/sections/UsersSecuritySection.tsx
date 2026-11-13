@@ -388,7 +388,6 @@ export default function UsersSecuritySection({
           <div style={{ flex: '1 1 200px' }}>
             <input
               type="text"
-              placeholder="Search user, detail, or ID…"
               value={auditSearch}
               onChange={e => setAuditSearch(e.target.value)}
               className="form-input"

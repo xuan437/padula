@@ -1316,7 +1316,6 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     type="email"
                     required
                     autoFocus
-                    placeholder="name@asiancollege.edu.ph"
                     value={customEmail}
                     onChange={e => setCustomEmail(e.target.value)}
                     style={{
@@ -1342,7 +1341,6 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     </label>
                     <input
                       type="password"
-                      placeholder={cooldownSeconds > 0 ? `Locked (${cooldownSeconds}s remaining)` : "••••••••••••"}
                       value={password}
                       disabled={cooldownSeconds > 0}
                       autoComplete="off"
@@ -1521,7 +1519,6 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Maria Santos"
                   value={reqName}
                   onChange={e => setReqName(e.target.value)}
                   style={{
@@ -1543,7 +1540,6 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                 <input
                   type="email"
                   required
-                  placeholder="name@asiancollege.edu.ph"
                   value={reqEmail}
                   onChange={e => setReqEmail(e.target.value)}
                   style={{
@@ -1618,7 +1614,6 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. Certified volleyball referee with College Athletic Club credentials"
                   value={reqNote}
                   onChange={e => setReqNote(e.target.value)}
                   style={{

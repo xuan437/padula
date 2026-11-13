@@ -272,7 +272,6 @@ export default function SchedulePage() {
             </span>
             <input
               type="text"
-              placeholder="Search team, round, venue, or scorer..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="form-input"

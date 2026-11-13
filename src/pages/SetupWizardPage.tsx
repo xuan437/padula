@@ -246,7 +246,6 @@ export default function SetupWizardPage() {
                 <label>Tournament Title</label>
                 <input
                   className="form-input"
-                  placeholder="e.g. Asian College Padula Cup 2026"
                   value={eventForm.name}
                   onChange={e => setEventForm(prev => ({ ...prev, name: e.target.value }))}
                 />
@@ -285,7 +284,6 @@ export default function SetupWizardPage() {
                 <label>Regulatory Ruleset</label>
                 <input
                   className="form-input"
-                  placeholder="e.g. Official NCAA / FIBA Standard Rules"
                   value={eventForm.rules}
                   onChange={e => setEventForm(prev => ({ ...prev, rules: e.target.value }))}
                 />

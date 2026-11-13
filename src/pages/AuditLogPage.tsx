@@ -96,7 +96,6 @@ export default function AuditLogPage() {
           </div>
           <input
             className="form-input"
-            placeholder="Search actions, users, details..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ paddingLeft: '34px', fontSize: '13px' }}

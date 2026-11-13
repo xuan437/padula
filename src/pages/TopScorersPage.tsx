@@ -82,7 +82,6 @@ export default function TopScorersPage() {
           <input
             type="text"
             className="form-input"
-            placeholder="Search scoring leader by athlete name or team..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ paddingLeft: '34px', fontSize: '13px' }}

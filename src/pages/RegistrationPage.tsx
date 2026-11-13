@@ -520,7 +520,6 @@ export default function RegistrationPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Enter team name"
                   value={teamForm.name}
                   onChange={e => setTeamForm(p => ({ ...p, name: e.target.value }))}
                   className="form-input"
@@ -563,7 +562,6 @@ export default function RegistrationPage() {
               <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0 }}>Registered Teams ({teams.length})</h3>
               <input
                 type="text"
-                placeholder="Search teams…"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="form-input"
@@ -893,7 +891,6 @@ export default function RegistrationPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Maria Clara Santos"
                     value={playerForm.name}
                     onChange={e => setPlayerForm(p => ({ ...p, name: e.target.value }))}
                     className="form-input"
@@ -910,7 +907,6 @@ export default function RegistrationPage() {
                   <input
                     type="text"
                     required
-                    placeholder="2024-101"
                     value={playerForm.studentId}
                     onChange={e => setPlayerForm(p => ({ ...p, studentId: e.target.value }))}
                     className="form-input"
@@ -926,7 +922,6 @@ export default function RegistrationPage() {
                   </label>
                   <input
                     type="email"
-                    placeholder="player@asiancollege.edu.ph"
                     value={playerForm.email}
                     onChange={e => setPlayerForm(p => ({ ...p, email: e.target.value }))}
                     className="form-input"
@@ -1076,7 +1071,6 @@ export default function RegistrationPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="10"
                     value={playerForm.jerseyNumber}
                     onChange={e => setPlayerForm(p => ({ ...p, jerseyNumber: e.target.value }))}
                     className="form-input"
@@ -1100,7 +1094,6 @@ export default function RegistrationPage() {
                   <input
                     type="text"
                     list="player-reg-positions-list"
-                    placeholder={sportPresetPositions[0] || 'e.g. Point Guard / Carry'}
                     value={playerForm.position}
                     onChange={e => setPlayerForm(p => ({ ...p, position: e.target.value }))}
                     className="form-input"
@@ -1251,7 +1244,6 @@ export default function RegistrationPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   type="text"
-                  placeholder="Search athlete or ID…"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="form-input"
@@ -1483,7 +1475,6 @@ export default function RegistrationPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Prof. Marcus Aurelio"
                     value={officialForm.name}
                     onChange={e => setOfficialForm(p => ({ ...p, name: e.target.value }))}
                     className="form-input"
@@ -1508,7 +1499,6 @@ export default function RegistrationPage() {
                   <label className="form-label">Affiliation / Organization</label>
                   <input
                     type="text"
-                    placeholder="e.g. Athletic Board"
                     value={officialForm.affiliation}
                     onChange={e => setOfficialForm(p => ({ ...p, affiliation: e.target.value }))}
                     className="form-input"
@@ -1519,7 +1509,6 @@ export default function RegistrationPage() {
                   <label className="form-label">License / Accreditation ID</label>
                   <input
                     type="text"
-                    placeholder="e.g. PAD-REF-05"
                     value={officialForm.licenseId}
                     onChange={e => setOfficialForm(p => ({ ...p, licenseId: e.target.value }))}
                     className="form-input"
@@ -1533,7 +1522,6 @@ export default function RegistrationPage() {
                   <input
                     type={role === 'scorekeeper' ? 'text' : 'email'}
                     required={role === 'scorekeeper'}
-                    placeholder={role === 'scorekeeper' ? 'e.g. s.chen@asiancollege.edu.ph or sam.chen' : 'name@asiancollege.edu.ph'}
                     value={officialForm.contact}
                     onChange={e => setOfficialForm(p => ({ ...p, contact: e.target.value }))}
                     className="form-input"
@@ -1552,7 +1540,6 @@ export default function RegistrationPage() {
                 <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0 }}>Registered {roleLabel}s ({filteredOfficials.length})</h3>
                 <input
                   type="text"
-                  placeholder={`Search ${role}…`}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="form-input"
@@ -1744,7 +1731,6 @@ export default function RegistrationPage() {
                   type="text"
                   required
                   disabled={coordinatorLimitReached}
-                  placeholder="e.g. Jordan Lee"
                   value={coordForm.name}
                   onChange={e => setCoordForm(p => ({ ...p, name: e.target.value }))}
                   className="form-input"
@@ -1757,7 +1743,6 @@ export default function RegistrationPage() {
                   type="email"
                   required
                   disabled={coordinatorLimitReached}
-                  placeholder="j.lee@asiancollege.edu.ph"
                   value={coordForm.email}
                   onChange={e => setCoordForm(p => ({ ...p, email: e.target.value }))}
                   className="form-input"
@@ -2122,7 +2107,6 @@ export default function RegistrationPage() {
                       type="email"
                       value={effectiveTargetEmail}
                       onChange={(e) => setApiTargetEmailOverride(e.target.value)}
-                      placeholder="e.g. coordinator@asiancollege.edu.ph"
                       style={{
                         width: '100%',
                         padding: '7px 12px',
@@ -2685,7 +2669,6 @@ export default function RegistrationPage() {
                       className="form-input"
                       value={editAthleteForm.position}
                       onChange={e => setEditAthleteForm(prev => ({ ...prev, position: e.target.value }))}
-                      placeholder="e.g. Point Guard, Carry"
                       style={{ height: '40px', borderRadius: '8px' }}
                     />
                     <datalist id="edit-athlete-positions-list">

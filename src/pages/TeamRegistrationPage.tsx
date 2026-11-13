@@ -190,7 +190,7 @@ export default function TeamRegistrationPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
                   <label>Team Name *</label>
-                  <input className="form-input" placeholder="e.g. BAA Eagles" value={teamForm.name} onChange={e => setTeamForm(p => ({ ...p, name: e.target.value }))} required />
+                  <input className="form-input" value={teamForm.name} onChange={e => setTeamForm(p => ({ ...p, name: e.target.value }))} required />
                 </div>
                 <div className="form-group">
                   <label>Sport *</label>
@@ -214,7 +214,7 @@ export default function TeamRegistrationPage() {
                 </div>
                 <div className="form-group">
                   <label>Head Coach</label>
-                  <input className="form-input" placeholder="Coach name" value={teamForm.coach} onChange={e => setTeamForm(p => ({ ...p, coach: e.target.value }))} />
+                  <input className="form-input" value={teamForm.coach} onChange={e => setTeamForm(p => ({ ...p, coach: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label>Team Color</label>
@@ -277,11 +277,11 @@ export default function TeamRegistrationPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
                   <label>Full Name *</label>
-                  <input className="form-input" placeholder="Juan Dela Cruz" value={playerForm.name} onChange={e => setPlayerForm(p => ({ ...p, name: e.target.value }))} required />
+                  <input className="form-input" value={playerForm.name} onChange={e => setPlayerForm(p => ({ ...p, name: e.target.value }))} required />
                 </div>
                 <div className="form-group">
                   <label>Student ID *</label>
-                  <input className="form-input" placeholder="2024-00001" value={playerForm.studentId} onChange={e => setPlayerForm(p => ({ ...p, studentId: e.target.value }))} required />
+                  <input className="form-input" value={playerForm.studentId} onChange={e => setPlayerForm(p => ({ ...p, studentId: e.target.value }))} required />
                 </div>
                 <div className="form-group">
                   <label>Department *</label>
@@ -305,7 +305,7 @@ export default function TeamRegistrationPage() {
                 </div>
                 <div className="form-group">
                   <label>Jersey Number</label>
-                  <input className="form-input" placeholder="10" value={playerForm.jerseyNumber} onChange={e => setPlayerForm(p => ({ ...p, jerseyNumber: e.target.value }))} />
+                  <input className="form-input" value={playerForm.jerseyNumber} onChange={e => setPlayerForm(p => ({ ...p, jerseyNumber: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label>Position</label>
@@ -318,14 +318,13 @@ export default function TeamRegistrationPage() {
                 </div>
                 <div className="form-group">
                   <label>GWA (Eligibility)</label>
-                  <input className="form-input" type="number" step="0.01" min="1" max="5" placeholder="1.75" value={playerForm.gwa} onChange={e => setPlayerForm(p => ({ ...p, gwa: e.target.value }))} />
+                  <input className="form-input" type="number" step="0.01" min="1" max="5" value={playerForm.gwa} onChange={e => setPlayerForm(p => ({ ...p, gwa: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label>Gmail Address</label>
                   <input
                     className="form-input"
                     type="email"
-                    placeholder="athlete@gmail.com or @asiancollege.edu.ph"
                     value={playerForm.email}
                     onChange={e => setPlayerForm(p => ({ ...p, email: e.target.value }))}
                   />

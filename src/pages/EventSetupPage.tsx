@@ -276,7 +276,6 @@ export default function EventSetupPage() {
                 <label>Sport / Esport Name *</label>
                 <input
                   className="form-input"
-                  placeholder="e.g. Swimming, Taekwondo, Mobile Legends..."
                   value={sportForm.name}
                   onChange={e => setSportForm(p => ({ ...p, name: e.target.value }))}
                   required
@@ -314,7 +313,6 @@ export default function EventSetupPage() {
                 <label>Scoring Metric (Unit) *</label>
                 <input
                   className="form-input"
-                  placeholder="e.g. Points, Goals, Sets, Games, Wins"
                   value={sportForm.unit}
                   onChange={e => setSportForm(p => ({ ...p, unit: e.target.value }))}
                   required
@@ -350,7 +348,6 @@ export default function EventSetupPage() {
                 <label>Rules &amp; Match Scoring Summary</label>
                 <input
                   className="form-input"
-                  placeholder="e.g. Sets to 25, best of 3; finals best of 5"
                   value={sportForm.rulesSummary}
                   onChange={e => setSportForm(p => ({ ...p, rulesSummary: e.target.value }))}
                 />
@@ -452,7 +449,7 @@ export default function EventSetupPage() {
             <form onSubmit={handleAddDiv} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'end' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Division Name</label>
-                <input className="form-input" placeholder="e.g. Men's Varsity" value={divForm.name} onChange={e => setDivForm(p => ({ ...p, name: e.target.value }))} required />
+                <input className="form-input" value={divForm.name} onChange={e => setDivForm(p => ({ ...p, name: e.target.value }))} required />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Sport</label>
@@ -503,11 +500,11 @@ export default function EventSetupPage() {
             <form onSubmit={handleAddVenue} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'end' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Venue Name</label>
-                <input className="form-input" placeholder="e.g. Main Arena Court 3" value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))} required />
+                <input className="form-input" value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))} required />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Capacity</label>
-                <input className="form-input" type="number" placeholder="300" value={venueForm.capacity} onChange={e => setVenueForm(p => ({ ...p, capacity: e.target.value }))} />
+                <input className="form-input" type="number" value={venueForm.capacity} onChange={e => setVenueForm(p => ({ ...p, capacity: e.target.value }))} />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Location</label>
@@ -533,7 +530,6 @@ export default function EventSetupPage() {
                   <input
                     className="form-input"
                     style={{ marginTop: '8px' }}
-                    placeholder="e.g. Main Gymnasium"
                     value={venueForm.location}
                     onChange={e => setVenueForm(p => ({ ...p, location: e.target.value }))}
                     required
@@ -589,11 +585,11 @@ export default function EventSetupPage() {
             <form onSubmit={handleAddDept} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'end' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Full Name</label>
-                <input className="form-input" placeholder="e.g. College of Nursing" value={deptForm.name} onChange={e => setDeptForm(p => ({ ...p, name: e.target.value }))} required />
+                <input className="form-input" value={deptForm.name} onChange={e => setDeptForm(p => ({ ...p, name: e.target.value }))} required />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Short Name</label>
-                <input className="form-input" placeholder="CON" value={deptForm.shortName} onChange={e => setDeptForm(p => ({ ...p, shortName: e.target.value }))} />
+                <input className="form-input" value={deptForm.shortName} onChange={e => setDeptForm(p => ({ ...p, shortName: e.target.value }))} />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Color</label>
@@ -651,13 +647,13 @@ export default function EventSetupPage() {
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <FileTextIcon size={13} color="var(--accent)" /> Event Name
                   </label>
-                  <input className="form-input" placeholder="Asian College Padula 2026" value={eventForm.name} onChange={e => setEventForm(p => ({ ...p, name: e.target.value }))} required />
+                  <input className="form-input" value={eventForm.name} onChange={e => setEventForm(p => ({ ...p, name: e.target.value }))} required />
                 </div>
                 <div className="form-group">
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <AwardIcon size={13} color="var(--accent)" /> Category Label
                   </label>
-                  <input className="form-input" placeholder="e.g. Men's Varsity Basketball" value={eventForm.category} onChange={e => setEventForm(p => ({ ...p, category: e.target.value }))} />
+                  <input className="form-input" value={eventForm.category} onChange={e => setEventForm(p => ({ ...p, category: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

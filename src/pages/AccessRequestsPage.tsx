@@ -476,7 +476,6 @@ export default function AccessRequestsPage() {
           </span>
           <input
             type="text"
-            placeholder="Search by name, email, sport..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="form-input"
@@ -1028,7 +1027,6 @@ export default function AccessRequestsPage() {
             </p>
 
             <textarea
-              placeholder="Reason for declining (optional)..."
               value={declineReason}
               onChange={e => setDeclineReason(e.target.value)}
               className="form-input"

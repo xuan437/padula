@@ -297,7 +297,6 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
             </span>
             <input
               type="text"
-              placeholder="Search team or athlete…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{
