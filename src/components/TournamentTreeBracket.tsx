@@ -1093,7 +1093,7 @@ export default function TournamentTreeBracket({
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(275px, 1fr))',
               gap: '10px',
               width: '100%',
             }}>
@@ -1142,7 +1142,7 @@ export default function TournamentTreeBracket({
                         <span style={{
                           fontSize: '11.5px',
                           fontWeight: 900,
-                          color: isLive ? '#ef4444' : item.isNextUp ? '#38bdf8' : isFin ? '#10b981' : 'var(--accent)',
+                          color: isLive ? '#ef4444' : item.isNextUp ? '#0284c7' : isFin ? '#10b981' : 'var(--accent)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1187,16 +1187,16 @@ export default function TournamentTreeBracket({
                       color: 'var(--text-primary)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '4px',
+                      minWidth: 0,
                     }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.teamA}</span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{item.teamA}</span>
                       <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '11px', flexShrink: 0 }}>vs</span>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.teamB}</span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{item.teamB}</span>
                       {(isLive || isFin) && item.scoreA !== undefined && item.scoreB !== undefined && (
-                        <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontWeight: 800, flexShrink: 0 }}>
+                        <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontWeight: 800, flexShrink: 0, whiteSpace: 'nowrap' }}>
                           ({item.scoreA}–{item.scoreB})
                         </span>
                       )}
