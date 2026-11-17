@@ -240,7 +240,7 @@ export const INITIAL_DEPARTMENTS: Department[] = [
 ];
 
 export const INITIAL_VENUES: Venue[] = [
-  { id: 'v1', name: 'Main Arena Court 1', capacity: 800, location: 'Gymnasium Building A', sports: ['s1', 's2'] },
+  { id: 'v1', name: 'Main Arena Court 1', capacity: 800, location: 'Gymnasium Building A', sports: ['s1', 's2', 's_futsal'] },
   { id: 'v2', name: 'Main Arena Court 2', capacity: 400, location: 'Gymnasium Building A', sports: ['s1', 's2', 's3', 's_sepaktakraw'] },
   { id: 'v3', name: 'Student Center Hall', capacity: 200, location: 'Student Center 2F', sports: ['s4', 's8', 's_scrabble'] },
   { id: 'v4', name: 'Esports Arena Lab 1', capacity: 120, location: 'IT Building 3F', sports: ['s5', 's6', 's7'] },
@@ -259,6 +259,7 @@ export const INITIAL_DIVISIONS: Division[] = [
   { id: 'div9', name: 'Open Division',      sportId: 's7' },
   { id: 'div10', name: 'Open Division',     sportId: 's8' },
   { id: 'div11', name: 'Open Division',     sportId: 's_football' },
+  { id: 'div15', name: 'Open Division',     sportId: 's_futsal' },
   { id: 'div12', name: 'Open Division',     sportId: 's_sepaktakraw' },
   { id: 'div13', name: 'Open Division',     sportId: 's_frisbee' },
   { id: 'div14', name: 'Open Division',     sportId: 's_scrabble' },

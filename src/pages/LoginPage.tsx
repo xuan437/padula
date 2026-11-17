@@ -1595,6 +1595,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     <option value="Basketball">Basketball</option>
                     <option value="Volleyball">Volleyball</option>
                     <option value="Football">Football</option>
+                    <option value="Futsal">Futsal</option>
                     <option value="Badminton">Badminton</option>
                     <option value="Table Tennis">Table Tennis</option>
                     <option value="Sepak Takraw">Sepak Takraw</option>

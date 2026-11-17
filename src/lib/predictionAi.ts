@@ -105,6 +105,8 @@ const SPORT_SCORING_BASELINES: Record<string, { baseScore: number; variance: num
   s5: { baseScore: 16, variance: 6,  pythExp: 2.5 },   // Esports
   s6: { baseScore: 2,  variance: 1,  pythExp: 2.0 },   // Chess
   s7: { baseScore: 3,  variance: 1.5, pythExp: 1.8 },  // Football / Futsal / Dancesport
+  s_football: { baseScore: 3, variance: 1.5, pythExp: 1.8 }, // Football
+  s_futsal: { baseScore: 4, variance: 2.0, pythExp: 2.0 },   // Futsal
   s8: { baseScore: 21, variance: 5,  pythExp: 3.5 },   // Sepak Takraw
   s9: { baseScore: 13, variance: 3,  pythExp: 2.8 },   // Frisbee
   s10: { baseScore: 380, variance: 60, pythExp: 6.0 }, // Scrabble

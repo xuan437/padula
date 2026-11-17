@@ -17,6 +17,7 @@ const ALL_SPORTS: { id: SportId; name: string; category: string }[] = [
   { id: 'basketball', name: 'Basketball', category: 'Team Sport' },
   { id: 'volleyball', name: 'Volleyball', category: 'Team Sport' },
   { id: 'football', name: 'Football', category: 'Team Sport' },
+  { id: 'futsal', name: 'Futsal', category: 'Team Sport' },
   { id: 'sepaktakraw', name: 'Sepak Takraw', category: 'Team Sport' },
   { id: 'tabletennis', name: 'Table Tennis', category: 'Individual Sport' },
   { id: 'badminton', name: 'Badminton', category: 'Individual Sport' },

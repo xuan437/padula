@@ -15,6 +15,7 @@ const AVAILABLE_SPORTS: { id: SportId; name: string }[] = [
   { id: 'basketball', name: 'Basketball' },
   { id: 'volleyball', name: 'Volleyball' },
   { id: 'football', name: 'Football' },
+  { id: 'futsal', name: 'Futsal' },
   { id: 'sepaktakraw', name: 'Sepak Takraw' },
   { id: 'tabletennis', name: 'Table Tennis' },
   { id: 'badminton', name: 'Badminton' },

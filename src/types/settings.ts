@@ -14,6 +14,7 @@ export type SportId =
   | 'basketball'
   | 'volleyball'
   | 'football'
+  | 'futsal'
   | 'sepaktakraw'
   | 'tabletennis'
   | 'badminton'

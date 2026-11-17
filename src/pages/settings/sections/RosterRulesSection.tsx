@@ -15,6 +15,7 @@ const SPORT_NAMES: Record<SportId, string> = {
   basketball: 'Basketball',
   volleyball: 'Volleyball',
   football: 'Football',
+  futsal: 'Futsal',
   sepaktakraw: 'Sepak Takraw',
   tabletennis: 'Table Tennis',
   badminton: 'Badminton',

@@ -22,6 +22,7 @@ const POSITIONS_BY_SPORT: Record<string, string[]> = {
   Basketball: ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'],
   Volleyball: ['Setter', 'Outside Hitter', 'Middle Blocker', 'Libero', 'Opposite Hitter'],
   Football: ['Goalkeeper', 'Defender', 'Midfielder', 'Forward', 'Striker'],
+  Futsal: ['Goalkeeper', 'Fixo (Defender)', 'Ala (Winger)', 'Pivot (Forward)', 'Universal'],
   'Sepak Takraw': ['Tekong (Server)', 'Killer (Spiker)', 'Feeder (Setter)'],
   Badminton: ['Singles Specialist', 'Doubles Front', 'Doubles Back'],
   'Table Tennis': ['Offensive Attacker', 'Defensive Chopper', 'All-Rounder'],

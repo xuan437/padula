@@ -70,6 +70,18 @@ export const SPORTS_CATALOG: SportMeta[] = [
     icon: (c, s = 18) => <FootballIcon size={s} color={c} />,
   },
   {
+    id: 's_futsal',
+    name: 'Futsal',
+    category: 'team',
+    unit: 'Goals',
+    rulesSummary: '5v5 indoor goals, 2 halves of 20 min; penalty shootout for ties',
+    format: 'Single elimination',
+    divisions: ["Men's Division", "Women's Open"],
+    scoringType: 'goals',
+    periodsDescription: '2 Halves (20 min each) + Penalty Shootout',
+    icon: (c, s = 18) => <FootballIcon size={s} color={c} />,
+  },
+  {
     id: 's_sepaktakraw',
     name: 'Sepak Takraw',
     category: 'team',
@@ -183,7 +195,8 @@ export function getIconByKey(key?: string, size = 18, color?: string): React.Rea
   switch ((key || '').toLowerCase()) {
     case 'basketball': return <BasketballIcon size={size} color={color} />;
     case 'volleyball': return <VolleyballIcon size={size} color={color} />;
-    case 'football': return <FootballIcon size={size} color={color} />;
+    case 'football':
+    case 'futsal': return <FootballIcon size={size} color={color} />;
     case 'sepaktakraw': return <SepakTakrawIcon size={size} color={color} />;
     case 'tabletennis': return <TableTennisIcon size={size} color={color} />;
     case 'badminton': return <ShuttlecockIcon size={size} color={color} />;
@@ -306,6 +319,7 @@ export function getSportName(sportIdOrName: string): string {
   if (match) return match.name;
   if (sportIdOrName.toLowerCase().includes('dota')) return 'DOTA 2';
   if (sportIdOrName.toLowerCase().includes('valorant')) return 'Valorant';
+  if (sportIdOrName.toLowerCase().includes('futsal') || sportIdOrName.toLowerCase().includes('footsal')) return 'Futsal';
   if (sportIdOrName.toLowerCase().includes('football') || sportIdOrName.toLowerCase().includes('soccer')) return 'Football';
   if (sportIdOrName.toLowerCase().includes('takraw')) return 'Sepak Takraw';
   if (sportIdOrName.toLowerCase().includes('frisbee')) return 'Frisbee (Ultimate)';

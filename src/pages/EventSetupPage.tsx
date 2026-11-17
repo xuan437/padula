@@ -330,6 +330,7 @@ export default function EventSetupPage() {
                   <option value="basketball">Basketball</option>
                   <option value="volleyball">Volleyball</option>
                   <option value="football">Football / Soccer</option>
+                  <option value="futsal">Futsal</option>
                   <option value="sepaktakraw">Sepak Takraw</option>
                   <option value="tabletennis">Table Tennis</option>
                   <option value="badminton">Badminton</option>
@@ -380,7 +381,7 @@ export default function EventSetupPage() {
 
             <div className="sports-grid">
               {allSports.map(sport => {
-                const isCustom = !['s1', 's2', 's_football', 's_sepaktakraw', 's4', 's3', 's_frisbee', 's8', 's_scrabble', 's5', 's6', 's7'].includes(sport.id);
+                const isCustom = !['s1', 's2', 's_football', 's_futsal', 's_sepaktakraw', 's4', 's3', 's_frisbee', 's8', 's_scrabble', 's5', 's6', 's7'].includes(sport.id);
                 return (
                   <div key={sport.id} className={`sport-tile ${sport.category === 'esport' ? 'esport' : ''}`} style={{ cursor: 'default', position: 'relative' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
