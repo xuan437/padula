@@ -18,7 +18,7 @@ export default function EventSetupPage() {
     addDepartment, removeDepartment,
     addDivision, removeDivision,
     addVenue, removeVenue,
-    createEvent, publishEvent, archiveEvent, deleteEvent, updateEvent, deleteBracket,
+    createEvent, publishEvent, startEvent, archiveEvent, deleteEvent, updateEvent, deleteBracket,
     setActiveView, currentUser,
   } = useApp();
 
@@ -952,6 +952,17 @@ export default function EventSetupPage() {
                         onClick={() => setActiveView('bracket')}>
                         View Bracket ↗
                       </button>
+                      {(ev.status === 'draft' || ev.status === 'published') && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-success"
+                          onClick={() => startEvent(ev.id)}
+                          style={{ borderRadius: '8px', fontWeight: 700 }}
+                          title={`Start ${ev.name} now and set status to Ongoing`}
+                        >
+                          ▶ Start Event
+                        </button>
+                      )}
                       {ev.status === 'draft' && (
                         <button type="button" className="btn btn-sm btn-primary" onClick={() => publishEvent(ev.id)} style={{ borderRadius: '8px' }}>Publish</button>
                       )}

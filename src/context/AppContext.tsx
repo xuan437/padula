@@ -202,6 +202,7 @@ interface AppContextType {
   createEvent: (event: Omit<TournamentEvent, 'id' | 'bracket'>) => string;
   updateEvent: (id: string, updates: Partial<TournamentEvent>) => void;
   publishEvent: (id: string) => void;
+  startEvent: (id: string) => void;
   archiveEvent: (id: string) => void;
   deleteEvent: (id: string) => void;
   deleteBracket: (eventIdOrSport: string) => void;
@@ -2988,6 +2989,43 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     supabase.from('tournament_events').update({ status: 'published' }).eq('id', id).then();
   }, [addAuditLog]);
 
+  const startEvent = useCallback((id: string) => {
+    const target = eventsRef.current.find(e => e.id === id) || events.find(e => e.id === id);
+    if (!target) return;
+
+    eventsRef.current = eventsRef.current.map(e =>
+      e.id === id ? { ...e, status: 'ongoing', archived: false } : e
+    );
+    setEvents(prev => prev.map(e =>
+      e.id === id ? { ...e, status: 'ongoing', archived: false } : e
+    ));
+    addAuditLog('event_update', `Started event: ${target.name} (${getSportName(target.sport)})`, id, 'TournamentEvent');
+
+    supabase.from('tournament_events').update({ status: 'ongoing', archived: false }).eq('id', id).then();
+
+    // Ensure bracket matches exist for this event if none have been generated yet
+    const existingMatches = matches.filter(m => m.eventId === id || m.sport === target.sport);
+    if (existingMatches.length === 0) {
+      const allTeams = teamsRef.current.length > 0 ? teamsRef.current : teams;
+      const sportTeamIds = allTeams
+        .filter(t => t.isActive !== false && t.sport === target.sport)
+        .map(t => t.id);
+      if (sportTeamIds.length >= 2) {
+        generateBracket(id, sportTeamIds, false, target.format || 'single_elimination');
+      }
+    }
+
+    // Publish an official announcement that the event is now underway
+    postAnnouncement({
+      title: `Event Started: ${target.name} (${getSportName(target.sport)})`,
+      body: `${target.name} is now LIVE and underway at ${target.venue || 'Main Arena'}. Follow live scores and brackets on the Public Portal.`,
+      priority: 'urgent',
+      createdBy: currentUser?.name || 'Sports Director',
+      eventId: id,
+      sport: target.sport,
+    });
+  }, [events, matches, teams, currentUser, addAuditLog, generateBracket, postAnnouncement]);
+
   const archiveEvent = useCallback((id: string) => {
     const archivedAt = new Date().toISOString();
     setEvents(prev => prev.map(e =>
@@ -3501,7 +3539,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       registerOfficial, assignMatchOfficials,
       updateMatchScore, submitMatchScore, finalizeMatchScore, correctMatchScore,
       startMatch, finishMatch, advanceTeamToBracketSlot, reopenMatch,
-      createEvent, updateEvent, publishEvent, archiveEvent, deleteEvent, deleteBracket, generateBracket,
+      createEvent, updateEvent, publishEvent, startEvent, archiveEvent, deleteEvent, deleteBracket, generateBracket,
       registerTeam, registerPlayer, updatePlayer, removePlayer,
       addDepartment, removeDepartment,
       addDivision, removeDivision,
