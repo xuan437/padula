@@ -628,93 +628,132 @@ export default function PlayerDashboard() {
         /* ── CARD VIEW ── */
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
           gap: '16px',
         }}>
           {filteredPlayers.map(p => {
             const team = teams.find(t => t.id === p.teamId);
             const dept = departments.find(d => d.id === p.department || d.shortName?.toUpperCase() === p.department?.toUpperCase() || d.name?.toLowerCase() === p.department?.toLowerCase());
+            const deptColor = dept?.color || '#0f2d5c';
             const points = p.currentSeasonGoals ?? p.intGoals ?? 0;
+            const matchesCount = p.intMatches ?? p.matchStats?.length ?? 0;
+            const initials = p.name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'A';
 
             return (
               <div
                 key={p.id}
                 className="glass-card"
                 style={{
-                  padding: '18px',
+                  padding: 0,
+                  borderRadius: '8px',
+                  overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  gap: '12px',
                   cursor: 'pointer',
-                  transition: 'all var(--transition)',
+                  border: '1px solid var(--border)',
+                  transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.borderColor = deptColor;
+                  e.currentTarget.style.boxShadow = `0 10px 24px -6px ${deptColor}30`;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.boxShadow = '';
                 }}
                 onClick={() => setActiveProfilePlayer(p)}
               >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                {/* Top Department Color Accent Strip */}
+                <div style={{ height: '4px', width: '100%', background: deptColor }} />
+
+                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+                  {/* Top Badges Row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{
-                        background: 'var(--accent)',
-                        color: '#fff',
+                        background: '#0f2d5c',
+                        color: '#ffffff',
+                        border: '1px solid rgba(56, 189, 248, 0.45)',
                         fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '2px 7px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
                         borderRadius: '4px',
+                        fontFamily: 'monospace',
                       }}>
-                        #{p.jerseyNumber}
+                        #{p.jerseyNumber || '00'}
                       </span>
                       <span style={{
                         fontSize: '11px',
-                        fontWeight: 600,
-                        padding: '2px 7px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
                         borderRadius: '4px',
-                        background: `${dept?.color || '#3b82f6'}18`,
-                        color: dept?.color || 'var(--accent)',
+                        background: `${deptColor}1a`,
+                        color: deptColor,
+                        border: `1px solid ${deptColor}40`,
                       }}>
                         {dept?.shortName || 'ATH'}
                       </span>
                     </div>
 
-
-                    <span className={`status-badge ${p.medicalCleared ? 'live' : 'scheduled'}`} style={{ fontSize: '10px' }}>
-                      {p.medicalCleared ? 'Eligible' : 'Pending'}
+                    <span style={{
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      background: p.medicalCleared ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
+                      color: p.medicalCleared ? '#10b981' : '#f59e0b',
+                      border: p.medicalCleared ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)',
+                    }}>
+                      {p.medicalCleared ? '✓ Eligible' : 'Pending'}
                     </span>
                   </div>
 
-
+                  {/* Athlete Identity */}
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <div style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '50%',
-                      background: 'var(--bg-elevated)',
-                      border: '2px solid var(--accent)',
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '8px',
+                      background: `linear-gradient(135deg, ${deptColor}28 0%, var(--bg-elevated) 100%)`,
+                      border: `1.5px solid ${deptColor}80`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '18px',
-                      fontWeight: 800,
+                      fontSize: '16px',
+                      fontWeight: 900,
                       color: 'var(--text-primary)',
                       flexShrink: 0,
+                      letterSpacing: '0.02em',
                     }}>
-                      {p.name[0]}
+                      {initials}
                     </div>
 
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{
+                        fontSize: '15px',
+                        fontWeight: 800,
+                        color: 'var(--text-primary)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}>
                         {p.name}
                       </div>
 
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600, marginTop: '1px' }}>
                         {p.position || 'Athlete'} · {getSportName(p.sport)}
                       </div>
 
                       <div
                         style={{
-                          fontSize: '11.5px',
-                          color: dept?.color || 'var(--text-muted)',
-                          fontWeight: 600,
+                          fontSize: '11px',
+                          color: deptColor,
+                          fontWeight: 700,
                           marginTop: '2px',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -725,49 +764,71 @@ export default function PlayerDashboard() {
                         {dept ? `${dept.shortName} · ${dept.name}` : (p.department || 'Department Unassigned')}
                       </div>
                     </div>
-
                   </div>
 
-                </div>
-
-
-                <div style={{
-                  borderTop: '1px solid var(--border)',
-                  paddingTop: '10px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '12px',
-                  color: 'var(--text-secondary)',
-                }}>
-                  <span>Team: <strong>{team?.name || 'Unassigned'}</strong></span>
-                  <span>Pts: <strong style={{ color: 'var(--accent)' }}>{points}</strong></span>
-                </div>
-
-
-                {canManage && (
-                  <div
-                    style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', paddingTop: '4px' }}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <button
-                      className="btn btn-sm btn-ghost"
-                      onClick={() => handleOpenEdit(p)}
-                      style={{ fontSize: '11.5px', padding: '3px 8px' }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-ghost"
-                      onClick={() => setPlayerToRemove(p)}
-                      style={{ fontSize: '11.5px', padding: '3px 8px', color: '#ef4444' }}
-                    >
-                      Remove
-                    </button>
+                  {/* Mini Stat Strip */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.6fr 0.7fr 0.7fr',
+                    gap: '8px',
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '6px',
+                    padding: '8px 10px',
+                    marginTop: 'auto',
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '9.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Team</div>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {team?.name || 'Unassigned'}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-light)', paddingLeft: '6px' }}>
+                      <div style={{ fontSize: '9.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Games</div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-primary)' }}>{matchesCount}</div>
+                    </div>
+                    <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-light)', paddingLeft: '6px' }}>
+                      <div style={{ fontSize: '9.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pts</div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--accent)' }}>{points}</div>
+                    </div>
                   </div>
 
-                )}
+                  {/* Card Footer */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '6px',
+                    borderTop: '1px solid var(--border-light)',
+                    fontSize: '11px',
+                  }}>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>ID: {p.studentId}</span>
+                    {canManage ? (
+                      <div
+                        style={{ display: 'flex', gap: '6px' }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => handleOpenEdit(p)}
+                          style={{ fontSize: '11px', padding: '3px 9px' }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => setPlayerToRemove(p)}
+                          style={{ fontSize: '11px', padding: '3px 9px', color: '#ef4444' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--accent)', fontWeight: 700 }}>View Profile ↗</span>
+                    )}
+                  </div>
+                </div>
               </div>
-
             );
           })}
         </div>
