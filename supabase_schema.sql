@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS matches (
   team_b TEXT NOT NULL,
   score_a INT DEFAULT 0,
   score_b INT DEFAULT 0,
-  status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'live', 'finished', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'live', 'submitted', 'finished', 'cancelled')),
   venue TEXT NOT NULL,
   round TEXT NOT NULL,
   round_number INT DEFAULT 1,
@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS tournament_events (
   venue TEXT,
   rules TEXT,
   status TEXT DEFAULT 'published' CHECK (status IN ('draft', 'published', 'ongoing', 'completed')),
+  bracket JSONB DEFAULT '[]'::jsonb,
   archived BOOLEAN DEFAULT false,
   archived_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
