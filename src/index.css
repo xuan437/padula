@@ -6,11 +6,12 @@
 
 /* ── Shared tokens (accent, geometry, fonts) ── */
 :root {
-  --accent:        #dc2626;
-  --accent-hover:  #b91c1c;
-  --accent-light:  rgba(220, 38, 38, 0.08);
-  --accent-border: rgba(220, 38, 38, 0.25);
-  --accent-subtle: rgba(220, 38, 38, 0.05);
+  --accent:        #0f2d5c;
+  --accent-hover:  #0a1f42;
+  --accent-sub:    #38bdf8;
+  --accent-light:  rgba(56, 189, 248, 0.14);
+  --accent-border: rgba(56, 189, 248, 0.35);
+  --accent-subtle: rgba(56, 189, 248, 0.08);
 
   --color-live:    #ef4444;
   --color-success: #10b981;
@@ -93,8 +94,12 @@
   --border-light: #16243d;
   --border-hover: #2d4673;
 
-  --accent-light:  rgba(220,38,38,0.15);
-  --accent-border: rgba(220,38,38,0.35);
+  --accent:        #38bdf8;
+  --accent-hover:  #0ea5e9;
+  --accent-sub:    #7dd3fc;
+  --accent-light:  rgba(56, 189, 248, 0.14);
+  --accent-border: rgba(56, 189, 248, 0.35);
+  --accent-subtle: rgba(56, 189, 248, 0.08);
 
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
@@ -672,15 +677,15 @@ input, select, textarea {
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #ef4444 0%, var(--accent) 100%);
+  background: linear-gradient(180deg, #1e3a8a 0%, #0f2d5c 100%);
   color: #ffffff;
-  border-color: var(--accent);
-  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  border-color: #1e40af;
+  box-shadow: 0 1px 2px rgba(15, 45, 92, 0.35), inset 0 1px 0 rgba(56, 189, 248, 0.25);
 }
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-hover) 100%);
-  border-color: var(--accent-hover);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  background: linear-gradient(180deg, #1d4ed8 0%, #1e3a8a 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.28);
 }
 
 .btn-ghost {
