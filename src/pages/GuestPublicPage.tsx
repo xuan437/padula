@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { getSportName, getSportIcon, SPORTS_CATALOG } from '../lib/sports';
 import { isPlaceholder } from '../lib/bracket';
@@ -345,6 +345,16 @@ export default function GuestPublicPage() {
   const [simTeamB, setSimTeamB] = useState<string>('');
   const [simResult, setSimResult] = useState<any | null>(null);
   const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
+  const liveFeedRef = useRef<HTMLElement | null>(null);
+
+  const handleViewLiveFeed = () => {
+    setTab('live');
+    setFilterSport('all');
+    setSearchTeam('');
+    setTimeout(() => {
+      liveFeedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   const handleToggleMyTeam = (teamName: string) => {
     const next = myTeam === teamName ? '' : teamName;
@@ -643,7 +653,7 @@ export default function GuestPublicPage() {
             </div>
             <button
               type="button"
-              onClick={() => setTab('live')}
+              onClick={handleViewLiveFeed}
               className="btn btn-ghost btn-sm"
               style={{ fontSize: 11.5, padding: '3px 9px', fontWeight: 700 }}
             >
@@ -654,7 +664,7 @@ export default function GuestPublicPage() {
             {liveMatches.map(m => (
               <div
                 key={`strip-${m.id}`}
-                onClick={() => setTab('live')}
+                onClick={handleViewLiveFeed}
                 style={{
                   padding: '10px 14px',
                   borderRadius: '10px',
@@ -820,7 +830,7 @@ export default function GuestPublicPage() {
           TAB 1: LIVE MATCHES
          ═══════════════════════════════════════════════════════════════════════ */}
       {tab === 'live' && (
-        <section>
+        <section ref={liveFeedRef} style={{ scrollMarginTop: '20px' }}>
           {liveMatches.length === 0 ? (
             <div className="empty-state glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
               <FlameIcon size={36} color="var(--accent)" />
