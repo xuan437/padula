@@ -284,18 +284,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const handleUpdateSettings = (partial: Partial<AppSettings>): AppSettings => {
     const updated = updateStoredSettings(partial, currentUser?.name || 'Staff User');
     setSettingsState(updated);
+    supabase.from('system_settings').upsert([{ id: 'default', data: updated, updated_at: new Date().toISOString() }]).then();
     return updated;
   };
 
   const handleResetSettings = (): AppSettings => {
     const reset = resetStoredSettings(currentUser?.name || 'Staff User');
     setSettingsState(reset);
+    supabase.from('system_settings').upsert([{ id: 'default', data: reset, updated_at: new Date().toISOString() }]).then();
     return reset;
   };
 
   const handleResetSection = <K extends keyof AppSettings>(sectionKey: K): AppSettings => {
     const reset = resetStoredSection(sectionKey, currentUser?.name || 'Staff User');
     setSettingsState(reset);
+    supabase.from('system_settings').upsert([{ id: 'default', data: reset, updated_at: new Date().toISOString() }]).then();
     return reset;
   };
 
@@ -555,10 +558,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         setIsConnected(true);
 
-        // Load tables in parallel
+        // Load all tables in parallel
         const [
           deptRes, venueRes, divRes, offRes,
-          teamRes, playRes, matchRes, annRes, auditRes, eventRes, userRes
+          teamRes, playRes, matchRes, annRes, auditRes, eventRes, userRes,
+          staffRes, accessReqRes, invRes, settingsRes
         ] = await Promise.all([
           supabase.from('departments').select('*'),
           supabase.from('venues').select('*'),
@@ -571,6 +575,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           supabase.from('audit_logs').select('*').order('created_at', { ascending: false }),
           supabase.from('tournament_events').select('*'),
           supabase.from('users').select('*'),
+          supabase.from('staff').select('*'),
+          supabase.from('access_requests').select('*').order('requested_at', { ascending: false }),
+          supabase.from('staff_invitations').select('*').order('sent_at', { ascending: false }),
+          supabase.from('system_settings').select('*').eq('id', 'default').maybeSingle(),
         ]);
 
         if (!isMounted) return;
@@ -579,16 +587,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           setDepartments(deptRes.data.map(d => ({
             id: d.id, name: d.name, shortName: d.short_name, color: d.color,
           })));
+        } else if (!deptRes.error) {
+          supabase.from('departments').upsert(
+            INITIAL_DEPARTMENTS.map(d => ({ id: d.id, name: d.name, short_name: d.shortName, color: d.color })),
+            { onConflict: 'id' }
+          ).then();
         }
         if (venueRes.data && venueRes.data.length > 0) {
           setVenues(venueRes.data.map(v => ({
             id: v.id, name: v.name, capacity: v.capacity, location: v.location, sports: v.sports || [],
           })));
+        } else if (!venueRes.error) {
+          supabase.from('venues').upsert(
+            INITIAL_VENUES.map(v => ({ id: v.id, name: v.name, capacity: v.capacity, location: v.location, sports: v.sports || [] })),
+            { onConflict: 'id' }
+          ).then();
         }
         if (divRes.data && divRes.data.length > 0) {
           setDivisions(divRes.data.map(dv => ({
             id: dv.id, name: dv.name, sportId: dv.sport_id,
           })));
+        } else if (!divRes.error) {
+          supabase.from('divisions').upsert(
+            INITIAL_DIVISIONS.map(dv => ({ id: dv.id, name: dv.name, sport_id: dv.sportId })),
+            { onConflict: 'id' }
+          ).then();
         }
         if (offRes.data && offRes.data.length > 0) {
           const fromDb = offRes.data.map(o => ({
@@ -613,7 +636,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (playRes.data && playRes.data.length > 0) {
           const validPlayers = playRes.data.filter(p => !['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].includes(p.id) && !p.id?.startsWith('mock-'));
           setPlayers(validPlayers.map(p => ({
-            id: p.id, name: p.name, studentId: p.student_id, department: p.department,
+            id: p.id, name: p.name, studentId: p.student_id, email: p.email, department: p.department,
             sport: p.sport, teamId: p.team_id, jerseyNumber: p.jersey_number,
             position: p.position, gwa: p.gwa ? Number(p.gwa) : undefined, medicalCleared: p.medical_cleared,
           })));
@@ -649,6 +672,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (annRes.data && annRes.data.length > 0) {
           setAnnouncements(annRes.data.map(a => ({
             id: a.id, title: a.title, body: a.body, priority: a.priority,
+            eventId: a.event_id, sport: a.sport,
             createdAt: a.created_at, createdBy: a.created_by,
           })));
         }
@@ -661,8 +685,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
         if (eventRes && eventRes.data && eventRes.data.length > 0) {
           setEvents(eventRes.data.map(e => ({
-            id: e.id, name: e.name, sport: e.sport, division: e.division, category: e.category,
-            dates: e.dates, startDate: e.start_date, endDate: e.end_date, venue: e.venue,
+            id: e.id, name: e.name, sport: e.sport, division: e.division,
+            format: e.format || 'single_elimination', category: e.category,
+            dates: e.dates, startDate: e.start_date, endDate: e.end_date,
+            startTime: e.start_time, endTime: e.end_time, venue: e.venue, rules: e.rules,
             status: e.status, archived: e.archived, archivedAt: e.archived_at, bracket: [],
           })));
         }
@@ -680,6 +706,65 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
           });
           setRegisteredUsers(mergedUsers);
+        } else if (userRes && !userRes.error) {
+          supabase.from('users').upsert(
+            INITIAL_USERS.map(u => ({
+              id: u.id, name: u.name, role: u.role, username: u.username, email: u.email,
+              password: u.password || 'padulaAdmin2026', department: u.department,
+              assigned_sport: u.assignedSport, avatar_initials: u.avatarInitials,
+              gmail_verified: u.gmailVerified ?? true, is_active: u.isActive ?? true,
+              is_default_password: false,
+            })),
+            { onConflict: 'id' }
+          ).then();
+        }
+        if (staffRes && staffRes.data && staffRes.data.length > 0) {
+          const fromDbStaff: StaffMember[] = staffRes.data.map((s: any) => ({
+            id: s.id, email: s.email, name: s.name, role: s.role,
+            assignedCompetitionId: s.assigned_competition_id, status: s.status || 'active',
+            password: s.password, invitationStatus: s.invitation_status,
+            invitationId: s.invitation_id, addedBy: s.added_by, createdAt: s.created_at,
+          }));
+          const mergedStaff = [...INITIAL_STAFF];
+          fromDbStaff.forEach(s => {
+            if (!mergedStaff.some(m => m.email.toLowerCase() === s.email.toLowerCase())) {
+              mergedStaff.push(s);
+            }
+          });
+          setStaff(mergedStaff);
+        } else if (staffRes && !staffRes.error) {
+          supabase.from('staff').upsert(
+            INITIAL_STAFF.map(s => ({
+              id: s.id, email: s.email, name: s.name, role: s.role,
+              assigned_competition_id: s.assignedCompetitionId, status: s.status,
+              password: s.password, invitation_status: s.invitationStatus,
+              invitation_id: s.invitationId, added_by: s.addedBy, created_at: s.createdAt,
+            })),
+            { onConflict: 'id' }
+          ).then();
+        }
+        if (accessReqRes && accessReqRes.data && accessReqRes.data.length > 0) {
+          setAccessRequests(accessReqRes.data.map((r: any) => ({
+            id: r.id, name: r.name, email: r.email, role: r.role,
+            sportOrDept: r.sport_or_dept || '', note: r.note || '',
+            requestedAt: r.requested_at, status: r.status,
+            reviewedAt: r.reviewed_at, reviewedBy: r.reviewed_by,
+            generatedPassword: r.generated_password,
+          })));
+        }
+        if (invRes && invRes.data && invRes.data.length > 0) {
+          setStaffInvitations(invRes.data.map((inv: any) => ({
+            id: inv.id, recipientName: inv.recipient_name, recipientEmail: inv.recipient_email,
+            role: inv.role, roleTitle: inv.role_title, assignedSportOrDept: inv.assigned_sport_or_dept,
+            generatedPassword: inv.generated_password, status: inv.status,
+            sentBy: inv.sent_by, sentByEmail: inv.sent_by_email,
+            sentAt: inv.sent_at, respondedAt: inv.responded_at,
+            subject: inv.subject, letterBody: inv.letter_body,
+          })));
+        }
+        if (settingsRes && settingsRes.data && settingsRes.data.data) {
+          const syncedSettings = updateStoredSettings(settingsRes.data.data, 'Supabase Sync');
+          setSettingsState(syncedSettings);
         }
       } catch (err) {
         console.warn('Supabase initialization notice (offline fallback active):', err);
@@ -871,6 +956,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return updated;
       });
       setLatestInvitation(inv);
+
+      supabase.from('staff_invitations').upsert([{
+        id: inv.id,
+        recipient_name: inv.recipientName,
+        recipient_email: inv.recipientEmail,
+        role: inv.role,
+        role_title: inv.roleTitle,
+        assigned_sport_or_dept: inv.assignedSportOrDept,
+        generated_password: inv.generatedPassword,
+        status: inv.status,
+        sent_by: inv.sentBy,
+        sent_by_email: inv.sentByEmail,
+        sent_at: inv.sentAt,
+        subject: inv.subject,
+        letter_body: inv.letterBody,
+      }], { onConflict: 'id' }).then();
 
       const enrichedUser: User = {
         ...newUser,
@@ -1658,6 +1759,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return updated;
     });
 
+    supabase.from('access_requests').upsert([{
+      id: newReq.id,
+      name: newReq.name,
+      email: newReq.email,
+      role: newReq.role,
+      sport_or_dept: newReq.sportOrDept,
+      note: newReq.note,
+      requested_at: newReq.requestedAt,
+      status: newReq.status,
+    }], { onConflict: 'id' }).then();
+
     addAuditLog(
       'request_access',
       `Access request submitted by ${data.name} (${cleanEmail}) for ${data.role} (${data.sportOrDept}). Note: "${data.note || 'N/A'}"`,
@@ -1695,6 +1807,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return updated;
     });
 
+    supabase.from('access_requests').update({
+      status: 'approved',
+      reviewed_at: updatedReq.reviewedAt,
+      reviewed_by: updatedReq.reviewedBy,
+      generated_password: updatedReq.generatedPassword,
+    }).eq('id', requestId).then();
+
     addAuditLog(
       'approve_access',
       `Sports Director approved access request for ${req.name} (${req.email}) as ${req.role} for ${req.sportOrDept}. Credentials issued.`,
@@ -1723,6 +1842,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return updated;
     });
 
+    supabase.from('access_requests').update({
+      status: 'declined',
+      reviewed_at: updatedReq.reviewedAt,
+      reviewed_by: updatedReq.reviewedBy,
+      note: updatedReq.note,
+    }).eq('id', requestId).then();
+
     addAuditLog(
       'decline_access',
       `Sports Director declined access request for ${req.name} (${req.email}). Reason: ${reason || 'Not specified'}`,
@@ -1737,6 +1863,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch {}
       return updated;
     });
+    supabase.from('access_requests').delete().eq('id', requestId).then();
     addAuditLog(
       'delete_mock_data',
       `Removed portal access request: ${requestId}`,
@@ -1748,6 +1875,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const clearAllAccessRequests = useCallback(() => {
     setAccessRequests([]);
     try { localStorage.removeItem('padula_access_requests'); } catch {}
+    supabase.from('access_requests').delete().neq('id', 'keep_none').then();
     addAuditLog(
       'delete_mock_data',
       'Cleared all portal access requests',
@@ -2926,11 +3054,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       name: newEvent.name,
       sport: newEvent.sport,
       division: newEvent.division,
+      format: newEvent.format,
       category: newEvent.category,
       dates: newEvent.dates,
       start_date: newEvent.startDate,
       end_date: newEvent.endDate,
+      start_time: newEvent.startTime,
+      end_time: newEvent.endTime,
       venue: newEvent.venue,
+      rules: newEvent.rules,
       status: newEvent.status,
     }]).then();
 
@@ -3322,9 +3454,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       id,
       name: newPlayer.name,
       student_id: newPlayer.studentId,
+      email: newPlayer.email,
       department: newPlayer.department,
       sport: newPlayer.sport,
       team_id: newPlayer.teamId,
+      team_name: teams.find(t => t.id === newPlayer.teamId)?.name || null,
       jersey_number: newPlayer.jerseyNumber,
       position: newPlayer.position,
       gwa: newPlayer.gwa,

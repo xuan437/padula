@@ -11,6 +11,10 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- CLEAN RESET: Drop existing tables to prevent schema/column drift
 -- ─────────────────────────────────────────────────────────────────────────────
+DROP TABLE IF EXISTS system_settings CASCADE;
+DROP TABLE IF EXISTS staff_invitations CASCADE;
+DROP TABLE IF EXISTS access_requests CASCADE;
+DROP TABLE IF EXISTS staff CASCADE;
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS match_score_audits CASCADE;
 DROP TABLE IF EXISTS announcements CASCADE;
@@ -89,9 +93,11 @@ CREATE TABLE IF NOT EXISTS players (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   student_id TEXT NOT NULL UNIQUE,
+  email TEXT,
   department TEXT NOT NULL,
   sport TEXT NOT NULL,
   team_id TEXT,
+  team_name TEXT,
   jersey_number TEXT,
   position TEXT,
   gwa NUMERIC(4,2),
@@ -116,6 +122,7 @@ CREATE TABLE IF NOT EXISTS matches (
   event_id TEXT,
   sport TEXT NOT NULL,
   division TEXT,
+  format TEXT DEFAULT 'single_elimination',
   team_a TEXT NOT NULL,
   team_b TEXT NOT NULL,
   score_a INT DEFAULT 0,
@@ -149,11 +156,15 @@ CREATE TABLE IF NOT EXISTS tournament_events (
   name TEXT NOT NULL,
   sport TEXT NOT NULL,
   division TEXT,
+  format TEXT DEFAULT 'single_elimination',
   category TEXT,
   dates TEXT,
   start_date DATE,
   end_date DATE,
+  start_time TEXT,
+  end_time TEXT,
   venue TEXT,
+  rules TEXT,
   status TEXT DEFAULT 'published' CHECK (status IN ('draft', 'published', 'ongoing', 'completed')),
   archived BOOLEAN DEFAULT false,
   archived_at TIMESTAMPTZ,
@@ -166,6 +177,8 @@ CREATE TABLE IF NOT EXISTS announcements (
   title TEXT NOT NULL,
   body TEXT NOT NULL,
   priority TEXT DEFAULT 'normal' CHECK (priority IN ('normal', 'urgent')),
+  event_id TEXT,
+  sport TEXT,
   created_by TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -216,6 +229,61 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 12. STAFF DIRECTORY
+CREATE TABLE IF NOT EXISTS staff (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('director', 'coordinator', 'scorer')),
+  assigned_competition_id TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  password TEXT,
+  invitation_status TEXT,
+  invitation_id TEXT,
+  added_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13. ACCESS REQUESTS
+CREATE TABLE IF NOT EXISTS access_requests (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('coordinator', 'scorer')),
+  sport_or_dept TEXT,
+  note TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'declined')),
+  requested_at TIMESTAMPTZ DEFAULT NOW(),
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by TEXT,
+  generated_password TEXT
+);
+
+-- 14. STAFF INVITATIONS
+CREATE TABLE IF NOT EXISTS staff_invitations (
+  id TEXT PRIMARY KEY,
+  recipient_name TEXT NOT NULL,
+  recipient_email TEXT NOT NULL,
+  role TEXT NOT NULL,
+  role_title TEXT,
+  assigned_sport_or_dept TEXT,
+  generated_password TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  sent_by TEXT,
+  sent_by_email TEXT,
+  sent_at TIMESTAMPTZ DEFAULT NOW(),
+  responded_at TIMESTAMPTZ,
+  subject TEXT,
+  letter_body TEXT
+);
+
+-- 15. SYSTEM SETTINGS
+CREATE TABLE IF NOT EXISTS system_settings (
+  id TEXT PRIMARY KEY,
+  data JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- ROW LEVEL SECURITY (RLS) & ACCESS POLICIES
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -231,6 +299,10 @@ ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_score_audits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE access_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
 -- Public / Anon read & authenticated operational policies
 DO $$
@@ -306,6 +378,30 @@ BEGIN
   CREATE POLICY "Public Read Users" ON users FOR SELECT USING (true);
   DROP POLICY IF EXISTS "Operational Write Users" ON users;
   CREATE POLICY "Operational Write Users" ON users FOR ALL USING (true);
+
+  -- Staff
+  DROP POLICY IF EXISTS "Public Read Staff" ON staff;
+  CREATE POLICY "Public Read Staff" ON staff FOR SELECT USING (true);
+  DROP POLICY IF EXISTS "Operational Write Staff" ON staff;
+  CREATE POLICY "Operational Write Staff" ON staff FOR ALL USING (true);
+
+  -- Access Requests
+  DROP POLICY IF EXISTS "Public Read Access Requests" ON access_requests;
+  CREATE POLICY "Public Read Access Requests" ON access_requests FOR SELECT USING (true);
+  DROP POLICY IF EXISTS "Operational Write Access Requests" ON access_requests;
+  CREATE POLICY "Operational Write Access Requests" ON access_requests FOR ALL USING (true);
+
+  -- Staff Invitations
+  DROP POLICY IF EXISTS "Public Read Staff Invitations" ON staff_invitations;
+  CREATE POLICY "Public Read Staff Invitations" ON staff_invitations FOR SELECT USING (true);
+  DROP POLICY IF EXISTS "Operational Write Staff Invitations" ON staff_invitations;
+  CREATE POLICY "Operational Write Staff Invitations" ON staff_invitations FOR ALL USING (true);
+
+  -- System Settings
+  DROP POLICY IF EXISTS "Public Read System Settings" ON system_settings;
+  CREATE POLICY "Public Read System Settings" ON system_settings FOR SELECT USING (true);
+  DROP POLICY IF EXISTS "Operational Write System Settings" ON system_settings;
+  CREATE POLICY "Operational Write System Settings" ON system_settings FOR ALL USING (true);
 END $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
