@@ -191,7 +191,7 @@ export default function LiveScoreboard() {
 
         {/* TV Bottom Strip */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14, color: '#94a3b8' }}>
-          <span>Asian College Dumaguete · Padula Sports Analytics</span>
+          <span>Asian College Dumaguete · Asian College Padula — Tournament Hub</span>
           <span>Scorer: {currentTvMatch.scorekeeper || 'Official Scorer'} · Referee: {currentTvMatch.referee || 'Assigned Referee'}</span>
         </div>
       </div>
