@@ -35,6 +35,39 @@ export default function OfficialsHubPage() {
 
   const [officialFilter, setOfficialFilter] = useState<'all' | 'referee' | 'scorekeeper' | 'coach' | 'manager'>('all');
   const [matchSportFilter, setMatchSportFilter] = useState<string>('all');
+  const [pendingAssignment, setPendingAssignment] = useState<{
+    matchId: string;
+    matchLabel: string;
+    roleLabel: string;
+    field: 'venue' | 'referee' | 'scorekeeper' | 'coachA' | 'coachB' | 'manager';
+    value: string;
+    previousValue: string;
+  } | null>(null);
+  const [confirmBanner, setConfirmBanner] = useState<string | null>(null);
+
+  const requestAssignment = (
+    matchId: string,
+    matchLabel: string,
+    roleLabel: string,
+    field: 'venue' | 'referee' | 'scorekeeper' | 'coachA' | 'coachB' | 'manager',
+    value: string,
+    previousValue: string
+  ) => {
+    if (value === previousValue) return;
+    setPendingAssignment({ matchId, matchLabel, roleLabel, field, value, previousValue });
+  };
+
+  const confirmPendingAssignment = () => {
+    if (!pendingAssignment) return;
+    assignMatchOfficials(pendingAssignment.matchId, { [pendingAssignment.field]: pendingAssignment.value });
+    setConfirmBanner(
+      pendingAssignment.value
+        ? `Confirmed: Assigned ${pendingAssignment.value} as ${pendingAssignment.roleLabel} for ${pendingAssignment.matchLabel}.`
+        : `Confirmed: Cleared ${pendingAssignment.roleLabel} for ${pendingAssignment.matchLabel}.`
+    );
+    setPendingAssignment(null);
+    setTimeout(() => setConfirmBanner(null), 4000);
+  };
 
   const refereesList = useMemo(() => officials.filter(o => o.role === 'referee'), [officials]);
   const coachesList = useMemo(() => officials.filter(o => o.role === 'coach'), [officials]);
@@ -357,7 +390,7 @@ export default function OfficialsHubPage() {
                             width: '100%',
                           }}
                           value={m.venue || venues[0]?.name || ''}
-                          onChange={e => assignMatchOfficials(m.id, { venue: e.target.value })}
+                          onChange={e => requestAssignment(m.id, `${m.teamA} vs ${m.teamB}`, 'Venue', 'venue', e.target.value, m.venue || venues[0]?.name || '')}
                         >
                           {venues.map(v => (
                             <option key={v.id} value={v.name}>{v.name} — {v.location}</option>
@@ -411,7 +444,7 @@ export default function OfficialsHubPage() {
                             width: '100%',
                           }}
                           value={m.referee || ''}
-                          onChange={e => assignMatchOfficials(m.id, { referee: e.target.value })}
+                          onChange={e => requestAssignment(m.id, `${m.teamA} vs ${m.teamB}`, 'Lead Referee', 'referee', e.target.value, m.referee || '')}
                         >
                           <option value="">Select Referee...</option>
                           {refereesList.map(r => (
@@ -466,7 +499,7 @@ export default function OfficialsHubPage() {
                             width: '100%',
                           }}
                           value={m.scorekeeper || ''}
-                          onChange={e => assignMatchOfficials(m.id, { scorekeeper: e.target.value })}
+                          onChange={e => requestAssignment(m.id, `${m.teamA} vs ${m.teamB}`, 'Scorekeeper', 'scorekeeper', e.target.value, m.scorekeeper || '')}
                         >
                           <option value="">Select Scorekeeper...</option>
                           {scorekeepersList.map(s => (
@@ -521,7 +554,7 @@ export default function OfficialsHubPage() {
                             width: '100%',
                           }}
                           value={m.coachA || ''}
-                          onChange={e => assignMatchOfficials(m.id, { coachA: e.target.value })}
+                          onChange={e => requestAssignment(m.id, `${m.teamA} vs ${m.teamB}`, `Coach (${m.teamA || 'Team A'})`, 'coachA', e.target.value, m.coachA || '')}
                         >
                           <option value="">Select Coach...</option>
                           {coachesList.map(c => (
@@ -576,7 +609,7 @@ export default function OfficialsHubPage() {
                             width: '100%',
                           }}
                           value={m.coachB || ''}
-                          onChange={e => assignMatchOfficials(m.id, { coachB: e.target.value })}
+                          onChange={e => requestAssignment(m.id, `${m.teamA} vs ${m.teamB}`, `Coach (${m.teamB || 'Team B'})`, 'coachB', e.target.value, m.coachB || '')}
                         >
                           <option value="">Select Coach...</option>
                           {coachesList.map(c => (
@@ -631,7 +664,7 @@ export default function OfficialsHubPage() {
                             width: '100%',
                           }}
                           value={m.manager || ''}
-                          onChange={e => assignMatchOfficials(m.id, { manager: e.target.value })}
+                          onChange={e => requestAssignment(m.id, `${m.teamA} vs ${m.teamB}`, 'Athletic Manager', 'manager', e.target.value, m.manager || '')}
                         >
                           <option value="">Select Manager...</option>
                           {managersList.map(mg => (
@@ -720,6 +753,112 @@ export default function OfficialsHubPage() {
           )}
         </div>
       </div>
+
+      {/* Confirmation Banner */}
+      {confirmBanner && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 1100,
+            background: '#065f46',
+            color: '#ecfdf5',
+            border: '1px solid #10b981',
+            borderRadius: '10px',
+            padding: '12px 16px',
+            fontSize: '13px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxShadow: '0 10px 28px rgba(0,0,0,0.35)',
+          }}
+        >
+          <CheckIcon size={16} color="#34d399" />
+          <span>{confirmBanner}</span>
+          <button
+            type="button"
+            onClick={() => setConfirmBanner(null)}
+            style={{ background: 'transparent', border: 'none', color: '#a7f3d0', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Confirm Assignment Modal */}
+      {pendingAssignment && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1200,
+            background: 'rgba(2, 6, 23, 0.72)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            className="glass-card"
+            style={{
+              width: '100%',
+              maxWidth: '430px',
+              padding: '24px',
+              borderRadius: '14px',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 24px 48px rgba(0, 0, 0, 0.45)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)' }}>
+              Confirm Official Assignment
+            </h3>
+            <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Are you sure you want to assign <strong style={{ color: 'var(--text-primary)' }}>{pendingAssignment.value || 'Unassigned'}</strong> as{' '}
+              <strong style={{ color: 'var(--accent)' }}>{pendingAssignment.roleLabel}</strong> for{' '}
+              <strong style={{ color: 'var(--text-primary)' }}>{pendingAssignment.matchLabel}</strong>?
+            </p>
+            <div
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '10px 12px',
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
+                marginBottom: '18px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+              }}
+            >
+              <div>Previous: <strong>{pendingAssignment.previousValue || 'Unassigned'}</strong></div>
+              <div>New: <strong style={{ color: '#10b981' }}>{pendingAssignment.value || 'Unassigned'}</strong></div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => setPendingAssignment(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={confirmPendingAssignment}
+              >
+                Confirm Assignment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
