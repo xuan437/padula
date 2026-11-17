@@ -551,7 +551,7 @@ export const DEFAULT_SYSTEM: SystemSettings = {
   branding: {
     schoolName: 'Asian College',
     campusName: 'Dumaguete Campus',
-    tournamentTitle: 'Padula Sports — Tournament Hub',
+    tournamentTitle: 'Asian College Padula — Tournament Hub',
     logoUrl: '/School logo.png',
     primaryColor: '#dc2626',
     accentColor: '#f59e0b',

@@ -52,7 +52,7 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
     confidence, confidencePct, matchQualityRating,
     comebackProb, momentumLeader, momentumReason,
     factorSignals, keyFactors, tacticalSummary,
-    statsA, statsB, disclaimer
+    statsA, statsB, mlMetrics, disclaimer
   } = prediction;
 
   return (
@@ -364,6 +364,44 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
                 <li key={i}>{f}</li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Machine Learning Model Telemetry */}
+        {mlMetrics && (
+          <div style={{
+            marginBottom: 14,
+            padding: '10px 12px',
+            borderRadius: 10,
+            background: 'rgba(139, 92, 246, 0.08)',
+            border: '1px solid rgba(139, 92, 246, 0.28)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a78bfa' }}>
+                {mlMetrics.modelName}
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>
+                Samples: {mlMetrics.trainingSamples} · Accuracy: {mlMetrics.accuracyPct}% · Log-Loss: {mlMetrics.logLoss}
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {mlMetrics.learnedWeights.map(w => (
+                <span
+                  key={w.label}
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {w.label}: {w.weightPct}%
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

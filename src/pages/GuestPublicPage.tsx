@@ -554,7 +554,7 @@ export default function GuestPublicPage() {
                   letterSpacing: '0.02em',
                   lineHeight: 1.15,
                 }}>
-                  Padula Sports — Tournament Hub
+                  Asian College Padula — Tournament Hub
                 </h1>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                   Public Results, Live Scores, Brackets &amp; Standings
