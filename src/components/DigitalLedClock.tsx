@@ -25,8 +25,8 @@ const SEGMENTS: Record<string, boolean[]> = {
 
 export const SevenSegmentDigit: React.FC<SevenSegmentDigitProps> = ({
   char,
-  color = '#ffffff',
-  dimColor = 'rgba(255, 255, 255, 0.05)',
+  color = 'var(--text-primary)',
+  dimColor = 'rgba(148, 163, 184, 0.14)',
   size = 1,
 }) => {
   const active = SEGMENTS[char] || SEGMENTS[' '];
@@ -34,9 +34,9 @@ export const SevenSegmentDigit: React.FC<SevenSegmentDigitProps> = ({
   const height = 94 * size;
 
   const glowFilter =
-    color === '#ffffff'
-      ? 'drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4))'
-      : 'drop-shadow(0 0 6px rgba(255, 43, 61, 0.85)) drop-shadow(0 0 14px rgba(255, 43, 61, 0.45))';
+    color === '#ff2b3d'
+      ? 'drop-shadow(0 0 6px rgba(255, 43, 61, 0.85)) drop-shadow(0 0 14px rgba(255, 43, 61, 0.45))'
+      : 'drop-shadow(0 0 8px rgba(148, 163, 184, 0.25))';
 
   return (
     <svg
@@ -209,53 +209,23 @@ export default function DigitalLedClock() {
         </button>
       </div>
 
-      {/* ── Outer Clock Casing (Curved Black Bezel with authentic Depth) ── */}
+      {/* ── Borderless LED Clock Display ── */}
       <div
         style={{
           width: '100%',
           maxWidth: '780px',
-          background: 'linear-gradient(180deg, #181b22 0%, #0d0f14 45%, #050608 100%)',
-          border: '3px solid #282d3c',
-          borderRadius: '24px',
-          padding: '14px 20px',
-          boxShadow:
-            '0 20px 40px -10px rgba(0, 0, 0, 0.85), inset 0 2px 4px rgba(255, 255, 255, 0.15), inset 0 -4px 10px rgba(0, 0, 0, 0.9)',
+          padding: '6px 8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
           position: 'relative',
-          overflow: 'hidden',
+          flexWrap: 'nowrap',
+          overflowX: 'auto',
           userSelect: 'none',
+          boxSizing: 'border-box',
         }}
       >
-        {/* Subtle glass reflection highlight across the top */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '40%',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%)',
-            pointerEvents: 'none',
-            borderRadius: '20px 20px 0 0',
-          }}
-        />
-
-        {/* LED Screen Display Acrylic Frame */}
-        <div
-          style={{
-            background: '#040507',
-            border: '1.5px solid #141720',
-            borderRadius: '16px',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            position: 'relative',
-            boxShadow: 'inset 0 3px 12px rgba(0, 0, 0, 0.95)',
-            flexWrap: 'nowrap',
-            overflowX: 'auto',
-          }}
-        >
           {/* ── LEFT SECTION: Days of the week + AM/PM ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             {/* Days of week stack */}
@@ -277,7 +247,8 @@ export default function DigitalLedClock() {
                   <span
                     key={d.label}
                     style={{
-                      color: isToday ? '#ff2b3d' : '#2d3342',
+                      color: isToday ? '#ff2b3d' : 'var(--text-muted)',
+                      opacity: isToday ? 1 : 0.45,
                       textShadow: isToday ? '0 0 8px rgba(255, 43, 61, 0.9)' : undefined,
                       transition: 'color 0.3s',
                     }}
@@ -296,8 +267,7 @@ export default function DigitalLedClock() {
                   fontSize: '12px',
                   fontWeight: 900,
                   letterSpacing: '0.05em',
-                  color: '#ffffff',
-                  textShadow: '0 0 6px rgba(255, 255, 255, 0.8)',
+                  color: 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
                   marginLeft: '2px',
@@ -308,7 +278,7 @@ export default function DigitalLedClock() {
             )}
           </div>
 
-          {/* ── CENTER SECTION: Huge White 7-Segment Digits HH:MM ── */}
+          {/* ── CENTER SECTION: Huge 7-Segment Digits HH:MM ── */}
           <div
             style={{
               display: 'flex',
@@ -319,8 +289,8 @@ export default function DigitalLedClock() {
             }}
           >
             {/* Hours */}
-            <SevenSegmentDigit char={hoursStr[0]} color="#ffffff" size={0.95} />
-            <SevenSegmentDigit char={hoursStr[1]} color="#ffffff" size={0.95} />
+            <SevenSegmentDigit char={hoursStr[0]} color="var(--text-primary)" size={0.95} />
+            <SevenSegmentDigit char={hoursStr[1]} color="var(--text-primary)" size={0.95} />
 
             {/* Blinking Colon Separator */}
             <div
@@ -338,25 +308,23 @@ export default function DigitalLedClock() {
                 style={{
                   width: '9px',
                   height: '9px',
-                  background: '#ffffff',
+                  background: 'var(--text-primary)',
                   borderRadius: '2px',
-                  boxShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.4)',
                 }}
               />
               <div
                 style={{
                   width: '9px',
                   height: '9px',
-                  background: '#ffffff',
+                  background: 'var(--text-primary)',
                   borderRadius: '2px',
-                  boxShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.4)',
                 }}
               />
             </div>
 
             {/* Minutes */}
-            <SevenSegmentDigit char={minutesStr[0]} color="#ffffff" size={0.95} />
-            <SevenSegmentDigit char={minutesStr[1]} color="#ffffff" size={0.95} />
+            <SevenSegmentDigit char={minutesStr[0]} color="var(--text-primary)" size={0.95} />
+            <SevenSegmentDigit char={minutesStr[1]} color="var(--text-primary)" size={0.95} />
           </div>
 
           {/* ── ALARM / TOURNAMENT STATUS ICONS ── */}
@@ -486,7 +454,6 @@ export default function DigitalLedClock() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
