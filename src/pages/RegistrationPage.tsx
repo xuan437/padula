@@ -50,8 +50,6 @@ export function formatPlayerInitialLastName(fullName: string): string {
 
 type RegTab = 'teams' | 'players' | 'referees' | 'scorekeepers' | 'coaches' | 'managers' | 'coordinators';
 
-const MAX_COORDINATORS = 3;
-
 export default function RegistrationPage() {
   const {
     currentUser,
@@ -127,8 +125,6 @@ export default function RegistrationPage() {
   const activeCoordinators = useMemo(() => {
     return registeredUsers.filter(u => u.role === 'coordinator' && u.isActive !== false);
   }, [registeredUsers]);
-
-  const coordinatorLimitReached = activeCoordinators.length >= MAX_COORDINATORS;
 
   // Form states
   const [teamForm, setTeamForm] = useState({ name: '', sport: 's1', department: 'd1', division: 'div1', color: '#3b82f6' });
@@ -327,7 +323,7 @@ export default function RegistrationPage() {
   // Handle Coordinator Submit (Director Only)
   const handleCoordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isDirector || coordinatorLimitReached) return;
+    if (!isDirector) return;
     if (!coordForm.name.trim() || !coordForm.email.trim()) return;
 
     const email = coordForm.email.trim().toLowerCase();
@@ -422,8 +418,8 @@ export default function RegistrationPage() {
           {isDirector && (
             <div style={{ background: 'var(--bg-elevated)', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--border)' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Coordinators</div>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: coordinatorLimitReached ? '#ea580c' : 'var(--text-primary)', marginTop: '2px' }}>
-                {activeCoordinators.length} of {MAX_COORDINATORS}
+              <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+                {activeCoordinators.length}
               </div>
             </div>
           )}
@@ -493,7 +489,7 @@ export default function RegistrationPage() {
           { id: 'scorekeepers', label: 'Scorekeepers' },
           { id: 'coaches', label: 'Coaches' },
           { id: 'managers', label: 'Managers' },
-          ...(isDirector ? [{ id: 'coordinators', label: `Sports Coordinators (${activeCoordinators.length}/${MAX_COORDINATORS})` }] : []),
+          ...(isDirector ? [{ id: 'coordinators', label: `Sports Coordinators (${activeCoordinators.length})` }] : []),
         ].map(t => (
           <button
             key={t.id}
@@ -1689,8 +1685,8 @@ export default function RegistrationPage() {
           
           {/* Limit Notification Card */}
           <div style={{
-            background: coordinatorLimitReached ? 'rgba(234, 88, 12, 0.12)' : 'rgba(37, 99, 235, 0.08)',
-            border: `1.5px solid ${coordinatorLimitReached ? '#ea580c' : 'var(--accent)'}`,
+            background: 'rgba(37, 99, 235, 0.08)',
+            border: '1.5px solid var(--accent)',
             borderRadius: '12px',
             padding: '16px 20px',
             display: 'flex',
@@ -1700,13 +1696,11 @@ export default function RegistrationPage() {
             gap: '12px',
           }}>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 800, color: coordinatorLimitReached ? '#ea580c' : 'var(--text-primary)' }}>
-                {activeCoordinators.length} of {MAX_COORDINATORS} Sports Coordinators registered
+              <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {activeCoordinators.length} Active Sports Coordinator{activeCoordinators.length === 1 ? '' : 's'} Registered
               </div>
               <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {coordinatorLimitReached
-                  ? 'Maximum of 3 Sports Coordinators reached. Deactivate one to add another.'
-                  : 'Sports Coordinators can register teams, athletes, and officials, but cannot register coordinators or edit the Director.'}
+                Sports Coordinators can register teams, athletes, and officials, but cannot register coordinators or edit the Director.
               </div>
             </div>
             <span style={{
@@ -1714,15 +1708,15 @@ export default function RegistrationPage() {
               fontWeight: 800,
               padding: '4px 12px',
               borderRadius: '20px',
-              background: coordinatorLimitReached ? '#ea580c' : 'var(--accent)',
+              background: 'var(--accent)',
               color: '#fff',
             }}>
-              {coordinatorLimitReached ? 'LIMIT REACHED' : `${MAX_COORDINATORS - activeCoordinators.length} SLOTS AVAILABLE`}
+              OPEN REGISTRATION
             </span>
           </div>
 
           {/* Form */}
-          <div className="glass-card" style={{ padding: '24px', opacity: coordinatorLimitReached ? 0.6 : 1 }}>
+          <div className="glass-card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 16px' }}>Register Sports Coordinator</h3>
             <form onSubmit={handleCoordSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
               <div className="form-group">
@@ -1730,7 +1724,6 @@ export default function RegistrationPage() {
                 <input
                   type="text"
                   required
-                  disabled={coordinatorLimitReached}
                   value={coordForm.name}
                   onChange={e => setCoordForm(p => ({ ...p, name: e.target.value }))}
                   className="form-input"
@@ -1742,7 +1735,6 @@ export default function RegistrationPage() {
                 <input
                   type="email"
                   required
-                  disabled={coordinatorLimitReached}
                   value={coordForm.email}
                   onChange={e => setCoordForm(p => ({ ...p, email: e.target.value }))}
                   className="form-input"
@@ -1752,7 +1744,6 @@ export default function RegistrationPage() {
               <div className="form-group">
                 <label className="form-label">Assigned Department</label>
                 <select
-                  disabled={coordinatorLimitReached}
                   value={coordForm.department}
                   onChange={e => setCoordForm(p => ({ ...p, department: e.target.value }))}
                   className="form-input"
@@ -1763,7 +1754,6 @@ export default function RegistrationPage() {
 
               <button
                 type="submit"
-                disabled={coordinatorLimitReached}
                 className="btn btn-primary"
                 style={{ padding: '11px 18px', fontWeight: 700 }}
               >

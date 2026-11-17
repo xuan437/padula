@@ -41,7 +41,6 @@ export default function UsersSecuritySection({
 
   // Current active coordinators count
   const activeCoordinators = staff.filter(s => s.role === 'coordinator' && s.status === 'active');
-  const isLimitReached = activeCoordinators.length >= settings.maxCoordinators;
 
   const handleUpdatePermission = (
     role: UserRole,
@@ -96,10 +95,10 @@ export default function UsersSecuritySection({
           <div>
             <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UsersIcon size={18} color="var(--accent)" />
-              Sports Coordinators Management (Enforced Maximum: 3)
+              Sports Coordinators Management
             </h3>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              Each coordinator is assigned to exactly one competition / tournament bracket.
+              Assign coordinators to competitions / tournament brackets with no account limit.
             </span>
           </div>
 
@@ -108,30 +107,15 @@ export default function UsersSecuritySection({
             fontWeight: 800,
             padding: '4px 10px',
             borderRadius: '12px',
-            background: isLimitReached ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.12)',
-            color: isLimitReached ? '#ef4444' : '#22c55e',
-            border: isLimitReached ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)',
+            background: 'rgba(34, 197, 94, 0.12)',
+            color: '#22c55e',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
           }}>
-            {activeCoordinators.length} of {settings.maxCoordinators} Slots Assigned
+            {activeCoordinators.length} Active Coordinators
           </span>
         </div>
 
-        {isLimitReached && (
-          <div style={{
-            padding: '12px 14px',
-            borderRadius: '8px',
-            background: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            marginBottom: '16px',
-            fontSize: '12.5px',
-            color: '#fca5a5',
-            lineHeight: 1.4,
-          }}>
-            <strong>⚠️ Maximum Coordinator Limit Reached:</strong> The system strictly caps the institution at 3 simultaneous Sports Coordinators. To assign a new coordinator, an existing coordinator slot must be deactivated or re-assigned.
-          </div>
-        )}
-
-        {/* 3 Dedicated Slots */}
+        {/* Dedicated Slots */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
           {settings.coordinators.map(slot => {
             const assignedStaff = staff.find(s => s.id === slot.userId);
