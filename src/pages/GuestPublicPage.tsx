@@ -91,17 +91,43 @@ function QRCodeDisplay({ url, size = 110 }: { url: string; size?: number }) {
   );
 }
 
-// ── Share Match Result Card ────────────────────────────────────────────────
+// ── Share Match & Livestream Card ──────────────────────────────────────────
 function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
+  const [platformNotice, setPlatformNotice] = useState<string | null>(null);
+  const [streamUrl, setStreamUrl] = useState<string>('');
+  const isLive = match.status === 'live';
   const formatLabel = match.format === 'round_robin' ? 'Round Robin' : 'Single Elimination';
-  const text = `🏆 ${match.teamA} ${match.scoreA} – ${match.scoreB} ${match.teamB} (${getSportName(match.sport)} - ${match.round} · ${formatLabel}) · 📅 ${match.scheduledDate || '2026-11-10'} · ⏰ ${match.scheduledTime || '09:00 AM'} · 📍 ${match.venue || 'Main Court'} · Asian College Padula Athletics`;
+  const liveMatchUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/?tab=${isLive ? 'live' : 'results'}&sport=${encodeURIComponent(match.sport || '')}&match=${encodeURIComponent(match.id || '')}`
+    : '';
+  const streamPrefix = isLive ? '🔴 LIVE STREAM' : '🏆 OFFICIAL MATCH';
+  const streamLinkLine = streamUrl.trim() ? `\n📺 Watch Stream: ${streamUrl.trim()}` : '';
+  const text = `${streamPrefix}: ${match.teamA} ${match.scoreA} – ${match.scoreB} ${match.teamB} (${getSportName(match.sport)} · ${match.round} · ${formatLabel}) @ ${match.venue || 'Main Court'} — Asian College Padula 2026${streamLinkLine}\n📊 Live Scoreboard: ${liveMatchUrl}`;
 
-  const copyText = () => {
+  const copyText = (notice?: string) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (notice) setPlatformNotice(notice);
+      setTimeout(() => {
+        setCopied(false);
+        setPlatformNotice(null);
+      }, 3200);
+    }
+  };
+
+  const shareToPlatform = (platform: 'facebook' | 'tiktok' | 'youtube') => {
+    if (platform === 'facebook') {
+      copyText('Live score caption copied! Opening Facebook share dialog...');
+      const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(streamUrl.trim() || liveMatchUrl)}&quote=${encodeURIComponent(text)}`;
+      window.open(fbUrl, '_blank', 'noopener,noreferrer');
+    } else if (platform === 'tiktok') {
+      copyText('Live score caption & scoreboard link copied! Paste into your TikTok Live title or video.');
+      window.open('https://www.tiktok.com/live', '_blank', 'noopener,noreferrer');
+    } else {
+      copyText('Live score title, description & link copied! Paste into YouTube Live Studio.');
+      window.open('https://studio.youtube.com/', '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -109,7 +135,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(0,0,0,0.7)',
+      background: 'rgba(0,0,0,0.72)',
       backdropFilter: 'blur(4px)',
       display: 'flex',
       alignItems: 'center',
@@ -118,14 +144,18 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
       padding: '16px',
     }}>
       <div className="glass-card" style={{
-        maxWidth: '460px',
+        maxWidth: '490px',
         width: '100%',
-        padding: '24px',
+        padding: '22px',
         background: 'var(--bg-surface)',
-        borderRadius: '16px',
+        borderRadius: '10px',
+        maxHeight: '92vh',
+        overflowY: 'auto',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Share Official Match Card</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+            {isLive ? 'Share Live Stream & Scoreboard' : 'Share Official Match Card'}
+          </h3>
           <button className="btn btn-sm btn-ghost" onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
             <XIcon size={16} />
           </button>
@@ -134,21 +164,28 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
         {/* Card preview */}
         <div style={{
           background: 'var(--bg-elevated)',
-          border: '2px solid var(--accent)',
-          borderRadius: '12px',
-          padding: '20px',
+          border: `1.5px solid ${isLive ? 'var(--color-live)' : 'var(--accent)'}`,
+          borderRadius: '8px',
+          padding: '18px',
           textAlign: 'center',
-          marginBottom: '16px',
+          marginBottom: '14px',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-            Asian College Padula Sports
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
+            {isLive && (
+              <span className="status-badge live" style={{ fontSize: '10px' }}>
+                <span className="live-dot" /> LIVE SCORE CONNECTED
+              </span>
+            )}
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Asian College Padula 2026
+            </span>
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '6px' }}>
             {getSportName(match.sport)} · {match.round} ({formatLabel})
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              <CalendarIcon size={11} color="var(--text-muted)" /> {match.scheduledDate || '2026-11-10'}
+              <CalendarIcon size={11} color="var(--text-muted)" /> {match.scheduledDate || '2026-11-18'}
             </span>
             <span>·</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
@@ -159,31 +196,32 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
               <MapPinIcon size={11} color="var(--text-muted)" /> {match.venue || 'Main Court'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', margin: '14px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', margin: '12px 0' }}>
             <div style={{ flex: 1, textAlign: 'right' }}>
-              <div style={{ fontWeight: 800, fontSize: '16px', color: match.winner === match.teamA ? 'var(--accent)' : 'var(--text-primary)' }}>
+              <div style={{ fontWeight: 800, fontSize: '15px', color: match.winner === match.teamA ? 'var(--accent)' : 'var(--text-primary)' }}>
                 {match.teamA}
               </div>
             </div>
             <div style={{
-              background: 'var(--accent)',
+              background: isLive ? '#dc2626' : '#0f2d5c',
               color: '#fff',
               fontWeight: 900,
               fontSize: '20px',
               padding: '6px 16px',
-              borderRadius: '8px',
+              borderRadius: '6px',
               letterSpacing: '2px',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
             }}>
               {match.scoreA} : {match.scoreB}
             </div>
             <div style={{ flex: 1, textAlign: 'left' }}>
-              <div style={{ fontWeight: 800, fontSize: '16px', color: match.winner === match.teamB ? 'var(--accent)' : 'var(--text-primary)' }}>
+              <div style={{ fontWeight: 800, fontSize: '15px', color: match.winner === match.teamB ? 'var(--accent)' : 'var(--text-primary)' }}>
                 {match.teamB}
               </div>
             </div>
           </div>
           {match.winner && (
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
               <TrophyIcon size={14} color="#10b981" /> Official Winner: {match.winner}
             </div>
           )}
@@ -192,9 +230,93 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
           </div>
         </div>
 
+        {/* Optional Livestream URL Attachment */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Livestream Link (Optional — Facebook / TikTok / YouTube URL)
+          </label>
+          <input
+            type="url"
+            value={streamUrl}
+            onChange={e => setStreamUrl(e.target.value)}
+            className="form-input"
+            style={{ width: '100%', fontSize: '12.5px', padding: '7px 10px' }}
+          />
+        </div>
+
+        {/* Social Media Livestream Share Buttons */}
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Share Livestream with Live Scoreboard
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => shareToPlatform('facebook')}
+              style={{
+                background: '#1877F2',
+                color: '#ffffff',
+                borderColor: '#1877F2',
+                fontWeight: 700,
+                fontSize: '12px',
+              }}
+            >
+              Facebook
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => shareToPlatform('tiktok')}
+              style={{
+                background: '#0f172a',
+                color: '#ffffff',
+                borderColor: '#38bdf8',
+                fontWeight: 700,
+                fontSize: '12px',
+              }}
+            >
+              TikTok
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => shareToPlatform('youtube')}
+              style={{
+                background: '#FF0000',
+                color: '#ffffff',
+                borderColor: '#dc2626',
+                fontWeight: 700,
+                fontSize: '12px',
+              }}
+            >
+              YouTube
+            </button>
+          </div>
+        </div>
+
+        {platformNotice && (
+          <div style={{
+            fontSize: '11.5px',
+            fontWeight: 700,
+            color: '#10b981',
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '6px',
+            padding: '7px 10px',
+            marginBottom: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}>
+            <CheckIcon size={13} color="#10b981" />
+            <span>{platformNotice}</span>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-primary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={copyText}>
-            {copied ? <><CheckIcon size={14} /> Copied to Clipboard!</> : 'Copy Full Result Details'}
+          <button className="btn btn-primary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => copyText()}>
+            {copied ? <><CheckIcon size={14} /> Copied Live Details!</> : 'Copy Live Score & Stream Link'}
           </button>
           <button className="btn btn-ghost" onClick={onClose}>Close</button>
         </div>
@@ -1022,11 +1144,11 @@ export default function GuestPublicPage() {
                       </span>
                       <button
                         type="button"
-                        className="btn btn-sm btn-ghost"
+                        className="btn btn-sm btn-primary"
                         onClick={() => setShareMatch(m)}
-                        style={{ padding: '3px 8px', fontSize: '11px' }}
+                        style={{ padding: '4px 10px', fontSize: '11px' }}
                       >
-                        Share
+                        Share Live Stream
                       </button>
                     </div>
                   </div>
@@ -1665,7 +1787,12 @@ export default function GuestPublicPage() {
       {/* ── MODALS ── */}
       {selectedAiMatch && <AIPredictionModal match={selectedAiMatch} onClose={() => setSelectedAiMatch(null)} />}
       {showPosterModal && <QRPosterModal url={publicUrl} onClose={() => setShowPosterModal(false)} />}
-      {shareMatch && <ShareMatchModal match={shareMatch} onClose={() => setShareMatch(null)} />}
+      {shareMatch && (
+        <ShareMatchModal
+          match={matches.find(x => x.id === shareMatch.id) || shareMatch}
+          onClose={() => setShareMatch(null)}
+        />
+      )}
 
       {/* ── SPECTATOR MOBILE BOTTOM NAVIGATION (44px+ touch targets) ── */}
       <nav className="mobile-bottom-nav" aria-label="Spectator Mobile Navigation">
