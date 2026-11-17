@@ -80,8 +80,23 @@ function TeamButtons({ title, steps, onAdjust, children }: {
   children?: ReactNode;
 }) {
   return (
-    <div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', textAlign: 'center', fontWeight: 600 }}>{title}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%' }}>
+      <div
+        title={title}
+        style={{
+          fontSize: '11px',
+          color: 'var(--text-muted)',
+          marginBottom: '6px',
+          textAlign: 'center',
+          fontWeight: 600,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          lineHeight: 1.25,
+        }}
+      >
+        {title}
+      </div>
       <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
         {steps.map(d => (
           <button
@@ -89,7 +104,7 @@ function TeamButtons({ title, steps, onAdjust, children }: {
             type="button"
             className={`btn btn-sm ${d > 0 ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => onAdjust(d)}
-            style={{ minHeight: '44px', minWidth: '44px', fontSize: '13px', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}
+            style={{ minHeight: '42px', minWidth: '42px', fontSize: '13px', fontWeight: 800, padding: '4px 10px' }}
           >
             {d > 0 ? `+${d}` : d}
           </button>
@@ -579,8 +594,11 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
       {/* Score row */}
       <div className="match-score-row">
         <div className="team-block">
-          <div style={{ fontSize: '10px', fontWeight: 700, color: !isPlaceholder(match.teamA) ? '#10b981' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: 3 }}>
-            {!isPlaceholder(match.teamA) ? <><CheckIcon size={10} color="#10b981" /> Slot A (Auto-Assigned)</> : 'Slot A (Open)'}
+          <div
+            title={!isPlaceholder(match.teamA) ? 'Slot A (Auto-Assigned)' : 'Slot A (Open)'}
+            style={{ fontSize: '10px', fontWeight: 700, color: !isPlaceholder(match.teamA) ? '#10b981' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}
+          >
+            {!isPlaceholder(match.teamA) ? <><CheckIcon size={10} color="#10b981" /> Slot A · Auto</> : 'Slot A · Open'}
           </div>
           <div className="team-name" style={{ color: match.winner === match.teamA ? 'var(--accent)' : 'inherit', fontWeight: 700 }}>
             {match.teamA || 'TBD'}
@@ -597,13 +615,16 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
           )}
         </div>
 
-        <div className="vs-divider">VS</div>
+        <div className="vs-divider" style={{ alignSelf: 'center' }}>VS</div>
 
         <div className="team-block" style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: !isPlaceholder(match.teamB) ? '#10b981' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
-            {!isPlaceholder(match.teamB) ? <><CheckIcon size={10} color="#10b981" /> Slot B (Auto-Assigned)</> : 'Slot B (Open)'}
+          <div
+            title={!isPlaceholder(match.teamB) ? 'Slot B (Auto-Assigned)' : 'Slot B (Open)'}
+            style={{ fontSize: '10px', fontWeight: 700, color: !isPlaceholder(match.teamB) ? '#10b981' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3, whiteSpace: 'nowrap' }}
+          >
+            {!isPlaceholder(match.teamB) ? <><CheckIcon size={10} color="#10b981" /> Slot B · Auto</> : 'Slot B · Open'}
           </div>
-          <div className="team-name" style={{ color: match.winner === match.teamB ? 'var(--accent)' : 'inherit', fontWeight: 700 }}>
+          <div className="team-name" style={{ color: match.winner === match.teamB ? 'var(--accent)' : 'inherit', fontWeight: 700, justifyContent: 'flex-end' }}>
             {match.teamB || 'TBD'}
           </div>
           {!isLocked ? (
@@ -757,7 +778,7 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
       )}
 
       {/* Actions */}
-      <div className="match-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
+      <div className="match-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', paddingTop: '10px', marginTop: 'auto', borderTop: '1px solid var(--border)' }}>
         {match.status === 'scheduled' && (
           <button
             className="btn btn-sm btn-primary"

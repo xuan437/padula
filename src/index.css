@@ -1050,7 +1050,7 @@ input, select, textarea {
 
 .match-score-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 12px;
   background: var(--bg-elevated);
@@ -1061,15 +1061,21 @@ input, select, textarea {
 
 .team-block {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 6px;
 }
 
 .team-name {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--text-primary);
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  line-height: 1.25;
 }
 
 .score-control-wrap {
