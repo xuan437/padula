@@ -128,7 +128,7 @@ export default function RegistrationPage() {
 
   // Form states
   const [teamForm, setTeamForm] = useState({ name: '', sport: 's1', department: 'd1', division: 'div1', color: '#3b82f6' });
-  const [playerForm, setPlayerForm] = useState({ name: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', email: '', medicalCleared: true });
+  const [playerForm, setPlayerForm] = useState({ lastName: '', firstName: '', middleInitial: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', email: '', medicalCleared: true });
   const [officialForm, setOfficialForm] = useState({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '' });
   const [coordForm, setCoordForm] = useState({ name: '', email: '', department: 'd1' });
 
@@ -153,13 +153,19 @@ export default function RegistrationPage() {
   // Handle Player Submit
   const handlePlayerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!playerForm.name.trim() || !playerForm.studentId.trim()) return;
+    if (!playerForm.lastName.trim() || !playerForm.firstName.trim() || !playerForm.studentId.trim()) return;
+    const cleanLast = playerForm.lastName.trim();
+    const cleanFirst = playerForm.firstName.trim();
+    const cleanMI = playerForm.middleInitial.trim().replace(/\.+$/, '');
+    const fullName = cleanMI
+      ? `${cleanFirst} ${cleanMI.toUpperCase()}. ${cleanLast}`
+      : `${cleanFirst} ${cleanLast}`;
     const cleanStudentId = playerForm.studentId.trim();
     const cleanEmail = playerForm.email.trim().toLowerCase() || `${cleanStudentId.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.asiancollege.edu.ph`;
 
     // Register player entity (no player login account)
     registerPlayer({
-      name: playerForm.name.trim(),
+      name: fullName,
       studentId: cleanStudentId,
       department: playerForm.department,
       sport: playerForm.sport,
@@ -174,9 +180,9 @@ export default function RegistrationPage() {
 
     const assignedTeam = teams.find(t => t.id === playerForm.teamId);
     const teamNotice = assignedTeam ? ` and assigned to team "${assignedTeam.name}"` : '';
-    setSuccessBanner(`Athlete "${playerForm.name}" (${cleanStudentId}) registered successfully${teamNotice}.`);
+    setSuccessBanner(`Athlete "${fullName}" (${cleanStudentId}) registered successfully${teamNotice}.`);
     setRegisteredPlayerNotice(true);
-    setPlayerForm({ name: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', email: '', medicalCleared: true });
+    setPlayerForm({ lastName: '', firstName: '', middleInitial: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', email: '', medicalCleared: true });
     setTimeout(() => {
       setRegisteredPlayerNotice(false);
       setSuccessBanner(null);
@@ -878,19 +884,51 @@ export default function RegistrationPage() {
                 gap: '16px',
                 marginBottom: '18px',
               }}>
-                {/* 1. Full Name */}
+                {/* 1a. Last Name */}
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     <UserIcon size={13} color="var(--accent)" />
-                    Full Name *
+                    Last Name *
                   </label>
                   <input
                     type="text"
                     required
-                    value={playerForm.name}
-                    onChange={e => setPlayerForm(p => ({ ...p, name: e.target.value }))}
+                    value={playerForm.lastName}
+                    onChange={e => setPlayerForm(p => ({ ...p, lastName: e.target.value }))}
                     className="form-input"
-                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px' }}
+                    style={{ height: '42px', borderRadius: '6px', fontSize: '13.5px' }}
+                  />
+                </div>
+
+                {/* 1b. First Name */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <UserIcon size={13} color="var(--accent)" />
+                    First Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={playerForm.firstName}
+                    onChange={e => setPlayerForm(p => ({ ...p, firstName: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '6px', fontSize: '13.5px' }}
+                  />
+                </div>
+
+                {/* 1c. Middle Initial (Optional) */}
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    <UserIcon size={13} color="var(--accent)" />
+                    Middle Initial (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={3}
+                    value={playerForm.middleInitial}
+                    onChange={e => setPlayerForm(p => ({ ...p, middleInitial: e.target.value }))}
+                    className="form-input"
+                    style={{ height: '42px', borderRadius: '6px', fontSize: '13.5px' }}
                   />
                 </div>
 
@@ -1208,7 +1246,9 @@ export default function RegistrationPage() {
                   type="button"
                   className="btn btn-ghost"
                   onClick={() => setPlayerForm({
-                    name: '',
+                    lastName: '',
+                    firstName: '',
+                    middleInitial: '',
                     studentId: '',
                     department: 'd1',
                     sport: 's1',
