@@ -265,6 +265,7 @@ export default function PlayerDashboard() {
               </h2>
               <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 <span>ID: <strong style={{ color: 'var(--text-primary)' }}>{myPlayerProfile.studentId}</strong></span>
+                <span>Department: <strong style={{ color: 'var(--text-primary)' }}>{departments.find(d => d.id === myPlayerProfile.department || d.shortName?.toUpperCase() === myPlayerProfile.department?.toUpperCase())?.name || myPlayerProfile.department || 'Unassigned'}</strong></span>
                 <span>Team: <strong style={{ color: 'var(--accent)' }}>{teams.find(t => t.id === myPlayerProfile.teamId)?.name || 'Unassigned'}</strong></span>
                 <span>Sport: <strong style={{ color: 'var(--text-primary)' }}>{getSportName(myPlayerProfile.sport)}</strong></span>
                 <span>Position: <strong style={{ color: 'var(--text-primary)' }}>{myPlayerProfile.position || 'Athlete'}</strong></span>
@@ -458,7 +459,7 @@ export default function PlayerDashboard() {
           <div style={{ minWidth: '950px' }}>
             {filteredPlayers.map(p => {
               const team = teams.find(t => t.id === p.teamId);
-              const dept = departments.find(d => d.id === p.department);
+              const dept = departments.find(d => d.id === p.department || d.shortName?.toUpperCase() === p.department?.toUpperCase() || d.name?.toLowerCase() === p.department?.toLowerCase());
               const points = p.currentSeasonGoals ?? p.intGoals ?? 0;
               const matches = p.intMatches ?? p.matchStats?.length ?? 0;
 
@@ -632,7 +633,7 @@ export default function PlayerDashboard() {
         }}>
           {filteredPlayers.map(p => {
             const team = teams.find(t => t.id === p.teamId);
-            const dept = departments.find(d => d.id === p.department);
+            const dept = departments.find(d => d.id === p.department || d.shortName?.toUpperCase() === p.department?.toUpperCase() || d.name?.toLowerCase() === p.department?.toLowerCase());
             const points = p.currentSeasonGoals ?? p.intGoals ?? 0;
 
             return (
@@ -700,7 +701,7 @@ export default function PlayerDashboard() {
                       {p.name[0]}
                     </div>
 
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
                         {p.name}
                       </div>
@@ -709,6 +710,20 @@ export default function PlayerDashboard() {
                         {p.position || 'Athlete'} · {getSportName(p.sport)}
                       </div>
 
+                      <div
+                        style={{
+                          fontSize: '11.5px',
+                          color: dept?.color || 'var(--text-muted)',
+                          fontWeight: 600,
+                          marginTop: '2px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        title={dept ? `${dept.shortName} — ${dept.name}` : p.department}
+                      >
+                        {dept ? `${dept.shortName} · ${dept.name}` : (p.department || 'Department Unassigned')}
+                      </div>
                     </div>
 
                   </div>
