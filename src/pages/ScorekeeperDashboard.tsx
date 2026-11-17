@@ -879,6 +879,43 @@ export default function ScorekeeperDashboard() {
     .sort((a, b) => Number(b.status === 'live') - Number(a.status === 'live'));
   const completedMatches = filteredMatches.filter(m => m.status === 'finished');
 
+  const [collapsedSports, setCollapsedSports] = useState<Record<string, boolean>>({});
+  const toggleSportGroup = (key: string) => {
+    setCollapsedSports(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const groupMatchesBySport = useCallback((list: Match[]) => {
+    const map = new Map<string, Match[]>();
+    list.forEach(m => {
+      const k = m.sport || 'other';
+      const arr = map.get(k);
+      if (arr) arr.push(m);
+      else map.set(k, [m]);
+    });
+
+    const catalogOrder = SPORTS_CATALOG.map(s => s.id);
+    return Array.from(map.entries())
+      .sort(([a], [b]) => {
+        const idxA = catalogOrder.indexOf(a);
+        const idxB = catalogOrder.indexOf(b);
+        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+      })
+      .map(([sportId, items]) => ({
+        sportId,
+        sportName: getSportName(sportId),
+        items: [...items].sort((a, b) => {
+          if (a.status === 'live' && b.status !== 'live') return -1;
+          if (b.status === 'live' && a.status !== 'live') return 1;
+          const rDiff = (a.roundNumber || 1) - (b.roundNumber || 1);
+          if (rDiff !== 0) return rDiff;
+          return (a.matchNumber || a.slot || 0) - (b.matchNumber || b.slot || 0);
+        }),
+      }));
+  }, []);
+
+  const activeBySport = useMemo(() => groupMatchesBySport(activeMatches), [activeMatches, groupMatchesBySport]);
+  const completedBySport = useMemo(() => groupMatchesBySport(completedMatches), [completedMatches, groupMatchesBySport]);
+
   const availableScorekeepers = useMemo<GameOfficial[]>(() => {
     const list: GameOfficial[] = [...(officials || []).filter(o => o.role === 'scorekeeper')];
     const allScorers = [
@@ -995,62 +1032,198 @@ export default function ScorekeeperDashboard() {
         })}
       </div>
 
-      {/* ── Active / Live Matches ── */}
+      {/* ── Active / Live Matches (Categorized Per Game) ── */}
       <section>
         <h2 className="section-title">
           <FlameIcon size={18} color="var(--accent)" />
-          <span>Active & Scheduled Matches ({activeMatches.length})</span>
+          <span>Active &amp; Scheduled Matches ({activeMatches.length})</span>
         </h2>
 
-        {activeMatches.length === 0 ? (
+        {activeBySport.length === 0 ? (
           <div className="empty-state glass-card" style={{ padding: '30px', textAlign: 'center' }}>
             No active matches currently assigned.
           </div>
         ) : (
-          <div className="match-grid">
-            {activeMatches.map(m => (
-              <MatchCard
-                key={m.id}
-                match={m}
-                queue={queue}
-                enqueue={enqueue}
-                canAssign={canAssign}
-                onAssignScorer={target => {
-                  setAssignmentModalMatch(target);
-                  setSelectedScorerName(target.scorekeeper || '');
-                }}
-              />
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {activeBySport.map(group => {
+              const collapseKey = `active:${group.sportId}`;
+              const isCollapsed = !!collapsedSports[collapseKey];
+              const liveCount = group.items.filter(m => m.status === 'live').length;
+
+              return (
+                <div
+                  key={group.sportId}
+                  className="glass-card"
+                  style={{
+                    padding: '16px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-surface)',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                      flexWrap: 'wrap',
+                      marginBottom: isCollapsed ? 0 : '14px',
+                      paddingBottom: isCollapsed ? 0 : '10px',
+                      borderBottom: isCollapsed ? 'none' : '1px solid var(--border)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        {getSportIcon(group.sportId, 17, 'var(--accent)')}
+                      </span>
+                      <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {group.sportName}
+                      </h3>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        {group.items.length} Match{group.items.length === 1 ? '' : 'es'}
+                      </span>
+                      {liveCount > 0 && (
+                        <span className="status-badge live" style={{ fontSize: '10px' }}>
+                          <span className="live-dot" /> {liveCount} LIVE
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => toggleSportGroup(collapseKey)}
+                      style={{ fontSize: '11.5px', padding: '4px 10px' }}
+                    >
+                      {isCollapsed ? 'Show Matches ▾' : 'Hide ▴'}
+                    </button>
+                  </div>
+
+                  {!isCollapsed && (
+                    <div className="match-grid">
+                      {group.items.map(m => (
+                        <MatchCard
+                          key={m.id}
+                          match={m}
+                          queue={queue}
+                          enqueue={enqueue}
+                          canAssign={canAssign}
+                          onAssignScorer={target => {
+                            setAssignmentModalMatch(target);
+                            setSelectedScorerName(target.scorekeeper || '');
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* ── Completed Matches ── */}
+      {/* ── Completed Matches (Categorized Per Game) ── */}
       <section style={{ marginTop: '20px' }}>
         <h2 className="section-title">
           <CheckIcon size={18} color="var(--text-muted)" />
-          <span>Completed & Finalized Matches ({completedMatches.length})</span>
+          <span>Completed &amp; Finalized Matches ({completedMatches.length})</span>
         </h2>
 
-        {completedMatches.length === 0 ? (
+        {completedBySport.length === 0 ? (
           <div className="empty-state glass-card" style={{ padding: '30px', textAlign: 'center' }}>
             No completed matches yet.
           </div>
         ) : (
-          <div className="match-grid">
-            {completedMatches.map(m => (
-              <MatchCard
-                key={m.id}
-                match={m}
-                queue={queue}
-                enqueue={enqueue}
-                canAssign={canAssign}
-                onAssignScorer={target => {
-                  setAssignmentModalMatch(target);
-                  setSelectedScorerName(target.scorekeeper || '');
-                }}
-              />
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {completedBySport.map(group => {
+              const collapseKey = `done:${group.sportId}`;
+              const isCollapsed = !!collapsedSports[collapseKey];
+
+              return (
+                <div
+                  key={group.sportId}
+                  className="glass-card"
+                  style={{
+                    padding: '16px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-surface)',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                      flexWrap: 'wrap',
+                      marginBottom: isCollapsed ? 0 : '14px',
+                      paddingBottom: isCollapsed ? 0 : '10px',
+                      borderBottom: isCollapsed ? 'none' : '1px solid var(--border)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        {getSportIcon(group.sportId, 17, 'var(--text-muted)')}
+                      </span>
+                      <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {group.sportName}
+                      </h3>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.25)',
+                          color: '#10b981',
+                        }}
+                      >
+                        {group.items.length} Finalized
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => toggleSportGroup(collapseKey)}
+                      style={{ fontSize: '11.5px', padding: '4px 10px' }}
+                    >
+                      {isCollapsed ? 'Show Matches ▾' : 'Hide ▴'}
+                    </button>
+                  </div>
+
+                  {!isCollapsed && (
+                    <div className="match-grid">
+                      {group.items.map(m => (
+                        <MatchCard
+                          key={m.id}
+                          match={m}
+                          queue={queue}
+                          enqueue={enqueue}
+                          canAssign={canAssign}
+                          onAssignScorer={target => {
+                            setAssignmentModalMatch(target);
+                            setSelectedScorerName(target.scorekeeper || '');
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
