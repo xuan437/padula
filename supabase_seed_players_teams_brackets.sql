@@ -2,9 +2,9 @@
 -- ASIAN COLLEGE PADULA 2026 — FULL SEED DATA SQL
 -- Includes:
 --   - 5 Official Departments (BAA, HTM, CSE, DPD, SHS)
---   - 5 Tournament Events (8 Teams per Game = 40 Teams total)
---   - 112 Registered Players (>= 100) linked to Teams & Departments
---   - 35 Bracket Matches (7 Matches per 8-Team Single Elimination Bracket)
+--   - 7 Tournament Events (8 Teams per Game = 56 Teams total)
+--   - 160 Registered Players (>= 100) linked to Teams & Departments
+--   - 49 Bracket Matches (7 Matches per 8-Team Single Elimination Bracket)
 -- ==============================================================================
 
 -- 1. DEPARTMENTS
@@ -16,7 +16,7 @@ INSERT INTO departments (id, name, short_name, color) VALUES
   ('d5', 'Senior High School Department', 'SHS', '#0284c7')
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, short_name = EXCLUDED.short_name, color = EXCLUDED.color;
 
--- 2. TEAMS (40 Teams — 8 Teams per Game)
+-- 2. TEAMS (56 Teams — 8 Teams per Game)
 INSERT INTO teams (id, name, sport, department, division, color, players, is_active) VALUES
   ('team-s1-1', 'BAA Falcons', 's1', 'd1', 'Men''s Collegiate', '#eab308', '["pl-001", "pl-002", "pl-003"]'::jsonb, true),
   ('team-s1-2', 'CSE Titans', 's1', 'd3', 'Men''s Collegiate', '#9333ea', '["pl-004", "pl-005", "pl-006"]'::jsonb, true),
@@ -57,10 +57,26 @@ INSERT INTO teams (id, name, sport, department, division, color, players, is_act
   ('team-s5-37', 'SHS Phoenix Esports', 's5', 'd5', 'Collegiate 5v5', '#0284c7', '["pl-101", "pl-102", "pl-103"]'::jsonb, true),
   ('team-s5-38', 'CSE Hyperion', 's5', 'd3', 'Collegiate 5v5', '#9333ea', '["pl-104", "pl-105", "pl-106"]'::jsonb, true),
   ('team-s5-39', 'HTM Imperium', 's5', 'd2', 'Collegiate 5v5', '#dc2626', '["pl-107", "pl-108", "pl-109"]'::jsonb, true),
-  ('team-s5-40', 'SHS Eclipse', 's5', 'd5', 'Collegiate 5v5', '#0284c7', '["pl-110", "pl-111", "pl-112"]'::jsonb, true)
+  ('team-s5-40', 'SHS Eclipse', 's5', 'd5', 'Collegiate 5v5', '#0284c7', '["pl-110", "pl-111", "pl-112"]'::jsonb, true),
+  ('team-s6-41', 'BAA Ancients', 's6', 'd1', 'Collegiate 5v5', '#eab308', '["pl-113", "pl-114", "pl-115"]'::jsonb, true),
+  ('team-s6-42', 'CSE Direwolves', 's6', 'd3', 'Collegiate 5v5', '#9333ea', '["pl-116", "pl-117", "pl-118"]'::jsonb, true),
+  ('team-s6-43', 'HTM Radiant', 's6', 'd2', 'Collegiate 5v5', '#dc2626', '["pl-119", "pl-120", "pl-121"]'::jsonb, true),
+  ('team-s6-44', 'DPD Immortals', 's6', 'd4', 'Collegiate 5v5', '#059669', '["pl-122", "pl-123", "pl-124"]'::jsonb, true),
+  ('team-s6-45', 'SHS Aegis', 's6', 'd5', 'Collegiate 5v5', '#0284c7', '["pl-125", "pl-126", "pl-127"]'::jsonb, true),
+  ('team-s6-46', 'CSE Invokers', 's6', 'd3', 'Collegiate 5v5', '#9333ea', '["pl-128", "pl-129", "pl-130"]'::jsonb, true),
+  ('team-s6-47', 'BAA Divine', 's6', 'd1', 'Collegiate 5v5', '#eab308', '["pl-131", "pl-132", "pl-133"]'::jsonb, true),
+  ('team-s6-48', 'DPD Roshan', 's6', 'd4', 'Collegiate 5v5', '#059669', '["pl-134", "pl-135", "pl-136"]'::jsonb, true),
+  ('team-s7-49', 'BAA Sentinels', 's7', 'd1', 'Collegiate 5v5', '#eab308', '["pl-137", "pl-138", "pl-139"]'::jsonb, true),
+  ('team-s7-50', 'CSE Phantoms', 's7', 'd3', 'Collegiate 5v5', '#9333ea', '["pl-140", "pl-141", "pl-142"]'::jsonb, true),
+  ('team-s7-51', 'HTM Vandals', 's7', 'd2', 'Collegiate 5v5', '#dc2626', '["pl-143", "pl-144", "pl-145"]'::jsonb, true),
+  ('team-s7-52', 'DPD Radiants', 's7', 'd4', 'Collegiate 5v5', '#059669', '["pl-146", "pl-147", "pl-148"]'::jsonb, true),
+  ('team-s7-53', 'SHS Operators', 's7', 'd5', 'Collegiate 5v5', '#0284c7', '["pl-149", "pl-150", "pl-151"]'::jsonb, true),
+  ('team-s7-54', 'CSE Spike Rush', 's7', 'd3', 'Collegiate 5v5', '#9333ea', '["pl-152", "pl-153", "pl-154"]'::jsonb, true),
+  ('team-s7-55', 'HTM Clutch', 's7', 'd2', 'Collegiate 5v5', '#dc2626', '["pl-155", "pl-156", "pl-157"]'::jsonb, true),
+  ('team-s7-56', 'SHS Ascent', 's7', 'd5', 'Collegiate 5v5', '#0284c7', '["pl-158", "pl-159", "pl-160"]'::jsonb, true)
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sport = EXCLUDED.sport, department = EXCLUDED.department, color = EXCLUDED.color, players = EXCLUDED.players;
 
--- 3. PLAYERS (112 Players across 5 Departments)
+-- 3. PLAYERS (160 Players across 5 Departments)
 INSERT INTO players (id, name, student_id, email, department, sport, team_id, team_name, jersey_number, position, gwa, medical_cleared, is_active) VALUES
   ('pl-001', 'Lorenzo Castillo', '2026-0001', 'lorenzo.castillo.1@asiancollege.edu.ph', 'd1', 's1', 'team-s1-1', 'BAA Falcons', '4', 'Point Guard', 1.95, true, true),
   ('pl-002', 'Noah Sy', '2026-0002', 'noah.sy.2@asiancollege.edu.ph', 'd1', 's1', 'team-s1-1', 'BAA Falcons', '7', 'Shooting Guard', 1.65, true, true),
@@ -173,19 +189,69 @@ INSERT INTO players (id, name, student_id, email, department, sport, team_id, te
   ('pl-109', 'Tricia Lopez', '2026-0109', 'tricia.lopez.109@asiancollege.edu.ph', 'd2', 's5', 'team-s5-39', 'HTM Imperium', '34', 'EXP Laner', 1.55, true, true),
   ('pl-110', 'Marco Villanueva', '2026-0110', 'marco.villanueva.110@asiancollege.edu.ph', 'd5', 's5', 'team-s5-40', 'SHS Eclipse', '37', 'Jungler', 1.25, true, true),
   ('pl-111', 'Carlo Lim', '2026-0111', 'carlo.lim.111@asiancollege.edu.ph', 'd5', 's5', 'team-s5-40', 'SHS Eclipse', '40', 'Gold Laner', 1.95, true, true),
-  ('pl-112', 'Bryan Manalo', '2026-0112', 'bryan.manalo.112@asiancollege.edu.ph', 'd5', 's5', 'team-s5-40', 'SHS Eclipse', '43', 'EXP Laner', 1.65, true, true)
+  ('pl-112', 'Bryan Manalo', '2026-0112', 'bryan.manalo.112@asiancollege.edu.ph', 'd5', 's5', 'team-s5-40', 'SHS Eclipse', '43', 'EXP Laner', 1.65, true, true),
+  ('pl-113', 'Dominic Ocampo', '2026-0113', 'dominic.ocampo.113@asiancollege.edu.ph', 'd1', 's6', 'team-s6-41', 'BAA Ancients', '46', 'Carry', 1.35, true, true),
+  ('pl-114', 'Katrina Dela Cruz', '2026-0114', 'katrina.delacruz.114@asiancollege.edu.ph', 'd1', 's6', 'team-s6-41', 'BAA Ancients', '49', 'Midlaner', 2.05, true, true),
+  ('pl-115', 'Denise Ong', '2026-0115', 'denise.ong.115@asiancollege.edu.ph', 'd1', 's6', 'team-s6-41', 'BAA Ancients', '52', 'Offlaner', 1.75, true, true),
+  ('pl-116', 'Mikaela Lopez', '2026-0116', 'mikaela.lopez.116@asiancollege.edu.ph', 'd3', 's6', 'team-s6-42', 'CSE Direwolves', '55', 'Carry', 1.45, true, true),
+  ('pl-117', 'Joshua Gonzales', '2026-0117', 'joshua.gonzales.117@asiancollege.edu.ph', 'd3', 's6', 'team-s6-42', 'CSE Direwolves', '58', 'Midlaner', 2.15, true, true),
+  ('pl-118', 'Nathan Morales', '2026-0118', 'nathan.morales.118@asiancollege.edu.ph', 'd3', 's6', 'team-s6-42', 'CSE Direwolves', '61', 'Offlaner', 1.85, true, true),
+  ('pl-119', 'Kevin Manalo', '2026-0119', 'kevin.manalo.119@asiancollege.edu.ph', 'd2', 's6', 'team-s6-43', 'HTM Radiant', '64', 'Carry', 1.55, true, true),
+  ('pl-120', 'Isabella Bautista', '2026-0120', 'isabella.bautista.120@asiancollege.edu.ph', 'd2', 's6', 'team-s6-43', 'HTM Radiant', '67', 'Midlaner', 1.25, true, true),
+  ('pl-121', 'Andrea Aquino', '2026-0121', 'andrea.aquino.121@asiancollege.edu.ph', 'd2', 's6', 'team-s6-43', 'HTM Radiant', '70', 'Offlaner', 1.95, true, true),
+  ('pl-122', 'Michelle Ong', '2026-0122', 'michelle.ong.122@asiancollege.edu.ph', 'd4', 's6', 'team-s6-44', 'DPD Immortals', '73', 'Carry', 1.65, true, true),
+  ('pl-123', 'Cheska Perez', '2026-0123', 'cheska.perez.123@asiancollege.edu.ph', 'd4', 's6', 'team-s6-44', 'DPD Immortals', '76', 'Midlaner', 1.35, true, true),
+  ('pl-124', 'Miguel Flores', '2026-0124', 'miguel.flores.124@asiancollege.edu.ph', 'd4', 's6', 'team-s6-44', 'DPD Immortals', '79', 'Offlaner', 2.05, true, true),
+  ('pl-125', 'Jericho Morales', '2026-0125', 'jericho.morales.125@asiancollege.edu.ph', 'd5', 's6', 'team-s6-45', 'SHS Aegis', '82', 'Carry', 1.75, true, true),
+  ('pl-126', 'Justin Soriano', '2026-0126', 'justin.soriano.126@asiancollege.edu.ph', 'd5', 's6', 'team-s6-45', 'SHS Aegis', '85', 'Midlaner', 1.45, true, true),
+  ('pl-127', 'Beatrice Cruz', '2026-0127', 'beatrice.cruz.127@asiancollege.edu.ph', 'd5', 's6', 'team-s6-45', 'SHS Aegis', '88', 'Offlaner', 2.15, true, true),
+  ('pl-128', 'Nicole Aquino', '2026-0128', 'nicole.aquino.128@asiancollege.edu.ph', 'd3', 's6', 'team-s6-46', 'CSE Invokers', '91', 'Carry', 1.85, true, true),
+  ('pl-129', 'Kristine Go', '2026-0129', 'kristine.go.129@asiancollege.edu.ph', 'd3', 's6', 'team-s6-46', 'CSE Invokers', '94', 'Midlaner', 1.55, true, true),
+  ('pl-130', 'Gabriel Diaz', '2026-0130', 'gabriel.diaz.130@asiancollege.edu.ph', 'd3', 's6', 'team-s6-46', 'CSE Invokers', '97', 'Offlaner', 1.25, true, true),
+  ('pl-131', 'Christian Flores', '2026-0131', 'christian.flores.131@asiancollege.edu.ph', 'd1', 's6', 'team-s6-47', 'BAA Divine', '2', 'Carry', 1.95, true, true),
+  ('pl-132', 'Ethan Alvarez', '2026-0132', 'ethan.alvarez.132@asiancollege.edu.ph', 'd1', 's6', 'team-s6-47', 'BAA Divine', '5', 'Midlaner', 1.65, true, true),
+  ('pl-133', 'Vincent Aguilar', '2026-0133', 'vincent.aguilar.133@asiancollege.edu.ph', 'd1', 's6', 'team-s6-47', 'BAA Divine', '8', 'Offlaner', 1.35, true, true),
+  ('pl-134', 'Camille Cruz', '2026-0134', 'camille.cruz.134@asiancollege.edu.ph', 'd4', 's6', 'team-s6-48', 'DPD Roshan', '11', 'Carry', 2.05, true, true),
+  ('pl-135', 'Samantha Rivera', '2026-0135', 'samantha.rivera.135@asiancollege.edu.ph', 'd4', 's6', 'team-s6-48', 'DPD Roshan', '14', 'Midlaner', 1.75, true, true),
+  ('pl-136', 'Danica Chua', '2026-0136', 'danica.chua.136@asiancollege.edu.ph', 'd4', 's6', 'team-s6-48', 'DPD Roshan', '17', 'Offlaner', 1.45, true, true),
+  ('pl-137', 'Rhea Diaz', '2026-0137', 'rhea.diaz.137@asiancollege.edu.ph', 'd1', 's7', 'team-s7-49', 'BAA Sentinels', '20', 'Duelist', 2.15, true, true),
+  ('pl-138', 'Lorenzo Torres', '2026-0138', 'lorenzo.torres.138@asiancollege.edu.ph', 'd1', 's7', 'team-s7-49', 'BAA Sentinels', '23', 'Initiator', 1.85, true, true),
+  ('pl-139', 'Noah Salazar', '2026-0139', 'noah.salazar.139@asiancollege.edu.ph', 'd1', 's7', 'team-s7-49', 'BAA Sentinels', '26', 'Controller', 1.55, true, true),
+  ('pl-140', 'Kenneth Aguilar', '2026-0140', 'kenneth.aguilar.140@asiancollege.edu.ph', 'd3', 's7', 'team-s7-50', 'CSE Phantoms', '29', 'Duelist', 1.25, true, true),
+  ('pl-141', 'Clarisse Reyes', '2026-0141', 'clarisse.reyes.141@asiancollege.edu.ph', 'd3', 's7', 'team-s7-50', 'CSE Phantoms', '32', 'Initiator', 1.95, true, true),
+  ('pl-142', 'Patricia Castillo', '2026-0142', 'patricia.castillo.142@asiancollege.edu.ph', 'd3', 's7', 'team-s7-50', 'CSE Phantoms', '35', 'Controller', 1.65, true, true),
+  ('pl-143', 'Jasmine Chua', '2026-0143', 'jasmine.chua.143@asiancollege.edu.ph', 'd2', 's7', 'team-s7-51', 'HTM Vandals', '38', 'Duelist', 1.35, true, true),
+  ('pl-144', 'Rafael Santiago', '2026-0144', 'rafael.santiago.144@asiancollege.edu.ph', 'd2', 's7', 'team-s7-51', 'HTM Vandals', '41', 'Initiator', 2.05, true, true),
+  ('pl-145', 'Andre Mendoza', '2026-0145', 'andre.mendoza.145@asiancollege.edu.ph', 'd2', 's7', 'team-s7-51', 'HTM Vandals', '44', 'Controller', 1.75, true, true),
+  ('pl-146', 'Liam Salazar', '2026-0146', 'liam.salazar.146@asiancollege.edu.ph', 'd4', 's7', 'team-s7-52', 'DPD Radiants', '47', 'Duelist', 1.45, true, true),
+  ('pl-147', 'Patrick De Leon', '2026-0147', 'patrick.deleon.147@asiancollege.edu.ph', 'd4', 's7', 'team-s7-52', 'DPD Radiants', '50', 'Initiator', 2.15, true, true),
+  ('pl-148', 'Bianca Santos', '2026-0148', 'bianca.santos.148@asiancollege.edu.ph', 'd4', 's7', 'team-s7-52', 'DPD Radiants', '53', 'Controller', 1.85, true, true),
+  ('pl-149', 'Hannah Castillo', '2026-0149', 'hannah.castillo.149@asiancollege.edu.ph', 'd5', 's7', 'team-s7-53', 'SHS Operators', '56', 'Duelist', 1.55, true, true),
+  ('pl-150', 'Alyssa Sy', '2026-0150', 'alyssa.sy.150@asiancollege.edu.ph', 'd5', 's7', 'team-s7-53', 'SHS Operators', '59', 'Initiator', 1.25, true, true),
+  ('pl-151', 'Daniel Tolentino', '2026-0151', 'daniel.tolentino.151@asiancollege.edu.ph', 'd5', 's7', 'team-s7-53', 'SHS Operators', '62', 'Controller', 1.95, true, true),
+  ('pl-152', 'Paolo Mendoza', '2026-0152', 'paolo.mendoza.152@asiancollege.edu.ph', 'd3', 's7', 'team-s7-54', 'CSE Spike Rush', '65', 'Duelist', 1.65, true, true),
+  ('pl-153', 'Adrian Navarro', '2026-0153', 'adrian.navarro.153@asiancollege.edu.ph', 'd3', 's7', 'team-s7-54', 'CSE Spike Rush', '68', 'Initiator', 1.35, true, true),
+  ('pl-154', 'Sophia Pascual', '2026-0154', 'sophia.pascual.154@asiancollege.edu.ph', 'd3', 's7', 'team-s7-54', 'CSE Spike Rush', '71', 'Controller', 2.05, true, true),
+  ('pl-155', 'Angela Santos', '2026-0155', 'angela.santos.155@asiancollege.edu.ph', 'd2', 's7', 'team-s7-55', 'HTM Clutch', '74', 'Duelist', 1.75, true, true),
+  ('pl-156', 'Veronica Ramos', '2026-0156', 'veronica.ramos.156@asiancollege.edu.ph', 'd2', 's7', 'team-s7-55', 'HTM Clutch', '77', 'Initiator', 1.45, true, true),
+  ('pl-157', 'Tricia Tan', '2026-0157', 'tricia.tan.157@asiancollege.edu.ph', 'd2', 's7', 'team-s7-55', 'HTM Clutch', '80', 'Controller', 2.15, true, true),
+  ('pl-158', 'Marco Tolentino', '2026-0158', 'marco.tolentino.158@asiancollege.edu.ph', 'd5', 's7', 'team-s7-56', 'SHS Ascent', '83', 'Duelist', 1.85, true, true),
+  ('pl-159', 'Carlo Garcia', '2026-0159', 'carlo.garcia.159@asiancollege.edu.ph', 'd5', 's7', 'team-s7-56', 'SHS Ascent', '86', 'Initiator', 1.55, true, true),
+  ('pl-160', 'Bryan Fernandez', '2026-0160', 'bryan.fernandez.160@asiancollege.edu.ph', 'd5', 's7', 'team-s7-56', 'SHS Ascent', '89', 'Controller', 1.25, true, true)
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, department = EXCLUDED.department, sport = EXCLUDED.sport, team_id = EXCLUDED.team_id, team_name = EXCLUDED.team_name, jersey_number = EXCLUDED.jersey_number, position = EXCLUDED.position;
 
--- 4. TOURNAMENT EVENTS (5 Events)
+-- 4. TOURNAMENT EVENTS (7 Events)
 INSERT INTO tournament_events (id, name, sport, division, format, category, dates, start_date, end_date, start_time, end_time, venue, status, archived) VALUES
   ('evt-s1-2026', 'Padula 2026 Basketball Championship', 's1', 'Men''s Collegiate', 'single_elimination', 'Varsity Championship', 'Nov 18 - Nov 22, 2026', '2026-11-18', '2026-11-22', '08:00', '17:00', 'Main Arena Court 1', 'published', false),
   ('evt-s2-2026', 'Padula 2026 Volleyball Championship', 's2', 'Open Collegiate', 'single_elimination', 'Varsity Championship', 'Nov 18 - Nov 22, 2026', '2026-11-18', '2026-11-22', '08:00', '17:00', 'Main Arena Court 2', 'published', false),
   ('evt-s3-2026', 'Padula 2026 Badminton Open', 's3', 'Open Division', 'single_elimination', 'Varsity Championship', 'Nov 18 - Nov 22, 2026', '2026-11-18', '2026-11-22', '08:00', '17:00', 'Main Arena Court 2', 'published', false),
   ('evt-fb-2026', 'Padula 2026 Collegiate Football Cup', 's_football', 'Open Division', 'single_elimination', 'Varsity Championship', 'Nov 18 - Nov 22, 2026', '2026-11-18', '2026-11-22', '08:00', '17:00', 'Main Sports Field', 'published', false),
-  ('evt-mlbb-2026', 'Padula 2026 MLBB Esports Cup', 's5', 'Collegiate 5v5', 'single_elimination', 'Varsity Championship', 'Nov 18 - Nov 22, 2026', '2026-11-18', '2026-11-22', '08:00', '17:00', 'Esports Arena Lab 1', 'published', false)
+  ('evt-mlbb-2026', 'Padula 2026 MLBB Esports Cup', 's5', 'Collegiate 5v5', 'single_elimination', 'Varsity Championship', 'Nov 18 - Nov 22, 2026', '2026-11-18', '2026-11-22', '08:00', '17:00', 'Esports Arena Lab 1', 'published', false),
+  ('evt-dota2-2026', 'Padula 2026 DOTA 2 Championship', 's6', 'Collegiate 5v5', 'single_elimination', 'Varsity Championship', 'Nov 18 - Nov 22, 2026', '2026-11-18', '2026-11-22', '08:00', '17:00', 'Esports Arena Lab 1', 'published', false),
+  ('evt-val-2026', 'Padula 2026 Valorant Collegiate Cup', 's7', 'Collegiate 5v5', 'single_elimination', 'Varsity Championship', 'Nov 18 - Nov 22, 2026', '2026-11-18', '2026-11-22', '08:00', '17:00', 'Esports Arena Lab 1', 'published', false)
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sport = EXCLUDED.sport, format = EXCLUDED.format, venue = EXCLUDED.venue, status = EXCLUDED.status;
 
--- 5. BRACKET MATCHES (35 Matches — 8-Team Brackets for all 5 Games)
+-- 5. BRACKET MATCHES (49 Matches — 8-Team Brackets for all 5 Games)
 INSERT INTO matches (id, event_id, sport, division, format, team_a, team_b, score_a, score_b, status, venue, round, round_number, slot, match_number, next_match_id, next_slot, is_bye) VALUES
   ('m-s1-qf1', 'evt-s1-2026', 's1', 'Men''s Collegiate', 'single_elimination', 'BAA Falcons', 'CSE Titans', 0, 0, 'scheduled', 'Main Arena Court 1', 'Quarter-Finals', 1, 1, 1, 'm-s1-sf1', 'A', false),
   ('m-s1-qf2', 'evt-s1-2026', 's1', 'Men''s Collegiate', 'single_elimination', 'HTM Chefs', 'DPD Strikers', 0, 0, 'scheduled', 'Main Arena Court 1', 'Quarter-Finals', 1, 2, 2, 'm-s1-sf1', 'B', false),
@@ -221,5 +287,19 @@ INSERT INTO matches (id, event_id, sport, division, format, team_a, team_b, scor
   ('m-s5-qf4', 'evt-mlbb-2026', 's5', 'Collegiate 5v5', 'single_elimination', 'HTM Imperium', 'SHS Eclipse', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 4, 4, 'm-s5-sf2', 'B', false),
   ('m-s5-sf1', 'evt-mlbb-2026', 's5', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #1', 'Winner of Match #2', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Semi-Finals', 2, 1, 5, 'm-s5-fin', 'A', false),
   ('m-s5-sf2', 'evt-mlbb-2026', 's5', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #3', 'Winner of Match #4', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Semi-Finals', 2, 2, 6, 'm-s5-fin', 'B', false),
-  ('m-s5-fin', 'evt-mlbb-2026', 's5', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #5', 'Winner of Match #6', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Championship Final', 3, 1, 7, NULL, NULL, false)
+  ('m-s5-fin', 'evt-mlbb-2026', 's5', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #5', 'Winner of Match #6', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Championship Final', 3, 1, 7, NULL, NULL, false),
+  ('m-s6-qf1', 'evt-dota2-2026', 's6', 'Collegiate 5v5', 'single_elimination', 'BAA Ancients', 'CSE Direwolves', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 1, 1, 'm-s6-sf1', 'A', false),
+  ('m-s6-qf2', 'evt-dota2-2026', 's6', 'Collegiate 5v5', 'single_elimination', 'HTM Radiant', 'DPD Immortals', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 2, 2, 'm-s6-sf1', 'B', false),
+  ('m-s6-qf3', 'evt-dota2-2026', 's6', 'Collegiate 5v5', 'single_elimination', 'SHS Aegis', 'CSE Invokers', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 3, 3, 'm-s6-sf2', 'A', false),
+  ('m-s6-qf4', 'evt-dota2-2026', 's6', 'Collegiate 5v5', 'single_elimination', 'BAA Divine', 'DPD Roshan', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 4, 4, 'm-s6-sf2', 'B', false),
+  ('m-s6-sf1', 'evt-dota2-2026', 's6', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #1', 'Winner of Match #2', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Semi-Finals', 2, 1, 5, 'm-s6-fin', 'A', false),
+  ('m-s6-sf2', 'evt-dota2-2026', 's6', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #3', 'Winner of Match #4', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Semi-Finals', 2, 2, 6, 'm-s6-fin', 'B', false),
+  ('m-s6-fin', 'evt-dota2-2026', 's6', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #5', 'Winner of Match #6', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Championship Final', 3, 1, 7, NULL, NULL, false),
+  ('m-s7-qf1', 'evt-val-2026', 's7', 'Collegiate 5v5', 'single_elimination', 'BAA Sentinels', 'CSE Phantoms', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 1, 1, 'm-s7-sf1', 'A', false),
+  ('m-s7-qf2', 'evt-val-2026', 's7', 'Collegiate 5v5', 'single_elimination', 'HTM Vandals', 'DPD Radiants', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 2, 2, 'm-s7-sf1', 'B', false),
+  ('m-s7-qf3', 'evt-val-2026', 's7', 'Collegiate 5v5', 'single_elimination', 'SHS Operators', 'CSE Spike Rush', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 3, 3, 'm-s7-sf2', 'A', false),
+  ('m-s7-qf4', 'evt-val-2026', 's7', 'Collegiate 5v5', 'single_elimination', 'HTM Clutch', 'SHS Ascent', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Quarter-Finals', 1, 4, 4, 'm-s7-sf2', 'B', false),
+  ('m-s7-sf1', 'evt-val-2026', 's7', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #1', 'Winner of Match #2', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Semi-Finals', 2, 1, 5, 'm-s7-fin', 'A', false),
+  ('m-s7-sf2', 'evt-val-2026', 's7', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #3', 'Winner of Match #4', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Semi-Finals', 2, 2, 6, 'm-s7-fin', 'B', false),
+  ('m-s7-fin', 'evt-val-2026', 's7', 'Collegiate 5v5', 'single_elimination', 'Winner of Match #5', 'Winner of Match #6', 0, 0, 'scheduled', 'Esports Arena Lab 1', 'Championship Final', 3, 1, 7, NULL, NULL, false)
 ON CONFLICT (id) DO UPDATE SET team_a = EXCLUDED.team_a, team_b = EXCLUDED.team_b, round = EXCLUDED.round, round_number = EXCLUDED.round_number, slot = EXCLUDED.slot, match_number = EXCLUDED.match_number, next_match_id = EXCLUDED.next_match_id, next_slot = EXCLUDED.next_slot;
