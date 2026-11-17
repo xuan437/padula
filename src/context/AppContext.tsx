@@ -1804,9 +1804,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       };
     }
 
-    // Automatically reset sample tournament data when entering demo mode
-    seedDemoData();
-
     const isDemoRole = cleanEmail.startsWith('demo.') || member.isMock || cleanEmail.includes('mock');
     const demoDisplayName = member.role === 'director'
       ? 'Demo Director'
@@ -1825,12 +1822,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       status: member.status,
       isActive: true,
       gmailVerified: true,
-      isMock: true,
+      isMock: false,
       avatarInitials: member.role === 'director' ? 'DD' : member.role === 'coordinator' ? 'DC' : 'DS',
     };
 
     setCurrentUser(loggedUser);
-    addAuditLog('login', `Entered Demo Mode as ${demoDisplayName} (Sample Dataset Active)`, member.id, 'User');
+    addAuditLog('login', `Signed in as ${demoDisplayName} with full database access`, member.id, 'User');
 
     if (member.role === 'director' || member.role === 'coordinator') {
       setActiveView('admin');
@@ -1839,7 +1836,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
 
     return { success: true, user: loggedUser };
-  }, [staff, setCurrentUser, setActiveView, seedDemoData, addAuditLog]);
+  }, [staff, setCurrentUser, setActiveView, addAuditLog]);
 
   const deleteMockData = useCallback(async () => {
     if (!currentUser || currentUser.role !== 'director') {
