@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
 import {
   ClipboardIcon,
@@ -98,6 +99,158 @@ export default function RegistrationPage() {
   } | null>(null);
   const [viewingRosterTeam, setViewingRosterTeam] = useState<Team | null>(null);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+  const teamExcelInputRef = useRef<HTMLInputElement | null>(null);
+  const playerExcelInputRef = useRef<HTMLInputElement | null>(null);
+
+  const resolveDepartmentId = (rawVal: unknown): string => {
+    const val = String(rawVal ?? '').trim().toLowerCase();
+    if (!val) return departments[0]?.id || 'd1';
+    const found = departments.find(
+      d => d.id.toLowerCase() === val || d.shortName.toLowerCase() === val || d.name.toLowerCase() === val
+    );
+    return found?.id || departments[0]?.id || 'd1';
+  };
+
+  const resolveSportId = (rawVal: unknown): string => {
+    const val = String(rawVal ?? '').trim().toLowerCase();
+    if (!val) return SPORTS_CATALOG[0]?.id || 's1';
+    const found = SPORTS_CATALOG.find(
+      s => s.id.toLowerCase() === val || s.name.toLowerCase() === val
+    );
+    return found?.id || SPORTS_CATALOG[0]?.id || 's1';
+  };
+
+  const downloadExcelTemplate = (kind: 'teams' | 'players') => {
+    if (!canRegister) return;
+    const wb = XLSX.utils.book_new();
+    if (kind === 'teams') {
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['Team Name', 'Department', 'Sport', 'Division'],
+        ['BAA Falcons', 'BAA', 'Basketball', 'Men\'s Collegiate'],
+      ]);
+      XLSX.utils.book_append_sheet(wb, ws, 'Teams');
+      XLSX.writeFile(wb, 'padula_teams_template.xlsx');
+    } else {
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['Last Name', 'First Name', 'Middle Initial', 'Student ID', 'Department', 'Sport', 'Team', 'Jersey Number', 'Position', 'Gmail', 'Medical Cleared'],
+        ['Santos', 'Maria', 'C', '2026-0001', 'BAA', 'Basketball', 'BAA Falcons', '10', 'Point Guard', 'maria.santos@asiancollege.edu.ph', 'Yes'],
+      ]);
+      XLSX.utils.book_append_sheet(wb, ws, 'Players');
+      XLSX.writeFile(wb, 'padula_players_template.xlsx');
+    }
+  };
+
+  const handleExcelImport = async (kind: 'teams' | 'players', e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !canRegister) return;
+
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: '' });
+
+      if (rows.length === 0) {
+        showBanner('Excel file is empty. Please add at least one row and try again.');
+        return;
+      }
+
+      const pickField = (row: Record<string, unknown>, keys: string[]): string => {
+        for (const k of Object.keys(row)) {
+          const norm = k.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (keys.includes(norm)) return String(row[k] ?? '').trim();
+        }
+        return '';
+      };
+
+      if (kind === 'teams') {
+        let imported = 0;
+        let skipped = 0;
+        const seen = new Set(teams.map(t => `${t.sport}::${t.name.toLowerCase()}`));
+
+        for (const row of rows) {
+          const teamName = pickField(row, ['teamname', 'team', 'name']);
+          if (!teamName) { skipped++; continue; }
+          const deptId = resolveDepartmentId(pickField(row, ['department', 'dept', 'college']));
+          const sportId = resolveSportId(pickField(row, ['sport', 'discipline', 'game']));
+          const divisionVal = pickField(row, ['division', 'div']) || 'Open Division';
+          const key = `${sportId}::${teamName.toLowerCase()}`;
+          if (seen.has(key)) { skipped++; continue; }
+
+          const deptObj = departments.find(d => d.id === deptId);
+          seen.add(key);
+          registerTeam({
+            name: teamName,
+            sport: sportId,
+            department: deptId,
+            division: divisionVal,
+            players: [],
+            color: deptObj?.color || '#0f2d5c',
+            isActive: true,
+          });
+          imported++;
+        }
+        showBanner(`Excel Import Complete: ${imported} team${imported === 1 ? '' : 's'} registered${skipped > 0 ? ` (${skipped} skipped)` : ''}.`);
+      } else {
+        let imported = 0;
+        let skipped = 0;
+        const seenIds = new Set(players.map(p => p.studentId.toLowerCase()));
+
+        for (const row of rows) {
+          const lastName = pickField(row, ['lastname', 'surname', 'lname']);
+          const firstName = pickField(row, ['firstname', 'givenname', 'fname']);
+          const mi = pickField(row, ['middleinitial', 'mi', 'middle']).replace(/\.+$/, '');
+          const combinedName = pickField(row, ['fullname', 'name', 'playername', 'athletename']);
+
+          const fullName = (lastName && firstName)
+            ? (mi ? `${firstName} ${mi.toUpperCase()}. ${lastName}` : `${firstName} ${lastName}`)
+            : combinedName;
+
+          const studentId = pickField(row, ['studentid', 'id', 'sid']);
+          if (!fullName || !studentId || seenIds.has(studentId.toLowerCase())) {
+            skipped++;
+            continue;
+          }
+
+          const deptId = resolveDepartmentId(pickField(row, ['department', 'dept', 'college']));
+          const sportId = resolveSportId(pickField(row, ['sport', 'discipline', 'game']));
+          const teamNameRaw = pickField(row, ['team', 'teamname', 'squad']);
+          const matchedTeam = teamNameRaw
+            ? teams.find(t => t.name.toLowerCase() === teamNameRaw.toLowerCase() && (t.sport === sportId || !teamNameRaw))
+              || teams.find(t => t.name.toLowerCase() === teamNameRaw.toLowerCase())
+            : undefined;
+
+          const jersey = pickField(row, ['jerseynumber', 'jersey', 'number', 'no']) || '00';
+          const position = pickField(row, ['position', 'role', 'pos']) || 'Player';
+          const emailRaw = pickField(row, ['gmail', 'email', 'institutionalgmail']);
+          const cleanEmail = emailRaw ? emailRaw.toLowerCase() : `${studentId.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.asiancollege.edu.ph`;
+          const medRaw = pickField(row, ['medicalcleared', 'medical', 'cleared', 'eligible']).toLowerCase();
+          const medicalCleared = medRaw ? !['no', 'false', '0', 'pending'].includes(medRaw) : true;
+
+          seenIds.add(studentId.toLowerCase());
+          registerPlayer({
+            name: fullName,
+            studentId,
+            department: matchedTeam?.department || deptId,
+            sport: matchedTeam?.sport || sportId,
+            teamId: matchedTeam?.id,
+            jerseyNumber: jersey,
+            position,
+            email: cleanEmail,
+            medicalCleared,
+            isActive: true,
+            currentSeasonGoals: 0,
+          });
+          imported++;
+        }
+        showBanner(`Excel Import Complete: ${imported} athlete${imported === 1 ? '' : 's'} registered${skipped > 0 ? ` (${skipped} skipped/duplicate)` : ''}.`);
+      }
+    } catch (err) {
+      console.error('Excel import error:', err);
+      showBanner('Failed to read Excel file. Please ensure it is a valid .xlsx, .xls, or .csv file.');
+    }
+  };
 
   const getTeamPlayers = (team: Team) => {
     return players.filter(p =>
@@ -522,7 +675,36 @@ export default function RegistrationPage() {
       {activeTab === 'teams' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="glass-card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 16px' }}>Register Team</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0 }}>Register Team</h3>
+              {canRegister && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <input
+                    ref={teamExcelInputRef}
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    style={{ display: 'none' }}
+                    onChange={e => handleExcelImport('teams', e)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => downloadExcelTemplate('teams')}
+                    title="Download Excel template for bulk team registration"
+                  >
+                    Download Template (.xlsx)
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    onClick={() => teamExcelInputRef.current?.click()}
+                    title="Import teams from an Excel (.xlsx / .xls / .csv) file"
+                  >
+                    + Import Excel
+                  </button>
+                </div>
+              )}
+            </div>
             <form onSubmit={handleTeamSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
               <div className="form-group">
                 <label className="form-label">Team Name *</label>
@@ -864,12 +1046,39 @@ export default function RegistrationPage() {
                 </div>
               </div>
 
-              {/* Quick Counts Pill */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* Quick Counts & Excel Import (Director & Coordinators) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {canRegister && (
+                  <>
+                    <input
+                      ref={playerExcelInputRef}
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      style={{ display: 'none' }}
+                      onChange={e => handleExcelImport('players', e)}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => downloadExcelTemplate('players')}
+                      title="Download Excel template for bulk athlete registration"
+                    >
+                      Download Template (.xlsx)
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() => playerExcelInputRef.current?.click()}
+                      title="Import athletes from an Excel (.xlsx / .xls / .csv) file"
+                    >
+                      + Import Excel
+                    </button>
+                  </>
+                )}
                 <div style={{
                   background: 'var(--bg-elevated)',
                   border: '1px solid var(--border)',
-                  borderRadius: '10px',
+                  borderRadius: '6px',
                   padding: '8px 14px',
                   textAlign: 'right',
                 }}>
