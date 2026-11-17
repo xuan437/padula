@@ -27,9 +27,9 @@ const POSITIONS_BY_SPORT: Record<string, string[]> = {
   'Frisbee (Ultimate)': ['Handler', 'Cutter', 'Deep Receiver'],
   Chess: ['Board 1', 'Board 2', 'Board 3', 'Alternate'],
   Scrabble: ['Player', 'Alternate'],
-  'Mobile Legends': ['Mid Lane', 'Jungler', 'Exp Lane', 'Gold Lane', 'Roamer'],
-  'DOTA 2': ['Carry (Pos 1)', 'Mid (Pos 2)', 'Offlane (Pos 3)', 'Soft Support (Pos 4)', 'Hard Support (Pos 5)'],
-  Valorant: ['Duelist', 'Initiator', 'Controller', 'Sentinel'],
+  'Mobile Legends': ['Mid Lane', 'Jungler', 'Exp Lane', 'Gold Lane', 'Roamer', 'Flex', 'Shotcaller / Captain', 'Substitute / 6th Man'],
+  'DOTA 2': ['Carry (Pos 1)', 'Mid (Pos 2)', 'Offlane (Pos 3)', 'Soft Support (Pos 4)', 'Hard Support (Pos 5)', 'Captain / Drafter', 'Stand-in / Substitute'],
+  Valorant: ['Duelist', 'Initiator', 'Controller', 'Sentinel', 'Flex', 'In-Game Leader (IGL)', 'Substitute / 6th Man'],
 };
 
 export function formatPlayerInitialLastName(fullName: string): string {
@@ -239,7 +239,14 @@ export default function RegistrationPage() {
   };
 
   const currentSportName = useMemo(() => getSportName(playerForm.sport), [playerForm.sport]);
-  const sportPresetPositions = useMemo(() => POSITIONS_BY_SPORT[currentSportName] || [], [currentSportName]);
+  const currentSportMeta = useMemo(() => SPORTS_CATALOG.find(s => s.id === playerForm.sport || s.name.toLowerCase() === currentSportName.toLowerCase()), [playerForm.sport, currentSportName]);
+  const sportPresetPositions = useMemo(() => {
+    if (POSITIONS_BY_SPORT[currentSportName]) return POSITIONS_BY_SPORT[currentSportName];
+    if (currentSportMeta?.category === 'esport') {
+      return ['Team Captain / IGL', 'Carry / Duelist', 'Mid / Flex', 'Support / Roamer', 'Substitute / 6th Man'];
+    }
+    return [];
+  }, [currentSportName, currentSportMeta]);
 
   const playerMatchingTeams = useMemo(() => {
     return teams.filter(t => {
