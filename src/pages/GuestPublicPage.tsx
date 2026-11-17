@@ -1223,48 +1223,47 @@ export default function GuestPublicPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   flexWrap: 'wrap',
-                  gap: '12px',
+                  gap: '14px',
                 }}>
-                  <div style={{ flex: '1 1 320px' }}>
+                  <div style={{ flex: '1 1 360px', minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                      {getSportIcon(m.sport, 14, 'var(--accent)')}
-                      <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        {getSportIcon(m.sport, 14, 'var(--accent)')}
+                      </span>
+                      <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                         {getSportName(m.sport)} · {m.round} {m.matchNumber ? `(Match #${m.matchNumber})` : ''}
                       </span>
                       <span style={{
                         fontSize: '10px',
                         fontWeight: 800,
-                        padding: '2px 8px',
-                        borderRadius: '999px',
-                        background: ctx.format === 'round_robin' ? 'rgba(59,130,246,0.14)' : 'rgba(220,38,38,0.14)',
-                        color: ctx.format === 'round_robin' ? '#3b82f6' : 'var(--accent)',
+                        padding: '2px 7px',
+                        borderRadius: '4px',
+                        background: ctx.format === 'round_robin' ? 'rgba(56, 189, 248, 0.14)' : 'var(--accent-light)',
+                        color: ctx.format === 'round_robin' ? '#0284c7' : 'var(--accent)',
                       }}>
                         {ctx.formatLabel}
                       </span>
                     </div>
-                    <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.3 }}>
                       {isPlaceholder(m.teamA) ? 'TBD' : m.teamA} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>vs</span> {isPlaceholder(m.teamB) ? 'TBD' : m.teamB}
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '6px 14px', alignItems: 'center' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '4px 12px', alignItems: 'center' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                         <CalendarIcon size={12} color="var(--text-muted)" />
-                        <strong>Date:</strong> {ctx.formattedDate}
+                        <span>{ctx.formattedDate}</span>
                       </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <ClockIcon size={12} color="var(--text-muted)" />
-                        <strong>Time:</strong> {ctx.timeStr}
-                      </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>·</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                         <MapPinIcon size={12} color="var(--accent)" />
-                        <strong>Event Place:</strong> {ctx.venueName} ({ctx.venueLocation}{ctx.venueCapacity ? ` · Cap ${ctx.venueCapacity}` : ''})
+                        <span>{ctx.venueName} ({ctx.venueLocation}{ctx.venueCapacity ? ` · Cap ${ctx.venueCapacity}` : ''})</span>
                       </span>
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                      Event: {ctx.eventName} · Official Scorer: {m.scorekeeper || 'Official Desk'} · Referee: {m.referee || 'Certified Official'}
+                      {ctx.eventName} · Scorer: {m.scorekeeper || 'Official Desk'} · Referee: {m.referee || 'Certified Official'}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
                     {!isPlaceholder(m.teamA) && !isPlaceholder(m.teamB) && (
                       <button
                         type="button"
@@ -1272,23 +1271,39 @@ export default function GuestPublicPage() {
                         onClick={() => setSelectedAiMatch(m)}
                         title="View AI Match Probability Forecast"
                         style={{
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
                           gap: 5,
                           color: 'var(--accent)',
-                          borderColor: 'rgba(220, 38, 38, 0.35)',
-                          padding: '4px 10px',
+                          borderColor: 'var(--accent-border)',
+                          padding: '5px 10px',
                           fontSize: 11.5,
                           fontWeight: 700,
-                          background: 'rgba(220, 38, 38, 0.06)',
+                          background: 'var(--accent-subtle)',
                         }}
                       >
-                        <SparklesIcon size={13} /> AI Forecast
+                        <SparklesIcon size={12} color="var(--accent)" />
+                        <span>AI Forecast</span>
                       </button>
                     )}
-                    <span className="status-badge scheduled">SCHEDULED</span>
-                    <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', background: 'var(--bg-elevated)', padding: '5px 10px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                      ⏰ {ctx.timeStr}
+                    <span className="status-badge scheduled" style={{ borderRadius: '4px' }}>SCHEDULED</span>
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      color: 'var(--accent)',
+                      background: 'var(--bg-elevated)',
+                      padding: '5px 10px',
+                      borderRadius: '5px',
+                      border: '1px solid var(--border)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 5,
+                      minWidth: '88px',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      <ClockIcon size={12} color="var(--accent)" />
+                      <span>{ctx.timeStr}</span>
                     </div>
                   </div>
                 </div>
