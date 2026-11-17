@@ -335,29 +335,16 @@ export default function GuestPublicPage() {
   const [myTeam, setMyTeam] = useState<string>(() => {
     try { return localStorage.getItem('padula_my_team') || ''; } catch { return ''; }
   });
-  const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [showSharePanel, setShowSharePanel] = useState(false);
   const [showPosterModal, setShowPosterModal] = useState(false);
   const [shareMatch, setShareMatch] = useState<any | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<string>('Updated 1 min ago');
   const [selectedAiMatch, setSelectedAiMatch] = useState<Match | null>(null);
   const [simSport, setSimSport] = useState<string>('s1');
   const [simTeamA, setSimTeamA] = useState<string>('');
   const [simTeamB, setSimTeamB] = useState<string>('');
   const [simResult, setSimResult] = useState<any | null>(null);
   const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
-
-  useEffect(() => {
-    const onOnline = () => setIsOnline(true);
-    const onOffline = () => setIsOnline(false);
-    window.addEventListener('online', onOnline);
-    window.addEventListener('offline', onOffline);
-    return () => {
-      window.removeEventListener('online', onOnline);
-      window.removeEventListener('offline', onOffline);
-    };
-  }, []);
 
   const handleToggleMyTeam = (teamName: string) => {
     const next = myTeam === teamName ? '' : teamName;
@@ -377,18 +364,6 @@ export default function GuestPublicPage() {
       window.history.replaceState({}, '', url.toString());
     }
   }, [tab, filterSport]);
-
-  // Real-time last updated tick
-  useEffect(() => {
-    let mins = 0;
-    const updateTime = () => {
-      setLastUpdated(mins === 0 ? 'Updated just now' : `Updated ${mins} min ago`);
-      mins = (mins + 1) % 3;
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 60000);
-    return () => clearInterval(interval);
-  }, [matches]);
 
   const togglePublicTheme = () => {
     const next = isDark ? 'light' : 'dark';
@@ -510,24 +485,6 @@ export default function GuestPublicPage() {
                 whiteSpace: 'nowrap',
               }}>
                 Asian College Athletics · Dumaguete
-              </span>
-              <span style={{
-                fontSize: '11px',
-                color: isOnline ? '#059669' : '#d97706',
-                background: isOnline ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.12)',
-                border: isOnline ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: '999px',
-                padding: '2px 8px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                lineHeight: 1.25,
-              }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: isOnline ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
-                <span>{isOnline ? `Live Sync · ${lastUpdated}` : 'Offline · Cached View'}</span>
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px 14px', flexWrap: 'wrap' }}>
