@@ -53,7 +53,7 @@ export default function TopScorersPage() {
       {/* Page Header */}
       <div className="page-header">
         <div>
-          <div className="brand-pill-tag">Tournament Analytics</div>
+          <div className="brand-pill-tag">Scoring Leaders</div>
           <h1 className="page-title">Top Scorers Leaderboard</h1>
           <p className="page-desc">Ranked individual scoring leaders, goals, and match statistics across all sports</p>
         </div>

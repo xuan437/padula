@@ -896,7 +896,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
             >
               Asian College Dumaguete
             </div>
-            <div style={{ fontSize: '17px', fontWeight: 800 }}>Padula Athletics &amp; Tournament Analytics</div>
+            <div style={{ fontSize: '17px', fontWeight: 800 }}>Padula Athletics &amp; Tournament Hub</div>
             <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>
               Academic Excellence, Integrity &amp; Self-Leadership.
             </div>
