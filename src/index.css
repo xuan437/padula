@@ -2433,3 +2433,126 @@ select.form-input option {
   animation: spin 1s linear infinite;
 }
 
+/* ============================================================
+   PRINT STYLESHEET (@media print)
+   Clean, paper-friendly light mode output for reports,
+   tournament sheets, brackets, and QR posters.
+   ============================================================ */
+@media print {
+  @page {
+    margin: 12mm;
+    size: auto;
+  }
+
+  :root,
+  [data-theme='dark'],
+  [data-theme='light'] {
+    --bg-app: #ffffff !important;
+    --bg-surface: #ffffff !important;
+    --bg-elevated: #f8fafc !important;
+    --bg-card: #ffffff !important;
+    --bg-card-hover: #ffffff !important;
+    --text-primary: #0f172a !important;
+    --text-secondary: #1e293b !important;
+    --text-muted: #475569 !important;
+    --border: #cbd5e1 !important;
+    --border-light: #e2e8f0 !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Hide navigation chrome & interactive-only controls */
+  .sidebar,
+  .sidebar-backdrop,
+  .mobile-top-bar,
+  .mobile-bottom-nav,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Expand main content full width without sidebar offset */
+  .app-layout {
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+  }
+
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .dashboard-content {
+    gap: 12px !important;
+  }
+
+  .glass-card {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    border-color: #cbd5e1 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .table-responsive,
+  .bracket-tree-scroll-container {
+    overflow: visible !important;
+    max-width: 100% !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* QR Poster isolated print mode */
+  body.printing-qr-poster * {
+    visibility: hidden !important;
+  }
+
+  body.printing-qr-poster .qr-poster-backdrop,
+  body.printing-qr-poster .qr-poster-printable,
+  body.printing-qr-poster .qr-poster-printable * {
+    visibility: visible !important;
+  }
+
+  body.printing-qr-poster .qr-poster-printable .no-print {
+    display: none !important;
+  }
+
+  body.printing-qr-poster .qr-poster-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  body.printing-qr-poster .qr-poster-printable {
+    border: 2px solid #0f172a !important;
+    box-shadow: none !important;
+    max-width: 480px !important;
+  }
+}
+

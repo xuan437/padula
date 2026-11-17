@@ -328,11 +328,18 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
 // ── QR Poster Print Modal ──────────────────────────────────────────────────
 function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
   const handlePrint = () => {
+    document.body.classList.add('printing-qr-poster');
+    const cleanup = () => {
+      document.body.classList.remove('printing-qr-poster');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
     window.print();
+    setTimeout(cleanup, 1500);
   };
 
   return (
-    <div style={{
+    <div className="qr-poster-backdrop" style={{
       position: 'fixed',
       inset: 0,
       background: 'rgba(0,0,0,0.75)',
@@ -343,7 +350,7 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
       zIndex: 1000,
       padding: '16px',
     }}>
-      <div className="glass-card" style={{
+      <div className="glass-card qr-poster-printable" style={{
         maxWidth: '460px',
         width: '100%',
         padding: '32px',
@@ -352,7 +359,7 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
         borderRadius: '20px',
         textAlign: 'center',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+        <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
           <button className="btn btn-sm btn-ghost" onClick={onClose} style={{ color: '#64748b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
             <XIcon size={16} />
           </button>
@@ -379,7 +386,7 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
           {url}
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="no-print" style={{ display: 'flex', gap: '10px' }}>
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={handlePrint}>
             <PrinterIcon size={16} /> Print QR Poster
           </button>
@@ -654,7 +661,7 @@ export default function GuestPublicPage() {
         </div>
 
         {/* Right: Compact Icon Group (Share/QR, Theme, Print) + One Labeled "Staff Login" Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+        <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="btn btn-sm btn-ghost"

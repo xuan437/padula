@@ -175,9 +175,161 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
     }).sort((a, b) => b.points - a.points || b.gold - a.gold);
   }, [computeMedalTally]);
 
-  // ── Print Handler ─────────────────────────────────────────────────────────
+  // ── Print Handlers ────────────────────────────────────────────────────────
   const handlePrint = () => {
     window.print();
+  };
+
+  const escapeHtml = (val: unknown) =>
+    String(val ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const printHtmlDocument = (title: string, bodyHtml: string) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc || !iframe.contentWindow) {
+      document.body.removeChild(iframe);
+      window.print();
+      return;
+    }
+
+    const generatedAt = new Date().toLocaleString();
+    doc.open();
+    doc.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(title)} — Padula 2026</title>
+  <style>
+    @page { margin: 14mm; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; margin: 0; font-size: 11pt; }
+    .hdr { border-bottom: 2px solid #0f2d5c; padding-bottom: 10px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .hdr h1 { margin: 0; font-size: 18pt; color: #0f2d5c; }
+    .hdr .sub { font-size: 9pt; color: #475569; margin-top: 2px; }
+    .meta { font-size: 9pt; color: #475569; text-align: right; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 9.5pt; }
+    th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
+    th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .num { text-align: center; font-weight: 700; }
+    .footer { margin-top: 28px; display: flex; justify-content: space-between; font-size: 9pt; color: #475569; }
+    .sig { border-top: 1px solid #334155; padding-top: 4px; width: 210px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="hdr">
+    <div>
+      <div class="sub">ASIAN COLLEGE DUMAGUETE • PADULA 2026 SPORTS ANALYTICS</div>
+      <h1>${escapeHtml(title)}</h1>
+    </div>
+    <div class="meta">Generated: ${escapeHtml(generatedAt)}</div>
+  </div>
+  ${bodyHtml}
+  <div class="footer">
+    <div class="sig">Prepared by: Tournament Secretariat</div>
+    <div class="sig">Certified by: Sports Director</div>
+  </div>
+</body>
+</html>`);
+    doc.close();
+
+    const win = iframe.contentWindow;
+    setTimeout(() => {
+      win.focus();
+      win.print();
+      setTimeout(() => {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      }, 1500);
+    }, 150);
+  };
+
+  const handlePrintReport = (reportId: 'results' | 'medals' | 'roster' | 'audit') => {
+    if (reportId === 'results') {
+      const finished = matches.filter(m => m.status === 'finished' && !m.isBye);
+      const rows = finished.length
+        ? finished.map(m => `<tr>
+            <td>${escapeHtml(getSportName(m.sport))}</td>
+            <td>${escapeHtml(m.round || 'Match')}</td>
+            <td>${escapeHtml(m.teamA)} vs ${escapeHtml(m.teamB)}</td>
+            <td class="num">${m.scoreA} – ${m.scoreB}</td>
+            <td><strong>${escapeHtml(m.winner || 'Draw')}</strong></td>
+          </tr>`).join('')
+        : '<tr><td colspan="5" style="text-align:center;color:#64748b;">No verified final match results yet.</td></tr>';
+      printHtmlDocument('Official Results Certificate', `
+        <table>
+          <thead><tr><th>Sport</th><th>Round</th><th>Matchup</th><th class="num">Score</th><th>Winner</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`);
+      return;
+    }
+
+    if (reportId === 'medals') {
+      const rows = medalStandings.map((d, i) => {
+        const deptObj = departments.find(dept => dept.id === d.departmentId);
+        return `<tr>
+        <td class="num">${i + 1}</td>
+        <td><strong>${escapeHtml(d.departmentName)}</strong>${deptObj ? ` (${escapeHtml(deptObj.shortName)})` : ''}</td>
+        <td class="num">${d.gold}</td>
+        <td class="num">${d.silver}</td>
+        <td class="num">${d.bronze}</td>
+        <td class="num">${d.points}</td>
+      </tr>`;
+      }).join('');
+      printHtmlDocument('Department Medal Standings', `
+        <table>
+          <thead><tr><th class="num">Rank</th><th>Department</th><th class="num">Gold</th><th class="num">Silver</th><th class="num">Bronze</th><th class="num">Points</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`);
+      return;
+    }
+
+    if (reportId === 'roster') {
+      const rows = players.length
+        ? players.map(p => {
+            const dept = departments.find(d => d.id === p.department);
+            return `<tr>
+              <td>${escapeHtml(p.name)}</td>
+              <td>${escapeHtml(p.studentId)}</td>
+              <td>${escapeHtml(dept?.shortName || p.department)}</td>
+              <td>${escapeHtml(getSportName(p.sport))}</td>
+              <td class="num">#${escapeHtml(p.jerseyNumber || '—')}</td>
+              <td>${escapeHtml(p.position || '—')}</td>
+              <td>${p.medicalCleared ? 'Cleared' : 'Pending'}</td>
+            </tr>`;
+          }).join('')
+        : '<tr><td colspan="7" style="text-align:center;color:#64748b;">No registered athletes.</td></tr>';
+      printHtmlDocument('Athlete Roster List', `
+        <table>
+          <thead><tr><th>Athlete Name</th><th>Student ID</th><th>Dept</th><th>Sport</th><th class="num">Jersey</th><th>Position</th><th>Medical</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`);
+      return;
+    }
+
+    const rows = auditLogs.length
+      ? auditLogs.map(a => `<tr>
+          <td>${escapeHtml(a.timestamp)}</td>
+          <td>${escapeHtml(a.userName)} (${escapeHtml(a.userRole)})</td>
+          <td>${escapeHtml(a.action)}</td>
+          <td>${escapeHtml(a.details)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="4" style="text-align:center;color:#64748b;">No audit log entries recorded.</td></tr>';
+    printHtmlDocument('Audit Trail Activity Sheet', `
+      <table>
+        <thead><tr><th>Timestamp</th><th>Official / User</th><th>Action</th><th>Details</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`);
   };
 
   return (
@@ -191,7 +343,7 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
         title="Sports Analytics"
         description="Comprehensive tournament intelligence, team box scores, athlete leaderboards, and championship race telemetry."
         actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               className="btn btn-sm btn-primary"
               onClick={() => setActiveView('predictions')}
@@ -849,15 +1001,15 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, marginBottom: 16 }}>Official Tournament Summaries &amp; Exports</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
             {[
-              { title: 'Official Results Certificate', desc: 'All verified final match results and certified medalists' },
-              { title: 'Department Medal Standings', desc: 'Breakdown of Gold, Silver, Bronze and Championship Points' },
-              { title: 'Athlete Roster List', desc: `${players.length} registered student athletes with medical status` },
-              { title: 'Audit Trail Activity Sheet', desc: `${auditLogs.length} logged official transactions & score corrections` },
+              { id: 'results' as const, title: 'Official Results Certificate', desc: 'All verified final match results and certified medalists' },
+              { id: 'medals' as const, title: 'Department Medal Standings', desc: 'Breakdown of Gold, Silver, Bronze and Championship Points' },
+              { id: 'roster' as const, title: 'Athlete Roster List', desc: `${players.length} registered student athletes with medical status` },
+              { id: 'audit' as const, title: 'Audit Trail Activity Sheet', desc: `${auditLogs.length} logged official transactions & score corrections` },
             ].map(r => (
               <button
                 key={r.title}
                 className="btn btn-ghost"
-                onClick={handlePrint}
+                onClick={() => handlePrintReport(r.id)}
                 style={{
                   textAlign: 'left',
                   padding: 16,
