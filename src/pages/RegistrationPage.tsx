@@ -14,7 +14,7 @@ import {
   ShieldIcon,
   TrophyIcon,
 } from '../components/Icons';
-import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
+import { SPORTS_CATALOG, getAllSports, getSportName, getSportIcon } from '../lib/sports';
 import { buildGmailComposeUrl } from '../lib/emailApi';
 import type { StaffInvitation, Team, Player } from '../types';
 
@@ -76,6 +76,7 @@ export default function RegistrationPage() {
     removeTeam,
     matches,
     departments,
+    settings,
     toggleUserStatus,
     removeUser,
     setActiveView,
@@ -1741,21 +1742,28 @@ export default function RegistrationPage() {
                     onChange={e => setOfficialForm(p => ({ ...p, sport: e.target.value }))}
                     className="form-input"
                   >
-                    {SPORTS_CATALOG.map(s => (
+                    {getAllSports().map(s => (
                       <option key={s.id} value={s.name}>{s.name}</option>
                     ))}
-                    <option value="All Sports">All Sports</option>
+                    {!(role === 'scorekeeper' && settings.security.oneSportPerScorer) && (
+                      <option value="All Sports">All Sports</option>
+                    )}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Affiliation / Organization</label>
-                  <input
-                    type="text"
+                  <label className="form-label">Affiliation / Department</label>
+                  <select
                     value={officialForm.affiliation}
                     onChange={e => setOfficialForm(p => ({ ...p, affiliation: e.target.value }))}
                     className="form-input"
-                  />
+                  >
+                    <option value="">— Select Department / Affiliation —</option>
+                    <option value="Asian College Athletics">Asian College Athletics</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.name}>{d.shortName} — {d.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">

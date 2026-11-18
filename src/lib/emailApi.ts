@@ -119,3 +119,60 @@ export async function sendEmailViaOfficialApi(payload: EmailPayload): Promise<Em
   };
 }
 
+export interface InAppEmailVerification {
+  email: string;
+  code: string;
+  expiresAt: number;
+  sentAt: string;
+}
+
+const VERIFICATION_STORAGE_KEY = 'padula_inapp_email_codes';
+
+/**
+ * Generates and dispatches an in-app 6-digit Gmail verification code for @asiancollege.edu.ph accounts
+ * so staff can verify directly inside the app without opening Gmail separately.
+ */
+export function sendInAppVerificationCode(
+  email: string,
+  allowedDomain: string = 'asiancollege.edu.ph'
+): { success: boolean; error?: string; code?: string } {
+  const cleanEmail = email.trim().toLowerCase();
+  const domain = allowedDomain.replace(/^@/, '').toLowerCase();
+  if (!cleanEmail.endsWith(`@${domain}`)) {
+    return {
+      success: false,
+      error: `Only @${domain} Google/Gmail accounts are permitted.`,
+    };
+  }
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const record: InAppEmailVerification = {
+    email: cleanEmail,
+    code,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+    sentAt: new Date().toISOString(),
+  };
+  try {
+    const raw = localStorage.getItem(VERIFICATION_STORAGE_KEY);
+    const list: InAppEmailVerification[] = raw ? JSON.parse(raw) : [];
+    const filtered = Array.isArray(list) ? list.filter(x => x.email !== cleanEmail) : [];
+    filtered.push(record);
+    localStorage.setItem(VERIFICATION_STORAGE_KEY, JSON.stringify(filtered));
+  } catch {}
+  return { success: true, code };
+}
+
+export function verifyInAppCode(email: string, code: string): boolean {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanCode = code.trim();
+  try {
+    const raw = localStorage.getItem(VERIFICATION_STORAGE_KEY);
+    const list: InAppEmailVerification[] = raw ? JSON.parse(raw) : [];
+    const entry = list.find(x => x.email === cleanEmail);
+    if (!entry) return false;
+    if (Date.now() > entry.expiresAt) return false;
+    return entry.code === cleanCode;
+  } catch {
+    return false;
+  }
+}
+

@@ -15,6 +15,9 @@ import { SPORTS_CATALOG, getSportName } from '../lib/sports';
 export default function SchedulePage() {
   const {
     matches,
+    events,
+    teams,
+    departments,
     deleteMatch,
     currentUser,
     setActiveView,
@@ -22,9 +25,34 @@ export default function SchedulePage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sportFilter, setSportFilter] = useState('all');
+  const [eventFilter, setEventFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
+  const [teamDeptFilter, setTeamDeptFilter] = useState('all');
+  const [roundFilter, setRoundFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'scheduled' | 'finished'>('all');
   const [venueFilter, setVenueFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'time-asc' | 'time-desc' | 'sport'>('time-asc');
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSportFilter('all');
+    setEventFilter('all');
+    setDateFilter('');
+    setTeamDeptFilter('all');
+    setRoundFilter('all');
+    setStatusFilter('all');
+    setVenueFilter('all');
+  };
+
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    sportFilter !== 'all' ||
+    eventFilter !== 'all' ||
+    dateFilter !== '' ||
+    teamDeptFilter !== 'all' ||
+    roundFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    venueFilter !== 'all';
 
   const canManage = currentUser?.role === 'director' || currentUser?.role === 'coordinator';
 
@@ -43,11 +71,41 @@ export default function SchedulePage() {
   const scheduledMatchesCount = matches.filter(m => m.status === 'scheduled').length;
   const finishedMatchesCount = matches.filter(m => m.status === 'finished').length;
 
+  const roundsList = useMemo(() => {
+    const set = new Set<string>();
+    matches.forEach(m => {
+      if (m.round && m.round.trim()) set.add(m.round.trim());
+    });
+    return Array.from(set);
+  }, [matches]);
+
   // Filtered and Sorted matches
   const filteredMatches = useMemo(() => {
     return matches
       .filter(m => {
         if (sportFilter !== 'all' && m.sport.toLowerCase() !== sportFilter.toLowerCase()) {
+          return false;
+        }
+        if (eventFilter !== 'all' && m.eventId !== eventFilter) {
+          return false;
+        }
+        if (dateFilter && !(m.scheduledTime || m.scheduledDate || '').startsWith(dateFilter)) {
+          return false;
+        }
+        if (teamDeptFilter !== 'all') {
+          const isDept = departments.some(d => d.id === teamDeptFilter);
+          if (isDept) {
+            const deptTeamNames = new Set(
+              teams.filter(t => t.department === teamDeptFilter).map(t => t.name.toLowerCase())
+            );
+            if (!deptTeamNames.has((m.teamA || '').toLowerCase()) && !deptTeamNames.has((m.teamB || '').toLowerCase())) {
+              return false;
+            }
+          } else if (m.teamA !== teamDeptFilter && m.teamB !== teamDeptFilter) {
+            return false;
+          }
+        }
+        if (roundFilter !== 'all' && m.round !== roundFilter) {
           return false;
         }
         if (statusFilter !== 'all' && m.status !== statusFilter) {
@@ -79,7 +137,7 @@ export default function SchedulePage() {
         }
         return 0;
       });
-  }, [matches, sportFilter, statusFilter, venueFilter, searchQuery, sortBy]);
+  }, [matches, teams, departments, sportFilter, eventFilter, dateFilter, teamDeptFilter, roundFilter, statusFilter, venueFilter, searchQuery, sortBy]);
 
   const handleDeleteMatch = (matchId: string, teamA: string, teamB: string) => {
     if (window.confirm(`Are you sure you want to remove match: "${teamA} vs ${teamB}"? This will delete its schedule and scores.`)) {
@@ -338,6 +396,74 @@ export default function SchedulePage() {
             <option value="time-desc">Time (Latest)</option>
             <option value="sport">By Sport</option>
           </select>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={clearFilters}
+              style={{ fontSize: '12px', fontWeight: 700 }}
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {/* Secondary Filter Row: Competition, Date, Team/Dept, Round/Stage */}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select
+            className="form-input"
+            value={eventFilter}
+            onChange={e => setEventFilter(e.target.value)}
+            style={{ width: '185px', fontSize: '12.5px' }}
+          >
+            <option value="all">All Competitions</option>
+            {events.map(ev => (
+              <option key={ev.id} value={ev.id}>{ev.name}</option>
+            ))}
+          </select>
+
+          <input
+            type="date"
+            className="form-input"
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value)}
+            title="Filter by match date"
+            style={{ width: '150px', fontSize: '12.5px' }}
+          />
+
+          <select
+            className="form-input"
+            value={teamDeptFilter}
+            onChange={e => setTeamDeptFilter(e.target.value)}
+            style={{ width: '190px', fontSize: '12.5px' }}
+          >
+            <option value="all">All Teams &amp; Departments</option>
+            <optgroup label="Departments">
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.shortName} — {d.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Teams">
+              {teams.map(t => (
+                <option key={t.id} value={t.name}>{t.name}</option>
+              ))}
+            </optgroup>
+          </select>
+
+          {roundsList.length > 0 && (
+            <select
+              className="form-input"
+              value={roundFilter}
+              onChange={e => setRoundFilter(e.target.value)}
+              style={{ width: '180px', fontSize: '12.5px' }}
+            >
+              <option value="all">All Rounds / Stages</option>
+              {roundsList.map(r => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Filter stats pill */}

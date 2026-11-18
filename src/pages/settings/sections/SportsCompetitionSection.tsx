@@ -1,9 +1,21 @@
 import { useState, useMemo } from 'react';
-import type { SportsCompetitionSettings, SportId, TournamentFormat, TiebreakerRule } from '../../../types/settings';
+import { useApp } from '../../../context/AppContext';
+import type {
+  SportsCompetitionSettings,
+  SportId,
+  TournamentFormat,
+  TiebreakerRule,
+  MatchSeriesOption,
+  CoordinatorLockableField,
+  CompetitionOverride,
+  SeedingMode,
+} from '../../../types/settings';
 import {
   TrophyIcon,
   CalendarIcon,
   CheckIcon,
+  AlertTriangleIcon,
+  RefreshIcon,
 } from '../../../components/Icons';
 
 interface Props {
@@ -52,9 +64,129 @@ export default function SportsCompetitionSection({
     return matched.length > 0 ? matched : [ALL_SPORTS[0]];
   }, [isCoordinator, coordinatorCompetitionId]);
 
+  const { matches } = useApp();
   const [selectedSportId, setSelectedSportId] = useState<SportId>(allowedSports[0].id);
+  const [showAdvancedLists, setShowAdvancedLists] = useState(false);
 
   const currentSportRule = settings.sports[selectedSportId];
+  const isLocked = (field: CoordinatorLockableField) =>
+    isCoordinator && (settings.coordinatorLockedFields || []).includes(field);
+
+  const activeOverride: CompetitionOverride =
+    settings.competitionOverrides?.[selectedSportId] || {};
+
+  const effectiveFormat: TournamentFormat =
+    (isCoordinator && activeOverride.format) ||
+    settings.competitionFormats[selectedSportId] ||
+    currentSportRule.defaultTournamentFormat ||
+    'single_elimination';
+
+  const defaultSeriesOpt: MatchSeriesOption =
+    currentSportRule.defaultSeries ||
+    (currentSportRule.bestOf === 5 ? 'best_of_5' : currentSportRule.bestOf === 3 ? 'best_of_3' : 'single_game');
+
+  const effectiveSeries = {
+    groupStage: defaultSeriesOpt,
+    quarterFinals: defaultSeriesOpt,
+    semiFinals: defaultSeriesOpt,
+    finals: defaultSeriesOpt,
+    ...(currentSportRule.seriesByRound || {}),
+    ...(isCoordinator ? activeOverride.seriesByRound || {} : {}),
+  };
+
+  const effectivePoints = {
+    winPoints: 3,
+    drawPoints: 1,
+    lossPoints: 0,
+    ...(currentSportRule.pointSystem || {}),
+    ...(isCoordinator ? activeOverride.pointSystem || {} : {}),
+  };
+
+  const effectiveAdvancing =
+    (isCoordinator ? activeOverride.advancingTeamsCount : undefined) ??
+    currentSportRule.advancingTeamsCount ??
+    4;
+
+  const effectiveSeeding: SeedingMode =
+    (isCoordinator ? activeOverride.seedingMode : undefined) ??
+    currentSportRule.seedingMode ??
+    'seeded';
+
+  const activeOrFinishedCount = useMemo(() => {
+    return matches.filter(
+      m =>
+        (m.sport === selectedSportId || m.sport.toLowerCase().includes(selectedSportId)) &&
+        (m.status === 'live' || m.status === 'finished')
+    ).length;
+  }, [matches, selectedSportId]);
+
+  const confirmIfMatchesStarted = () => {
+    if (activeOrFinishedCount === 0) return true;
+    return window.confirm(
+      `Warning: ${activeOrFinishedCount} match(es) in ${currentSportRule.sportName} are already in progress or finished. Changes will apply to upcoming matches only. Continue?`
+    );
+  };
+
+  const updateCoordinatorOverride = (patch: Partial<CompetitionOverride>) => {
+    if (!confirmIfMatchesStarted()) return;
+    onChange({
+      ...settings,
+      competitionOverrides: {
+        ...(settings.competitionOverrides || {}),
+        [selectedSportId]: {
+          ...activeOverride,
+          ...patch,
+          applyToUpcomingOnly: true,
+        },
+      },
+    });
+  };
+
+  const resetCoordinatorOverride = () => {
+    if (!confirmIfMatchesStarted()) return;
+    const nextOverrides = { ...(settings.competitionOverrides || {}) };
+    delete nextOverrides[selectedSportId];
+    onChange({
+      ...settings,
+      competitionOverrides: nextOverrides,
+    });
+  };
+
+  const toggleDirectorLock = (field: CoordinatorLockableField) => {
+    const current = settings.coordinatorLockedFields || [];
+    const next = current.includes(field)
+      ? current.filter(f => f !== field)
+      : [...current, field];
+    onChange({
+      ...settings,
+      coordinatorLockedFields: next,
+    });
+  };
+
+  const statusBadge = (field: keyof CompetitionOverride, lockKey?: CoordinatorLockableField) => {
+    if (lockKey && isLocked(lockKey)) {
+      return (
+        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: 'rgba(239,68,68,0.12)', color: '#ef4444', marginLeft: 6 }}>
+          🔒 Locked by Director
+        </span>
+      );
+    }
+    if (!isCoordinator) return null;
+    const customized = activeOverride[field] !== undefined;
+    return (
+      <span style={{
+        fontSize: 10,
+        fontWeight: 700,
+        padding: '1px 6px',
+        borderRadius: 999,
+        marginLeft: 6,
+        background: customized ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.12)',
+        color: customized ? '#f59e0b' : '#10b981',
+      }}>
+        {customized ? 'Customized' : 'Default'}
+      </span>
+    );
+  };
 
   const handleUpdateSport = <K extends keyof typeof currentSportRule>(
     field: K,
@@ -180,18 +312,51 @@ export default function SportsCompetitionSection({
               Category: {currentSportRule.category.toUpperCase()} · Score Unit: {currentSportRule.unit}
             </span>
           </div>
-          <span style={{
-            fontSize: '11px',
-            padding: '3px 8px',
-            borderRadius: '12px',
-            background: 'rgba(34, 197, 94, 0.12)',
-            color: '#22c55e',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            fontWeight: 700,
-          }}>
-            Active Sport
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {isCoordinator && Object.keys(activeOverride).length > 0 && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline"
+                onClick={resetCoordinatorOverride}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5 }}
+              >
+                <RefreshIcon size={12} /> Reset to Default
+              </button>
+            )}
+            <span style={{
+              fontSize: '11px',
+              padding: '3px 8px',
+              borderRadius: '12px',
+              background: 'rgba(34, 197, 94, 0.12)',
+              color: '#22c55e',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              fontWeight: 700,
+            }}>
+              Active Sport
+            </span>
+          </div>
         </div>
+
+        {isCoordinator && activeOrFinishedCount > 0 && (
+          <div style={{
+            padding: '10px 14px',
+            borderRadius: 8,
+            background: 'rgba(245, 158, 11, 0.12)',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            color: '#f59e0b',
+            fontSize: 12,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 16,
+          }}>
+            <AlertTriangleIcon size={15} color="#f59e0b" />
+            <span>
+              {activeOrFinishedCount} match(es) already in progress or finished. Any settings changes apply to <strong>upcoming matches only</strong>.
+            </span>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
           {/* Period Type */}
@@ -294,31 +459,159 @@ export default function SportsCompetitionSection({
           </div>
         </div>
 
-        {/* Tournament Format & Tiebreakers */}
+        {/* Tournament Format, Series by Round & Tiebreakers */}
         <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
-              TOURNAMENT FORMAT
+              TOURNAMENT FORMAT {statusBadge('format', 'format')}
             </label>
             <select
-              value={settings.competitionFormats[selectedSportId] || 'single_elimination'}
-              onChange={e => handleUpdateFormat(e.target.value as TournamentFormat)}
+              value={effectiveFormat}
+              disabled={isLocked('format')}
+              onChange={e => {
+                const fmt = e.target.value as TournamentFormat;
+                if (isCoordinator) updateCoordinatorOverride({ format: fmt });
+                else handleUpdateFormat(fmt);
+              }}
               className="form-input"
               style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}
             >
               <option value="single_elimination">Single Elimination (Knockout Bracket)</option>
-              <option value="double_elimination">Double Elimination (Upper & Lower Brackets)</option>
+              <option value="double_elimination">Double Elimination (Winners &amp; Losers Brackets)</option>
               <option value="round_robin">Round Robin (Every team plays each other)</option>
-              <option value="pool_play_knockout">Pool Play + Knockout (Groups into Semi-Finals)</option>
+              <option value="point_system">Point System (Standings Based on Points)</option>
+              <option value="combined_rr_elim">Combined: Round Robin → Elimination Round</option>
+              <option value="combined_pts_elim">Combined: Point System → Elimination Round</option>
             </select>
             <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
               Determines bracket generation and progression flow for {currentSportRule.sportName}.
             </span>
+
+            {/* Progressive Disclosure: Advancing Teams for Combined Formats */}
+            {(effectiveFormat === 'combined_rr_elim' || effectiveFormat === 'combined_pts_elim') && (
+              <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
+                  TEAMS ADVANCING TO ELIMINATION ROUND {statusBadge('advancingTeamsCount', 'advancingTeamsCount')}
+                </label>
+                <select
+                  value={effectiveAdvancing}
+                  disabled={isLocked('advancingTeamsCount')}
+                  onChange={e => {
+                    const n = parseInt(e.target.value, 10) || 4;
+                    if (isCoordinator) updateCoordinatorOverride({ advancingTeamsCount: n });
+                    else handleUpdateSport('advancingTeamsCount', n);
+                  }}
+                  className="form-input"
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12.5 }}
+                >
+                  <option value={2}>Top 2 Teams (Finals)</option>
+                  <option value={4}>Top 4 Teams (Semi-Finals)</option>
+                  <option value={8}>Top 8 Teams (Quarter-Finals)</option>
+                </select>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                  Elimination Round only activates after group/point stage is reached.
+                </span>
+              </div>
+            )}
+
+            {/* Progressive Disclosure: Bracket Seeding & Byes for Elimination Formats */}
+            {(effectiveFormat === 'single_elimination' || effectiveFormat === 'double_elimination' || effectiveFormat === 'combined_rr_elim' || effectiveFormat === 'combined_pts_elim') && (
+              <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
+                  BRACKET SEEDING MODE {statusBadge('seedingMode', 'seedingMode')}
+                </label>
+                <select
+                  value={effectiveSeeding}
+                  disabled={isLocked('seedingMode')}
+                  onChange={e => {
+                    const mode = e.target.value as SeedingMode;
+                    if (isCoordinator) updateCoordinatorOverride({ seedingMode: mode });
+                    else handleUpdateSport('seedingMode', mode);
+                  }}
+                  className="form-input"
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12.5 }}
+                >
+                  <option value="seeded">Seeded Auto-Bracket</option>
+                  <option value="random">Random Draw Auto-Bracket</option>
+                  <option value="manual">Manual Placement / Swap</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Match Series Per Round */}
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              MATCH SERIES PER ROUND {statusBadge('seriesByRound', 'seriesByRound')}
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {(
+                [
+                  { key: 'groupStage', label: 'Group / R1' },
+                  { key: 'quarterFinals', label: 'Quarter-Finals' },
+                  { key: 'semiFinals', label: 'Semi-Finals' },
+                  { key: 'finals', label: 'Finals' },
+                ] as const
+              ).map(round => (
+                <div key={round.key}>
+                  <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 3 }}>
+                    {round.label}
+                  </label>
+                  <select
+                    value={effectiveSeries[round.key] || 'single_game'}
+                    disabled={isLocked('seriesByRound')}
+                    onChange={e => {
+                      const nextSeries = { ...effectiveSeries, [round.key]: e.target.value as MatchSeriesOption };
+                      if (isCoordinator) updateCoordinatorOverride({ seriesByRound: nextSeries });
+                      else handleUpdateSport('seriesByRound', nextSeries);
+                    }}
+                    className="form-input"
+                    style={{ width: '100%', padding: '7px 10px', borderRadius: 6, fontSize: 12 }}
+                  >
+                    <option value="single_game">Single Game</option>
+                    <option value="best_of_3">Best of 3</option>
+                    <option value="best_of_5">Best of 5</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+
+            {/* Progressive Disclosure: Point System (for Round Robin / Point System / Combined) */}
+            {(effectiveFormat === 'round_robin' || effectiveFormat === 'point_system' || effectiveFormat === 'combined_rr_elim' || effectiveFormat === 'combined_pts_elim') && (
+              <div style={{ marginTop: 14, padding: 12, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+                  POINT SYSTEM (WIN / DRAW / LOSS) {statusBadge('pointSystem', 'pointSystem')}
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {(['winPoints', 'drawPoints', 'lossPoints'] as const).map(pk => (
+                    <div key={pk}>
+                      <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 2 }}>
+                        {pk === 'winPoints' ? 'Win' : pk === 'drawPoints' ? 'Draw' : 'Loss'}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={20}
+                        disabled={isLocked('pointSystem')}
+                        value={effectivePoints[pk]}
+                        onChange={e => {
+                          const nextPts = { ...effectivePoints, [pk]: parseInt(e.target.value, 10) || 0 };
+                          if (isCoordinator) updateCoordinatorOverride({ pointSystem: nextPts });
+                          else handleUpdateSport('pointSystem', nextPts);
+                        }}
+                        className="form-input"
+                        style={{ width: '100%', padding: '6px 8px', borderRadius: 6, fontSize: 12.5 }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
-              TIEBREAKER PRIORITY ORDER
+              TIEBREAKER PRIORITY ORDER {statusBadge('tiebreakerOrder', 'tiebreakerOrder')}
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {currentSportRule.tiebreakerOrder.map((tb, idx) => (
@@ -412,28 +705,81 @@ export default function SportsCompetitionSection({
             </div>
           </div>
 
-          {/* Venues Preview */}
-          <div style={{ marginTop: '16px' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
-              OFFICIATING VENUES ({settings.eventSetup.venues.length})
+          {/* Director: Coordinator Permission Locks */}
+          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+              COORDINATOR PERMISSION LOCKS (LOCK OPTIONS COORDINATORS CANNOT CHANGE)
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {settings.eventSetup.venues.map((venue, i) => (
-                <span
-                  key={i}
-                  style={{
-                    fontSize: '11.5px',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  📍 {venue}
-                </span>
-              ))}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {(
+                [
+                  { id: 'format', label: 'Tournament Format' },
+                  { id: 'seriesByRound', label: 'Match Series (Bo1/Bo3/Bo5)' },
+                  { id: 'pointSystem', label: 'Point System (W/D/L)' },
+                  { id: 'tiebreakerOrder', label: 'Tiebreakers' },
+                  { id: 'advancingTeamsCount', label: 'Advancing Teams Count' },
+                  { id: 'seedingMode', label: 'Bracket Seeding & Byes' },
+                  { id: 'scheduleRules', label: 'Schedule & Period Rules' },
+                ] as { id: CoordinatorLockableField; label: string }[]
+              ).map(item => {
+                const locked = (settings.coordinatorLockedFields || []).includes(item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleDirectorLock(item.id)}
+                    className={`btn btn-sm ${locked ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ fontSize: 11.5 }}
+                  >
+                    {locked ? '🔒 Locked' : '🔓 Editable'}: {item.label}
+                  </button>
+                );
+              })}
             </div>
+          </div>
+
+          {/* Progressive Disclosure: Master Dropdown Lists */}
+          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => setShowAdvancedLists(p => !p)}
+              style={{ fontWeight: 700, padding: '6px 10px' }}
+            >
+              {showAdvancedLists ? '▾ Hide Master Dropdown Lists (Venues, Departments, Divisions)' : '▸ Show Master Dropdown Lists (Venues, Departments, Divisions)'}
+            </button>
+
+            {showAdvancedLists && (
+              <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+                {(
+                  [
+                    { key: 'venues', label: 'Venues' },
+                    { key: 'departments', label: 'Departments' },
+                    { key: 'divisions', label: 'Divisions' },
+                  ] as const
+                ).map(listDef => (
+                  <div key={listDef.key} style={{ padding: 12, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 6 }}>
+                      {listDef.label.toUpperCase()} ({settings.eventSetup[listDef.key].length})
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={settings.eventSetup[listDef.key].join('\n')}
+                      onChange={e =>
+                        handleUpdateEvent(
+                          listDef.key,
+                          e.target.value.split('\n').map(s => s.trim()).filter(Boolean)
+                        )
+                      }
+                      className="form-input"
+                      placeholder={`One ${listDef.label.toLowerCase().slice(0, -1)} per line`}
+                      style={{ width: '100%', fontSize: 11.5, padding: 8, borderRadius: 6 }}
+                    />
+                    <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>One entry per line (used in registration dropdowns)</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

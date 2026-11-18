@@ -29,7 +29,48 @@ export type TournamentFormat =
   | 'single_elimination'
   | 'double_elimination'
   | 'round_robin'
+  | 'point_system'
+  | 'combined_rr_elim'
+  | 'combined_pts_elim'
   | 'pool_play_knockout';
+
+export type MatchSeriesOption = 'single_game' | 'best_of_3' | 'best_of_5';
+
+export interface SeriesByRound {
+  groupStage?: MatchSeriesOption;
+  quarterFinals?: MatchSeriesOption;
+  semiFinals?: MatchSeriesOption;
+  finals?: MatchSeriesOption;
+}
+
+export interface PointSystemConfig {
+  winPoints: number;
+  drawPoints: number;
+  lossPoints: number;
+}
+
+export type SeedingMode = 'seeded' | 'random' | 'manual';
+
+export type CoordinatorLockableField =
+  | 'format'
+  | 'seriesByRound'
+  | 'pointSystem'
+  | 'tiebreakerOrder'
+  | 'advancingTeamsCount'
+  | 'seedingMode'
+  | 'scheduleRules';
+
+export interface CompetitionOverride {
+  format?: TournamentFormat;
+  seriesByRound?: SeriesByRound;
+  pointSystem?: PointSystemConfig;
+  tiebreakerOrder?: TiebreakerRule[];
+  advancingTeamsCount?: number;
+  seedingMode?: SeedingMode;
+  allowByes?: boolean;
+  periodDurationMinutes?: number;
+  applyToUpcomingOnly?: boolean;
+}
 
 export type TiebreakerRule =
   | 'head_to_head'
@@ -51,6 +92,11 @@ export interface SportScoringRule {
   winByTwo: boolean;
   tiebreakerOrder: TiebreakerRule[];
   defaultTournamentFormat: TournamentFormat;
+  defaultSeries?: MatchSeriesOption;
+  seriesByRound?: SeriesByRound;
+  pointSystem?: PointSystemConfig;
+  advancingTeamsCount?: number;
+  seedingMode?: SeedingMode;
   maxPointsPossiblePerPeriod: number;
   allowedDivisions: string[];
 }
@@ -69,12 +115,16 @@ export interface CompetitionEventSetup {
 }
 
 export interface SportsCompetitionSettings {
-  /** Master list of rules for all 12 accredited sports */
+  /** Master list of rules for all accredited sports */
   sports: Record<SportId, SportScoringRule>;
   /** Global competition and seasonal parameters */
   eventSetup: CompetitionEventSetup;
   /** Format assignments per competition ID */
   competitionFormats: Record<string, TournamentFormat>;
+  /** Fields locked by the Sports Director that Coordinators cannot modify */
+  coordinatorLockedFields?: CoordinatorLockableField[];
+  /** Per-competition overrides configured by assigned Sports Coordinators */
+  competitionOverrides?: Record<string, CompetitionOverride>;
 }
 
 // ── 2. Teams, Players & Roster Rules ──────────────────────────────────────────
@@ -195,6 +245,7 @@ export interface CoordinatorSlot {
 
 export interface SecuritySettings {
   maxCoordinators: 3;
+  oneSportPerScorer: boolean;
   allowedEmailDomain: string; // e.g. "asiancollege.edu.ph"
   sessionTimeoutMinutes: number; // e.g. 30
   scorerSessionTimeoutMinutes: number; // e.g. 120

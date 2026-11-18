@@ -97,16 +97,23 @@ function TeamButtons({ title, steps, onAdjust, children }: {
       >
         {title}
       </div>
-      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
         {steps.map(d => (
           <button
             key={d}
             type="button"
-            className={`btn btn-sm ${d > 0 ? 'btn-primary' : 'btn-ghost'}`}
+            className={`btn btn-sm ${d > 0 ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onAdjust(d)}
-            style={{ minHeight: '42px', minWidth: '42px', fontSize: '13px', fontWeight: 800, padding: '4px 10px' }}
+            style={{
+              minHeight: '50px',
+              minWidth: d < 0 ? '58px' : '50px',
+              fontSize: d < 0 ? '12px' : '16px',
+              fontWeight: 800,
+              padding: '6px 12px',
+              borderRadius: '10px',
+            }}
           >
-            {d > 0 ? `+${d}` : d}
+            {d === -1 ? 'Undo' : d > 0 ? `+${d}` : d}
           </button>
         ))}
       </div>
@@ -115,46 +122,102 @@ function TeamButtons({ title, steps, onAdjust, children }: {
   );
 }
 
-// Basketball: +1/+2/+3, fouls (quarter and fouls are display-only helpers)
+// Basketball: primary scoring + next period upfront; secondary actions (fouls/timeouts/subs) collapsible
 function BasketballScoringDesk(props: ScoringProps) {
   const { match, isLocked } = props;
   const adjust = makeAdjuster(props);
+  const periods = ['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const;
   const [quarter, setQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT'>('Q1');
   const [foulsA, setFoulsA] = useState(0);
   const [foulsB, setFoulsB] = useState(0);
+  const [timeoutsA, setTimeoutsA] = useState(0);
+  const [timeoutsB, setTimeoutsB] = useState(0);
+  const [subsA, setSubsA] = useState(0);
+  const [subsB, setSubsB] = useState(0);
+  const [showSecondary, setShowSecondary] = useState(false);
 
-  const fouls = (value: number, set: (fn: (f: number) => number) => void) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '6px' }}>
-      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Fouls: {value}</span>
-      <button type="button" className="btn btn-xs btn-ghost" style={{ padding: '1px 6px', fontSize: '10px' }} onClick={() => set(f => f + 1)}>
-        +Foul
-      </button>
-    </div>
-  );
+  const nextPeriod = () => {
+    const idx = periods.indexOf(quarter);
+    if (idx < periods.length - 1) setQuarter(periods[idx + 1]);
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
-        {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).map(q => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+        {periods.map(q => (
           <button
             key={q}
             type="button"
             className={`btn btn-sm ${quarter === q ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setQuarter(q)}
-            style={{ padding: '3px 10px', fontSize: '11px', borderRadius: '14px' }}
+            style={{ padding: '5px 11px', fontSize: '11.5px', borderRadius: '14px', minHeight: '34px' }}
           >
             {q}
           </button>
         ))}
+        {!isLocked && quarter !== 'OT' && (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline"
+            onClick={nextPeriod}
+            style={{ padding: '5px 12px', fontSize: '11.5px', fontWeight: 700, borderRadius: '14px', minHeight: '34px' }}
+          >
+            Next Period →
+          </button>
+        )}
       </div>
+
       {!isLocked && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <TeamButtons title={`${match.teamA} Points`} steps={[-1, 1, 2, 3]} onAdjust={d => adjust('A', d)}>
-            {fouls(foulsA, setFoulsA)}
-          </TeamButtons>
-          <TeamButtons title={`${match.teamB} Points`} steps={[-1, 1, 2, 3]} onAdjust={d => adjust('B', d)}>
-            {fouls(foulsB, setFoulsB)}
-          </TeamButtons>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <TeamButtons title={`${match.teamA}`} steps={[-1, 1, 2, 3]} onAdjust={d => adjust('A', d)} />
+          <TeamButtons title={`${match.teamB}`} steps={[-1, 1, 2, 3]} onAdjust={d => adjust('B', d)} />
+        </div>
+      )}
+
+      {!isLocked && (
+        <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '8px' }}>
+          <button
+            type="button"
+            className="btn btn-xs btn-ghost"
+            onClick={() => setShowSecondary(s => !s)}
+            style={{ width: '100%', justifyContent: 'center', fontSize: '11.5px', fontWeight: 700 }}
+          >
+            {showSecondary ? '▾ Hide Secondary Controls (Fouls / Timeouts / Subs)' : '▸ Secondary Controls (Fouls / Timeouts / Subs)'}
+          </button>
+          {showSecondary && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px', padding: '10px', borderRadius: '8px', background: 'var(--bg-elevated)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+                <div style={{ fontWeight: 700, textAlign: 'center' }}>{match.teamA}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Fouls: <strong>{foulsA}</strong></span>
+                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setFoulsA(f => f + 1)}>+Foul</button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Timeouts: <strong>{timeoutsA}</strong></span>
+                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setTimeoutsA(t => t + 1)}>+TO</button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Subs: <strong>{subsA}</strong></span>
+                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setSubsA(s => s + 1)}>+Sub</button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+                <div style={{ fontWeight: 700, textAlign: 'center' }}>{match.teamB}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Fouls: <strong>{foulsB}</strong></span>
+                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setFoulsB(f => f + 1)}>+Foul</button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Timeouts: <strong>{timeoutsB}</strong></span>
+                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setTimeoutsB(t => t + 1)}>+TO</button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Subs: <strong>{subsB}</strong></span>
+                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setSubsB(s => s + 1)}>+Sub</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -515,8 +578,24 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
                 background: match.format === 'round_robin' ? 'rgba(56,189,248,0.14)' : 'rgba(245,158,11,0.14)',
                 color: match.format === 'round_robin' ? '#38bdf8' : '#f59e0b',
               }}>
-                {match.format === 'round_robin' ? 'Round Robin' : 'Single Elimination'}
+                {match.format === 'double_elimination'
+                  ? 'Double Elimination'
+                  : match.format === 'round_robin'
+                    ? 'Round Robin'
+                    : match.format === 'point_system'
+                      ? 'Point System'
+                      : match.format === 'combined_rr_elim' || match.format === 'combined_pts_elim'
+                        ? (match.stage === 'elimination' ? 'Elimination Stage' : 'Group Stage')
+                        : 'Single Elimination'}
               </span>
+              {match.bestOf && match.bestOf > 1 && (
+                <span style={{
+                  fontSize: '10px', fontWeight: 800, padding: '1.5px 6px', borderRadius: '999px',
+                  background: 'rgba(245, 158, 11, 0.14)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)',
+                }}>
+                  Best of {match.bestOf} ({match.seriesWinsA ?? 0}–{match.seriesWinsB ?? 0})
+                </span>
+              )}
             </div>
             <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>{match.round}</div>
           </div>
@@ -830,7 +909,7 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
 // SCORING DESK DASHBOARD
 // ─────────────────────────────────────────────────────────────
 export default function ScorekeeperDashboard() {
-  const { matches, officials, currentUser, assignMatchOfficials, registeredUsers, updateMatchScore, staff, setActiveView } = useApp();
+  const { matches, officials, currentUser, assignMatchOfficials, registeredUsers, updateMatchScore, staff, setActiveView, settings } = useApp();
   const isOnline = useOnlineStatus();
   const [selectedSportFilter, setSelectedSportFilter] = useState('all');
 
@@ -867,10 +946,27 @@ export default function ScorekeeperDashboard() {
     setQueue([]);
   }, [isOnline]);
 
-  // Demo / Official Scorekeeper can view and score every available match across all sports
+  // Enforce Director's One-Sport-Per-Scorer restriction
+  const assignedScorerSport = useMemo(() => {
+    if (!currentUser || currentUser.role !== 'scorer') return null;
+    if (currentUser.assignedCompetitionId) return currentUser.assignedCompetitionId;
+    if (currentUser.assignedSport) return currentUser.assignedSport;
+    const assignedMatch = matches.find(
+      m => m.scorerId === currentUser.id || (m.scorekeeper && m.scorekeeper.toLowerCase() === currentUser.name.toLowerCase())
+    );
+    return assignedMatch?.sport || null;
+  }, [currentUser, matches]);
+
   const visibleMatches = useMemo(() => {
+    if (settings.security.oneSportPerScorer && currentUser?.role === 'scorer' && assignedScorerSport) {
+      return matches.filter(
+        m =>
+          m.sport === assignedScorerSport ||
+          getSportName(m.sport).toLowerCase() === getSportName(assignedScorerSport).toLowerCase()
+      );
+    }
     return matches;
-  }, [matches]);
+  }, [matches, settings.security.oneSportPerScorer, currentUser, assignedScorerSport]);
 
   const filteredMatches = visibleMatches.filter(m => selectedSportFilter === 'all' || m.sport === selectedSportFilter);
 

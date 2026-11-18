@@ -187,6 +187,23 @@ export default function UsersSecuritySection({
 
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
+              SCORER SPORT LIMIT RULE
+            </label>
+            <button
+              type="button"
+              onClick={() => onChange({ ...settings, oneSportPerScorer: !settings.oneSportPerScorer })}
+              className={`btn ${settings.oneSportPerScorer ? 'btn-primary' : 'btn-outline'}`}
+              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700 }}
+            >
+              {settings.oneSportPerScorer ? '✓ One Sport Per Scorer (Enforced)' : 'Allow Multiple Sports Per Scorer'}
+            </button>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+              Blocks assigning a scorer to a second sport and scopes their dashboard to 1 sport.
+            </span>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
               STAFF SESSION TIMEOUT (MINUTES)
             </label>
             <input

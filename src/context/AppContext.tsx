@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { isPlaceholder, getRoundName } from '../lib/bracket';
+import { isPlaceholder, getRoundName, getSeedOrder } from '../lib/bracket';
 import { getSportName } from '../lib/sports';
 import { sendEmailViaOfficialApi, type EmailDispatchResult } from '../lib/emailApi';
 import type { AppSettings } from '../types/settings';
@@ -9,6 +9,8 @@ import {
   updateSettings as updateStoredSettings,
   resetSettings as resetStoredSettings,
   resetSection as resetStoredSection,
+  getEffectiveCompetitionConfig,
+  seriesOptionToNumber,
 } from '../services/settingsService';
 
 function formatTime12h(timeStr?: string): string {
@@ -207,6 +209,9 @@ interface AppContextType {
   deleteEvent: (id: string) => void;
   deleteBracket: (eventIdOrSport: string) => void;
   generateBracket: (eventId: string, teamIds?: string[], forceRegenerate?: boolean, formatOverride?: TournamentFormat) => void;
+  advanceGroupToElimination: (eventIdOrSport: string) => { success: boolean; message?: string };
+  swapBracketTeams: (matchIdA: string, slotA: 'A' | 'B', matchIdB: string, slotB: 'A' | 'B') => { success: boolean; message?: string };
+  toggleMatchBye: (matchId: string) => void;
 
   // Teams & Players
   registerTeam: (team: Omit<Team, 'id'>) => string;
@@ -2174,6 +2179,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newVenue = assignments.venue !== undefined ? assignments.venue : targetMatch.venue;
     const scheduledTime = targetMatch.scheduledTime;
 
+    // Enforce Director's "One Sport Per Scorer" rule
+    const currentSettings = getSettings();
+    if (currentSettings.security.oneSportPerScorer && assignments.scorekeeper && assignments.scorekeeper.trim()) {
+      const skName = assignments.scorekeeper.trim().toLowerCase();
+      const otherSportMatch = matches.find(
+        m => m.id !== matchId &&
+          m.sport !== targetMatch.sport &&
+          m.scorekeeper &&
+          m.scorekeeper.trim().toLowerCase() === skName
+      );
+      const staffRec = staff.find(
+        s => s.role === 'scorer' && s.name.trim().toLowerCase() === skName && s.assignedCompetitionId
+      );
+      const staffDifferentSport = staffRec && staffRec.assignedCompetitionId !== targetMatch.sport;
+      if (otherSportMatch || staffDifferentSport) {
+        const lockedSportName = getSportName(otherSportMatch?.sport || staffRec?.assignedCompetitionId || '');
+        alert(`Blocked by Director Rule (One Sport Per Scorer): "${assignments.scorekeeper}" is already assigned to ${lockedSportName}. A scorer cannot be assigned to a second sport.`);
+        return;
+      }
+    }
+
     let warning: string | undefined = undefined;
     // Conflict only triggers when both matches have the same non-empty scheduledTime
     if (scheduledTime && targetMatch.status !== 'finished') {
@@ -2401,7 +2427,51 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     // 5. Sets winner = the team with the higher score that the scorer entered
     const winningTeam = scoreA > scoreB ? target.teamA : target.teamB;
+    const losingTeamForBracket = winningTeam === target.teamA ? target.teamB : target.teamA;
     const nowIso = new Date().toISOString();
+
+    // 5b. Best-of-N series check (Bo3 = 2 wins, Bo5 = 3 wins)
+    const bestOf = target.bestOf ?? 1;
+    if (bestOf > 1) {
+      const neededWins = Math.ceil(bestOf / 2);
+      const nextWinsA = (target.seriesWinsA ?? 0) + (scoreA > scoreB ? 1 : 0);
+      const nextWinsB = (target.seriesWinsB ?? 0) + (scoreB > scoreA ? 1 : 0);
+      if (nextWinsA < neededWins && nextWinsB < neededWins) {
+        setMatches(prev => prev.map(m =>
+          m.id === matchId
+            ? {
+                ...m,
+                seriesWinsA: nextWinsA,
+                seriesWinsB: nextWinsB,
+                scoreA: 0,
+                scoreB: 0,
+                status: 'live' as const,
+                timeline: [
+                  ...(m.timeline || []),
+                  {
+                    id: uid('tl'),
+                    time: `Game ${nextWinsA + nextWinsB}`,
+                    team: scoreA > scoreB ? 'A' : 'B',
+                    type: 'milestone',
+                    description: `${winningTeam} won Game ${nextWinsA + nextWinsB} (${scoreA}–${scoreB}). Series: ${nextWinsA}–${nextWinsB} (Best of ${bestOf}).`,
+                    scoreSnapshot: `${nextWinsA} - ${nextWinsB}`,
+                  },
+                ],
+              }
+            : m
+        ));
+        addAuditLog(
+          'score_finalize',
+          `Recorded Game ${nextWinsA + nextWinsB} win for ${winningTeam} in ${target.teamA} vs ${target.teamB} (${scoreA}–${scoreB}). Series: ${nextWinsA}–${nextWinsB} (Best of ${bestOf}).`,
+          matchId,
+          'Match'
+        );
+        return {
+          success: true,
+          message: `Game ${nextWinsA + nextWinsB} recorded! Series is now ${nextWinsA}–${nextWinsB} (first to ${neededWins} wins).`,
+        };
+      }
+    }
 
     // 6. Scorekeeper decides which next-round match & slot the winner advances to
     let nextMatchUpdate: { id: string; slot: 'A' | 'B'; team: string } | null = null;
@@ -2421,8 +2491,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       };
     }
 
+    const loserNextUpdate =
+      target.loserNextMatchId && target.loserNextSlot
+        ? { id: target.loserNextMatchId, slot: target.loserNextSlot, team: losingTeamForBracket }
+        : null;
+
     const chosenNextMatchId = nextMatchUpdate ? nextMatchUpdate.id : target.nextMatchId;
     const chosenNextSlot = nextMatchUpdate ? nextMatchUpdate.slot : target.nextSlot;
+    const finalSeriesWinsA = bestOf > 1 ? (target.seriesWinsA ?? 0) + (scoreA > scoreB ? 1 : 0) : target.seriesWinsA;
+    const finalSeriesWinsB = bestOf > 1 ? (target.seriesWinsB ?? 0) + (scoreB > scoreA ? 1 : 0) : target.seriesWinsB;
 
     setMatches(prev => {
       return prev.map(m => {
@@ -2431,6 +2508,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             ...m,
             scoreA,
             scoreB,
+            seriesWinsA: finalSeriesWinsA,
+            seriesWinsB: finalSeriesWinsB,
             status: 'finished' as const,
             winner: winningTeam,
             nextMatchId: chosenNextMatchId,
@@ -2445,6 +2524,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             ...m,
             teamA: nextMatchUpdate.slot === 'A' ? nextMatchUpdate.team : m.teamA,
             teamB: nextMatchUpdate.slot === 'B' ? nextMatchUpdate.team : m.teamB,
+          };
+        }
+        if (loserNextUpdate && m.id === loserNextUpdate.id) {
+          return {
+            ...m,
+            teamA: loserNextUpdate.slot === 'A' ? loserNextUpdate.team : m.teamA,
+            teamB: loserNextUpdate.slot === 'B' ? loserNextUpdate.team : m.teamB,
           };
         }
         return m;
@@ -2690,6 +2776,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const activeFormat: TournamentFormat = formatOverride || event.format || 'single_elimination';
+    const effectiveConfig = getEffectiveCompetitionConfig(getSettings(), event.sport);
+    const seriesByRound = effectiveConfig.seriesByRound;
+    const seedingMode = event.seedingMode || effectiveConfig.seedingMode || 'seeded';
+    const getSeriesForRound = (r: number, totalR: number, stage: 'group' | 'elimination'): 1 | 3 | 5 => {
+      if (stage === 'group') return seriesOptionToNumber(seriesByRound.groupStage);
+      const fromEnd = totalR - r;
+      if (fromEnd === 0) return seriesOptionToNumber(seriesByRound.finals);
+      if (fromEnd === 1) return seriesOptionToNumber(seriesByRound.semiFinals);
+      return seriesOptionToNumber(seriesByRound.quarterFinals);
+    };
     if (formatOverride && event.format !== formatOverride) {
       setEvents(prev => prev.map(ev => ev.id === event!.id ? { ...ev, format: formatOverride } : ev));
       eventsRef.current = eventsRef.current.map(ev => ev.id === event!.id ? { ...ev, format: formatOverride } : ev);
@@ -2702,11 +2798,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Only accept teams of the event's sport (or auto-select all active teams for that sport when teamIds is omitted/empty)
-    const sportTeams = (teamIds && teamIds.length > 0)
+    const rawSportTeams = (teamIds && teamIds.length > 0)
       ? teamIds
           .map(id => allTeams.find(t => t.id === id))
           .filter((t): t is Team => !!t && t.sport === event!.sport)
       : allTeams.filter(t => t.isActive !== false && t.sport === event!.sport);
+
+    const sportTeams = seedingMode === 'random'
+      ? [...rawSportTeams].sort(() => Math.random() - 0.5)
+      : rawSportTeams;
 
     const matchesByRound: Match[][] = [];
     let overallMatchNum = 1;
@@ -2719,8 +2819,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     let P = N > 8 ? 16 : 8;
     let totalRounds = Math.round(Math.log2(P));
 
-    if (activeFormat === 'round_robin') {
-      // ── ROUND ROBIN SCHEDULE (Every team plays every other team) ──
+    const isGroupPhaseFormat =
+      activeFormat === 'round_robin' ||
+      activeFormat === 'point_system' ||
+      activeFormat === 'combined_rr_elim' ||
+      activeFormat === 'combined_pts_elim';
+
+    if (isGroupPhaseFormat) {
+      // ── ROUND ROBIN / POINT SYSTEM / COMBINED GROUP STAGE ──
       const teamPool: string[] = N >= 2
         ? sportTeams.map(t => t.name)
         : [sportTeams[0]?.name || 'TBD', 'TBD', 'TBD', 'TBD'];
@@ -2731,6 +2837,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       totalRounds = poolSize - 1;
       const matchesPerRound = poolSize / 2;
       P = N >= 2 ? N : 4;
+      const roundLabelPrefix =
+        activeFormat === 'point_system' || activeFormat === 'combined_pts_elim'
+          ? 'Point System'
+          : 'Round Robin';
 
       const rot = [...teamPool];
       for (let r = 1; r <= totalRounds; r++) {
@@ -2757,11 +2867,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             eventId: event.id,
             sport: event.sport,
             division: event.division,
-            format: 'round_robin',
+            format: activeFormat,
+            stage: 'group',
+            bestOf: getSeriesForRound(r, totalRounds, 'group'),
             roundNumber: r,
             slot: slotCounter++,
             matchNumber: overallMatchNum++,
-            round: `Round Robin · Round ${r}`,
+            round: `${roundLabelPrefix} · Round ${r}`,
             status: 'scheduled',
             teamA: tA,
             teamB: tB,
@@ -2780,9 +2892,157 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const last = rot.pop()!;
         rot.splice(1, 0, last);
       }
+    } else if (activeFormat === 'double_elimination') {
+      // ── DOUBLE ELIMINATION (Winners Bracket + Losers Bracket + Grand Final) ──
+      const winnersRounds: Match[][] = [];
+      for (let r = 1; r <= totalRounds; r++) {
+        const matchCount = P / Math.pow(2, r);
+        const roundMatches: Match[] = [];
+        const baseName = getRoundName(r, totalRounds);
+        let roundDateStr = `2026-11-${String(9 + r * 2).padStart(2, '0')}`;
+        if (baseDateStr && /^\d{4}-\d{2}-\d{2}$/.test(baseDateStr)) {
+          const dt = new Date(`${baseDateStr}T00:00:00`);
+          if (!isNaN(dt.getTime())) {
+            dt.setDate(dt.getDate() + (r - 1) * 2);
+            roundDateStr = dt.toISOString().slice(0, 10);
+          }
+        }
+        for (let slot = 1; slot <= matchCount; slot++) {
+          const matchHour = Math.min(20, baseStartHour + (slot - 1) * 2);
+          roundMatches.push({
+            id: uid('m'),
+            eventId: event.id,
+            sport: event.sport,
+            division: event.division,
+            format: 'double_elimination',
+            stage: 'elimination',
+            bracketSide: 'winners',
+            bestOf: getSeriesForRound(r, totalRounds, 'elimination'),
+            roundNumber: r,
+            slot,
+            matchNumber: overallMatchNum++,
+            round: `Winners · ${baseName}`,
+            status: 'scheduled',
+            teamA: 'TBD',
+            teamB: 'TBD',
+            scoreA: 0,
+            scoreB: 0,
+            isBye: false,
+            venue: event.venue || venues[0]?.name || 'Main Arena Court 1',
+            scheduledTime: `${roundDateStr}T${String(matchHour).padStart(2, '0')}:${baseStartMin}:00`,
+          });
+        }
+        winnersRounds.push(roundMatches);
+      }
+
+      // Wire winners bracket progression
+      for (let r = 0; r < totalRounds - 1; r++) {
+        for (let slot = 0; slot < winnersRounds[r].length; slot++) {
+          winnersRounds[r][slot].nextMatchId = winnersRounds[r + 1][Math.floor(slot / 2)].id;
+          winnersRounds[r][slot].nextSlot = slot % 2 === 0 ? 'A' : 'B';
+        }
+      }
+
+      // Build Losers Bracket (each WB round feeds into corresponding LB round)
+      const losersRounds: Match[][] = [];
+      const lbR1Count = Math.max(1, winnersRounds[0].length / 2);
+      for (let lb = 1; lb <= Math.max(1, totalRounds - 1); lb++) {
+        const count = Math.max(1, lbR1Count / Math.pow(2, lb - 1));
+        const lbMatches: Match[] = [];
+        for (let slot = 1; slot <= count; slot++) {
+          lbMatches.push({
+            id: uid('m'),
+            eventId: event.id,
+            sport: event.sport,
+            division: event.division,
+            format: 'double_elimination',
+            stage: 'elimination',
+            bracketSide: 'losers',
+            bestOf: getSeriesForRound(lb, Math.max(2, totalRounds), 'elimination'),
+            roundNumber: totalRounds + lb,
+            slot,
+            matchNumber: overallMatchNum++,
+            round: `Losers · Round ${lb}`,
+            status: 'scheduled',
+            teamA: 'TBD',
+            teamB: 'TBD',
+            scoreA: 0,
+            scoreB: 0,
+            isBye: false,
+            venue: event.venue || venues[0]?.name || 'Main Arena Court 1',
+            scheduledTime: `${baseDateStr}T14:${baseStartMin}:00`,
+          });
+        }
+        losersRounds.push(lbMatches);
+      }
+
+      // Wire WB Round 1 losers into LB Round 1
+      if (losersRounds.length > 0) {
+        for (let slot = 0; slot < winnersRounds[0].length; slot++) {
+          const lbTarget = losersRounds[0][Math.floor(slot / 2)];
+          if (lbTarget) {
+            winnersRounds[0][slot].loserNextMatchId = lbTarget.id;
+            winnersRounds[0][slot].loserNextSlot = slot % 2 === 0 ? 'A' : 'B';
+          }
+        }
+        for (let lb = 0; lb < losersRounds.length - 1; lb++) {
+          for (let slot = 0; slot < losersRounds[lb].length; slot++) {
+            const nextLb = losersRounds[lb + 1][Math.floor(slot / 2)];
+            if (nextLb) {
+              losersRounds[lb][slot].nextMatchId = nextLb.id;
+              losersRounds[lb][slot].nextSlot = slot % 2 === 0 ? 'A' : 'B';
+            }
+          }
+        }
+      }
+
+      // Grand Final (Winners Champion vs Losers Champion)
+      const grandFinal: Match = {
+        id: uid('m'),
+        eventId: event.id,
+        sport: event.sport,
+        division: event.division,
+        format: 'double_elimination',
+        stage: 'elimination',
+        bracketSide: 'grand_final',
+        bestOf: seriesOptionToNumber(seriesByRound.finals),
+        roundNumber: totalRounds + losersRounds.length + 1,
+        slot: 1,
+        matchNumber: overallMatchNum++,
+        round: 'Grand Final',
+        status: 'scheduled',
+        teamA: 'TBD',
+        teamB: 'TBD',
+        scoreA: 0,
+        scoreB: 0,
+        isBye: false,
+        nextMatchId: null,
+        nextSlot: null,
+        venue: event.venue || venues[0]?.name || 'Main Arena Court 1',
+        scheduledTime: `${baseDateStr}T17:${baseStartMin}:00`,
+      };
+      const wbFinal = winnersRounds[winnersRounds.length - 1][0];
+      wbFinal.nextMatchId = grandFinal.id;
+      wbFinal.nextSlot = 'A';
+      if (losersRounds.length > 0) {
+        const lbFinal = losersRounds[losersRounds.length - 1][0];
+        lbFinal.nextMatchId = grandFinal.id;
+        lbFinal.nextSlot = 'B';
+      }
+
+      // Place teams into WB Round 1 (using getSeedOrder when seeded)
+      const seedOrder = seedingMode === 'seeded' ? getSeedOrder(P) : Array.from({ length: P }, (_, i) => i + 1);
+      const wbR1 = winnersRounds[0];
+      for (let slot = 0; slot < wbR1.length; slot++) {
+        const idxA = seedOrder[slot * 2] - 1;
+        const idxB = seedOrder[slot * 2 + 1] - 1;
+        wbR1[slot].teamA = sportTeams[idxA]?.name || 'TBD';
+        wbR1[slot].teamB = sportTeams[idxB]?.name || 'TBD';
+      }
+
+      matchesByRound.push(...winnersRounds, ...losersRounds, [grandFinal]);
     } else {
       // ── SINGLE ELIMINATION BRACKET (Quarter-Finals -> Semi-Finals -> Final) ──
-      // NO automatic seeding and NO automatic BYE advancement!
       for (let r = 1; r <= totalRounds; r++) {
         const matchCount = P / Math.pow(2, r);
         const roundMatches: Match[] = [];
@@ -2807,6 +3067,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             sport: event.sport,
             division: event.division,
             format: 'single_elimination',
+            stage: 'elimination',
+            bracketSide: 'winners',
+            bestOf: getSeriesForRound(r, totalRounds, 'elimination'),
             roundNumber: r,
             slot,
             matchNumber: overallMatchNum++,
@@ -2839,12 +3102,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       matchesByRound[totalRounds - 1][0].nextMatchId = null;
       matchesByRound[totalRounds - 1][0].nextSlot = null;
 
-      // Place registered teams sequentially into Round 1 without automatic seeding or auto-advancement
+      // Place registered teams into Round 1 (seeded or sequential/random)
+      const seedOrder = seedingMode === 'seeded' ? getSeedOrder(P) : Array.from({ length: P }, (_, i) => i + 1);
       const round1Matches = matchesByRound[0];
       for (let slot = 0; slot < round1Matches.length; slot++) {
         const m = round1Matches[slot];
-        const teamAObj = sportTeams[slot * 2] || null;
-        const teamBObj = sportTeams[slot * 2 + 1] || null;
+        const teamAObj = sportTeams[seedOrder[slot * 2] - 1] || null;
+        const teamBObj = sportTeams[seedOrder[slot * 2 + 1] - 1] || null;
 
         m.teamA = teamAObj ? teamAObj.name : 'TBD';
         m.teamB = teamBObj ? teamBObj.name : 'TBD';
@@ -3038,6 +3302,127 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }))).then();
     }
   }, [events, teams, matches, venues, officials, currentUser, addAuditLog, postAnnouncement]);
+
+  // ── Combined Format: Advance Top N Group Teams to Elimination Stage ──────────
+  const advanceGroupToElimination = useCallback((eventIdOrSport: string): { success: boolean; message?: string } => {
+    const ev = events.find(e => e.id === eventIdOrSport || e.sport === eventIdOrSport);
+    const sportId = ev?.sport || eventIdOrSport;
+    const effective = getEffectiveCompetitionConfig(getSettings(), sportId);
+    const topN = ev?.advancingTeamsCount || effective.advancingTeamsCount || 4;
+    const standings = computeStandings(sportId);
+    if (standings.length < 2) {
+      return { success: false, message: 'At least 2 teams with standings are required to generate the Elimination Round.' };
+    }
+    const advancingNames = standings.slice(0, topN).map(s => s.teamName);
+    const P = advancingNames.length > 8 ? 16 : advancingNames.length > 4 ? 8 : advancingNames.length > 2 ? 4 : 2;
+    const totalRounds = Math.round(Math.log2(P));
+    const seedOrder = getSeedOrder(P);
+
+    const existingElim = matches.filter(
+      m => (m.eventId === ev?.id || m.sport === sportId) && m.stage === 'elimination'
+    );
+    const existingElimIds = new Set(existingElim.map(m => m.id));
+    let maxMatchNum = matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0);
+
+    const elimRounds: Match[][] = [];
+    for (let r = 1; r <= totalRounds; r++) {
+      const count = P / Math.pow(2, r);
+      const rMatches: Match[] = [];
+      const fromEnd = totalRounds - r;
+      const bestOf = fromEnd === 0
+        ? seriesOptionToNumber(effective.seriesByRound.finals)
+        : fromEnd === 1
+          ? seriesOptionToNumber(effective.seriesByRound.semiFinals)
+          : seriesOptionToNumber(effective.seriesByRound.quarterFinals);
+      for (let slot = 1; slot <= count; slot++) {
+        rMatches.push({
+          id: uid('m'),
+          eventId: ev?.id,
+          sport: sportId,
+          division: ev?.division,
+          format: ev?.format || 'combined_rr_elim',
+          stage: 'elimination',
+          bracketSide: 'winners',
+          bestOf,
+          roundNumber: r,
+          slot,
+          matchNumber: ++maxMatchNum,
+          round: `Elimination · ${getRoundName(r, totalRounds)}`,
+          status: 'scheduled',
+          teamA: 'TBD',
+          teamB: 'TBD',
+          scoreA: 0,
+          scoreB: 0,
+          isBye: false,
+          venue: ev?.venue || venues[0]?.name || 'Main Arena Court 1',
+          scheduledTime: new Date(Date.now() + r * 86400000).toISOString().slice(0, 16),
+        });
+      }
+      elimRounds.push(rMatches);
+    }
+
+    for (let r = 0; r < totalRounds - 1; r++) {
+      for (let slot = 0; slot < elimRounds[r].length; slot++) {
+        elimRounds[r][slot].nextMatchId = elimRounds[r + 1][Math.floor(slot / 2)].id;
+        elimRounds[r][slot].nextSlot = slot % 2 === 0 ? 'A' : 'B';
+      }
+    }
+
+    for (let slot = 0; slot < elimRounds[0].length; slot++) {
+      const idxA = seedOrder[slot * 2] - 1;
+      const idxB = seedOrder[slot * 2 + 1] - 1;
+      elimRounds[0][slot].teamA = advancingNames[idxA] || 'BYE';
+      elimRounds[0][slot].teamB = advancingNames[idxB] || 'BYE';
+      if (elimRounds[0][slot].teamA === 'BYE' || elimRounds[0][slot].teamB === 'BYE') {
+        elimRounds[0][slot].isBye = true;
+      }
+    }
+
+    const newElimMatches = elimRounds.flat();
+    setMatches(prev => [...prev.filter(m => !existingElimIds.has(m.id)), ...newElimMatches]);
+    addAuditLog('bracket_generate', `Advanced top ${advancingNames.length} teams to Elimination Round for ${getSportName(sportId)}`, ev?.id || sportId, 'TournamentEvent');
+    return { success: true, message: `Elimination Round generated with top ${advancingNames.length} teams.` };
+  }, [events, matches, venues, addAuditLog]);
+
+  // ── Manual Bracket Editing: Swap Teams & Toggle Byes ────────────────────────
+  const swapBracketTeams = useCallback((
+    matchIdA: string,
+    slotA: 'A' | 'B',
+    matchIdB: string,
+    slotB: 'A' | 'B'
+  ): { success: boolean; message?: string } => {
+    const mA = matches.find(m => m.id === matchIdA);
+    const mB = matches.find(m => m.id === matchIdB);
+    if (!mA || !mB) return { success: false, message: 'Match not found.' };
+    if (mA.status !== 'scheduled' || mB.status !== 'scheduled') {
+      return { success: false, message: 'Warning: Cannot swap teams on matches already live or finished.' };
+    }
+    const teamFromA = slotA === 'A' ? mA.teamA : mA.teamB;
+    const teamFromB = slotB === 'A' ? mB.teamA : mB.teamB;
+
+    setMatches(prev => prev.map(m => {
+      if (m.id === matchIdA && m.id === matchIdB) {
+        return { ...m, teamA: slotA === 'A' ? teamFromB : teamFromA, teamB: slotA === 'B' ? teamFromB : teamFromA };
+      }
+      if (m.id === matchIdA) {
+        return { ...m, teamA: slotA === 'A' ? teamFromB : m.teamA, teamB: slotA === 'B' ? teamFromB : m.teamB };
+      }
+      if (m.id === matchIdB) {
+        return { ...m, teamA: slotB === 'A' ? teamFromA : m.teamA, teamB: slotB === 'B' ? teamFromA : m.teamB };
+      }
+      return m;
+    }));
+    addAuditLog('bracket_generate', `Manually swapped bracket slots: ${teamFromA} ↔ ${teamFromB}`, matchIdA, 'Match');
+    return { success: true };
+  }, [matches, addAuditLog]);
+
+  const toggleMatchBye = useCallback((matchId: string) => {
+    const target = matches.find(m => m.id === matchId);
+    if (!target || target.status !== 'scheduled') return;
+    const nextBye = !target.isBye;
+    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, isBye: nextBye } : m));
+    addAuditLog('bracket_generate', `${nextBye ? 'Set' : 'Cleared'} BYE status on Match #${target.matchNumber ?? target.slot ?? ''} (${target.teamA} vs ${target.teamB})`, matchId, 'Match');
+  }, [matches, addAuditLog]);
 
   // ── Event management (fused with automatic bracket generation & announcements) ──
   const createEvent = useCallback((eventData: Omit<TournamentEvent, 'id' | 'bracket'>) => {
@@ -3571,9 +3956,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addAuditLog('venue_add', `Removed venue: ${target?.name || id}`, id, 'Venue');
   }, [venues, addAuditLog]);
 
-  // â”€â”€ Computed: Standings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Computed: Standings (respects custom Point System & Tiebreakers) ───────
   const computeStandings = useCallback((sportId: string): StandingsRow[] => {
     const sportMatches = matches.filter(m => m.sport === sportId && m.status === 'finished' && !m.isBye);
+    const effective = getEffectiveCompetitionConfig(getSettings(), sportId);
+    const { winPoints, drawPoints, lossPoints } = effective.pointSystem;
     const teamMap = new Map<string, StandingsRow>();
 
     const ensureTeam = (name: string) => {
@@ -3583,8 +3970,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         teamMap.set(name, {
           teamId: teamObj?.id ?? name,
           teamName: name,
-          department: dept?.shortName ?? 'â€”',
-          played: 0, won: 0, lost: 0,
+          department: dept?.shortName ?? '—',
+          played: 0, won: 0, drawn: 0, lost: 0, points: 0,
           pointsFor: 0, pointsAgainst: 0, winPct: 0,
         });
       }
@@ -3597,12 +3984,44 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       a.played++; b.played++;
       a.pointsFor    += m.scoreA; a.pointsAgainst += m.scoreB;
       b.pointsFor    += m.scoreB; b.pointsAgainst += m.scoreA;
-      if (m.winner === m.teamA) { a.won++; b.lost++; }
-      else                      { b.won++; a.lost++; }
+      if (m.scoreA === m.scoreB && !m.winner) {
+        a.drawn = (a.drawn || 0) + 1;
+        b.drawn = (b.drawn || 0) + 1;
+        a.points = (a.points || 0) + drawPoints;
+        b.points = (b.points || 0) + drawPoints;
+      } else if (m.winner === m.teamA || m.scoreA > m.scoreB) {
+        a.won++; b.lost++;
+        a.points = (a.points || 0) + winPoints;
+        b.points = (b.points || 0) + lossPoints;
+      } else {
+        b.won++; a.lost++;
+        b.points = (b.points || 0) + winPoints;
+        a.points = (a.points || 0) + lossPoints;
+      }
       a.winPct = a.played ? a.won / a.played : 0;
       b.winPct = b.played ? b.won / b.played : 0;
     }
-    return Array.from(teamMap.values()).sort((a, b) => b.won - a.won || b.winPct - a.winPct);
+
+    return Array.from(teamMap.values()).sort((a, b) => {
+      const ptsDiff = (b.points ?? 0) - (a.points ?? 0);
+      if (ptsDiff !== 0) return ptsDiff;
+      for (const tb of effective.tiebreakerOrder) {
+        if (tb === 'point_differential') {
+          const diff = (b.pointsFor - b.pointsAgainst) - (a.pointsFor - a.pointsAgainst);
+          if (diff !== 0) return diff;
+        } else if (tb === 'total_points_scored') {
+          const diff = b.pointsFor - a.pointsFor;
+          if (diff !== 0) return diff;
+        } else if (tb === 'head_to_head') {
+          const h2h = sportMatches.find(
+            m => (m.teamA === a.teamName && m.teamB === b.teamName) || (m.teamA === b.teamName && m.teamB === a.teamName)
+          );
+          if (h2h?.winner === a.teamName) return -1;
+          if (h2h?.winner === b.teamName) return 1;
+        }
+      }
+      return b.won - a.won || b.winPct - a.winPct;
+    });
   }, [matches, teams, departments]);
 
   // â”€â”€ Computed: Medal Tally â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -3671,6 +4090,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       updateMatchScore, submitMatchScore, finalizeMatchScore, correctMatchScore,
       startMatch, finishMatch, advanceTeamToBracketSlot, reopenMatch,
       createEvent, updateEvent, publishEvent, startEvent, archiveEvent, deleteEvent, deleteBracket, generateBracket,
+      advanceGroupToElimination, swapBracketTeams, toggleMatchBye,
       registerTeam, registerPlayer, updatePlayer, removePlayer,
       addDepartment, removeDepartment,
       addDivision, removeDivision,

@@ -59,6 +59,8 @@ export const DEFAULT_SPORTS_COMPETITION: SportsCompetitionSettings = {
     dota2: 'single_elimination',
     valorant: 'single_elimination',
   },
+  coordinatorLockedFields: [],
+  competitionOverrides: {},
   sports: {
     basketball: {
       sportId: 'basketball',
@@ -470,6 +472,7 @@ export const DEFAULT_SCORING: ScoringSettings = {
 
 export const DEFAULT_SECURITY: SecuritySettings = {
   maxCoordinators: 3,
+  oneSportPerScorer: true,
   allowedEmailDomain: 'asiancollege.edu.ph',
   sessionTimeoutMinutes: 30,
   scorerSessionTimeoutMinutes: 120,

@@ -254,7 +254,15 @@ export interface GameOfficial {
 }
 
 // ── Matches ───────────────────────────────────────────────────────────────────
-export type TournamentFormat = 'single_elimination' | 'round_robin';
+export type TournamentFormat =
+  | 'single_elimination'
+  | 'double_elimination'
+  | 'round_robin'
+  | 'point_system'
+  | 'combined_rr_elim'
+  | 'combined_pts_elim';
+
+export type MatchSeriesFormat = 'single_game' | 'best_of_3' | 'best_of_5';
 
 export interface MatchPeriodScore {
   label: string;   // e.g. 'Q1', 'Set 1', '1st Half', 'Game 1'
@@ -278,6 +286,8 @@ export interface Match {
   sport: string;
   division?: string;
   format?: TournamentFormat;
+  advancingTeamsCount?: number;
+  seedingMode?: 'seeded' | 'random' | 'manual';
   teamA: string;
   teamB: string;
   scoreA: number;
@@ -290,6 +300,13 @@ export interface Match {
   matchNumber?: number;   // overall match sequence number
   nextMatchId?: string | null;
   nextSlot?: 'A' | 'B' | null;
+  loserNextMatchId?: string | null;
+  loserNextSlot?: 'A' | 'B' | null;
+  bracketSide?: 'winners' | 'losers' | 'grand_final';
+  stage?: 'group' | 'elimination';
+  bestOf?: 1 | 3 | 5;
+  seriesWinsA?: number;
+  seriesWinsB?: number;
   scheduledDate?: string;
   scheduledTime?: string; // ISO datetime string or time string
   winner?: string;
@@ -339,6 +356,8 @@ export interface TournamentEvent {
   sport: string;
   division?: string;
   format?: TournamentFormat;
+  advancingTeamsCount?: number;
+  seedingMode?: 'seeded' | 'random' | 'manual';
   category: string;
   dates: string;
   startDate?: string;
@@ -362,7 +381,9 @@ export interface StandingsRow {
   department: string;
   played: number;
   won: number;
+  drawn?: number;
   lost: number;
+  points?: number;
   pointsFor: number;
   pointsAgainst: number;
   winPct: number;

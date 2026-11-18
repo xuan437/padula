@@ -189,3 +189,94 @@ export function importSettings(
   }
 }
 
+import type {
+  SportId,
+  CompetitionOverride,
+  CoordinatorLockableField,
+  SeriesByRound,
+  PointSystemConfig,
+  MatchSeriesOption,
+} from '../types/settings';
+
+export function resolveSportKey(sportIdOrName: string): SportId {
+  const q = (sportIdOrName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (q === 's1' || q.includes('basketball')) return 'basketball';
+  if (q === 's2' || q.includes('volleyball')) return 'volleyball';
+  if (q === 's3' || q.includes('badminton')) return 'badminton';
+  if (q === 's4' || q.includes('tabletennis')) return 'tabletennis';
+  if (q === 's5' || q.includes('mobilelegends')) return 'mobilelegends';
+  if (q === 's6' || q.includes('dota')) return 'dota2';
+  if (q === 's7' || q.includes('valorant')) return 'valorant';
+  if (q === 's8' || q.includes('chess')) return 'chess';
+  if (q.includes('futsal') || q.includes('footsal')) return 'futsal';
+  if (q.includes('football') || q.includes('soccer')) return 'football';
+  if (q.includes('takraw')) return 'sepaktakraw';
+  if (q.includes('frisbee')) return 'frisbee';
+  if (q.includes('scrabble')) return 'scrabble';
+  return 'basketball';
+}
+
+export function seriesOptionToNumber(opt?: MatchSeriesOption): 1 | 3 | 5 {
+  if (opt === 'best_of_3') return 3;
+  if (opt === 'best_of_5') return 5;
+  return 1;
+}
+
+export function getEffectiveCompetitionConfig(settings: AppSettings, sportOrEventKey: string) {
+  const sportKey = resolveSportKey(sportOrEventKey);
+  const directorRule = settings.sportsCompetition.sports[sportKey];
+  const override: CompetitionOverride =
+    settings.sportsCompetition.competitionOverrides?.[sportOrEventKey] ||
+    settings.sportsCompetition.competitionOverrides?.[sportKey] ||
+    {};
+
+  const defaultSeriesOpt: MatchSeriesOption =
+    directorRule.defaultSeries ||
+    (directorRule.bestOf === 5 ? 'best_of_5' : directorRule.bestOf === 3 ? 'best_of_3' : 'single_game');
+
+  const defaultSeriesByRound: SeriesByRound = directorRule.seriesByRound || {
+    groupStage: defaultSeriesOpt,
+    quarterFinals: defaultSeriesOpt,
+    semiFinals: defaultSeriesOpt,
+    finals: defaultSeriesOpt,
+  };
+
+  const defaultPointSystem: PointSystemConfig = directorRule.pointSystem || {
+    winPoints: 3,
+    drawPoints: 1,
+    lossPoints: 0,
+  };
+
+  return {
+    sportKey,
+    format: override.format ?? settings.sportsCompetition.competitionFormats[sportKey] ?? directorRule.defaultTournamentFormat,
+    seriesByRound: { ...defaultSeriesByRound, ...(override.seriesByRound || {}) },
+    pointSystem: { ...defaultPointSystem, ...(override.pointSystem || {}) },
+    tiebreakerOrder: override.tiebreakerOrder ?? directorRule.tiebreakerOrder,
+    advancingTeamsCount: override.advancingTeamsCount ?? directorRule.advancingTeamsCount ?? 4,
+    seedingMode: override.seedingMode ?? directorRule.seedingMode ?? 'seeded',
+    allowByes: override.allowByes ?? true,
+    periodDurationMinutes: override.periodDurationMinutes ?? directorRule.periodDurationMinutes,
+    applyToUpcomingOnly: override.applyToUpcomingOnly ?? true,
+    override,
+    lockedFields: settings.sportsCompetition.coordinatorLockedFields || [],
+  };
+}
+
+export function isFieldCustomized(
+  settings: AppSettings,
+  competitionKey: string,
+  field: keyof CompetitionOverride
+): boolean {
+  const ov = settings.sportsCompetition.competitionOverrides?.[competitionKey];
+  return Boolean(ov && ov[field] !== undefined);
+}
+
+export function isFieldLockedForCoordinator(
+  settings: AppSettings,
+  field: CoordinatorLockableField
+): boolean {
+  return (settings.sportsCompetition.coordinatorLockedFields || []).includes(field);
+}
+
+

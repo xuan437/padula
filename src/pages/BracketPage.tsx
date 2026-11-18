@@ -16,6 +16,7 @@ import {
 import TournamentTreeBracket from '../components/TournamentTreeBracket';
 import { isPlaceholder, getRoundName } from '../lib/bracket';
 import { SPORTS_CATALOG, getSportName } from '../lib/sports';
+import type { TournamentFormat } from '../types';
 
 type AppState = ReturnType<typeof useApp>;
 type BracketMatch = AppState['matches'][number];
@@ -188,6 +189,7 @@ export default function BracketPage() {
   const {
     events, matches, venues, teams,
     assignMatchOfficials, startMatch, createEvent, generateBracket, deleteBracket, computeStandings,
+    advanceGroupToElimination, swapBracketTeams, toggleMatchBye,
     setActiveView, currentUser,
   } = useApp();
 
@@ -199,7 +201,9 @@ export default function BracketPage() {
     return 's1';
   });
   const [bracketStyle, setBracketStyle] = useState<'symmetrical' | 'column'>('symmetrical');
-  const [selectedFormat, setSelectedFormat] = useState<'single_elimination' | 'round_robin'>('single_elimination');
+  const [selectedFormat, setSelectedFormat] = useState<TournamentFormat>('single_elimination');
+  const [swapSlotA, setSwapSlotA] = useState<{ matchId: string; slot: 'A' | 'B'; label: string } | null>(null);
+  const [showBracketEditor, setShowBracketEditor] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState<string>(() => venues[0]?.name || 'Main Arena Court 1');
   const [tab, setTab] = useState<'bracket' | 'standings' | 'schedule'>('bracket');
   const [venueError, setVenueError] = useState('');
@@ -353,7 +357,15 @@ export default function BracketPage() {
     }
   };
 
-  const isRoundRobinEvent = event?.format === 'round_robin' || eventMatches.some(m => m.format === 'round_robin');
+  const activeEventFormat: TournamentFormat = event?.format || selectedFormat;
+  const isRoundRobinEvent =
+    activeEventFormat === 'round_robin' ||
+    activeEventFormat === 'point_system' ||
+    activeEventFormat === 'combined_rr_elim' ||
+    activeEventFormat === 'combined_pts_elim' ||
+    eventMatches.some(m => m.format === 'round_robin' || m.format === 'point_system');
+  const isCombinedEvent = activeEventFormat === 'combined_rr_elim' || activeEventFormat === 'combined_pts_elim';
+  const hasEliminationStage = eventMatches.some(m => m.stage === 'elimination');
 
   return (
     <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
@@ -523,7 +535,19 @@ export default function BracketPage() {
               <div className="sync-control-body">
                 <span className="sync-control-label">Tournament Format</span>
                 <div className="sync-control-value">
-                  <span>{selectedFormat === 'round_robin' ? 'Round Robin (All vs All)' : 'Single Elimination (Knockout)'}</span>
+                  <span>
+                    {selectedFormat === 'double_elimination'
+                      ? 'Double Elimination'
+                      : selectedFormat === 'round_robin'
+                        ? 'Round Robin (All vs All)'
+                        : selectedFormat === 'point_system'
+                          ? 'Point System (Standings)'
+                          : selectedFormat === 'combined_rr_elim'
+                            ? 'Round Robin + Elimination'
+                            : selectedFormat === 'combined_pts_elim'
+                              ? 'Point System + Elimination'
+                              : 'Single Elimination (Knockout)'}
+                  </span>
                 </div>
               </div>
               <div className="sync-control-chevron">
@@ -534,7 +558,11 @@ export default function BracketPage() {
                 <div className="sync-control-dropdown-menu" onClick={e => e.stopPropagation()}>
                   {[
                     { id: 'single_elimination', label: 'Single Elimination (Knockout)', desc: 'Standard knockout tournament tree bracket' },
+                    { id: 'double_elimination', label: 'Double Elimination', desc: 'Winners & Losers brackets + Grand Final' },
                     { id: 'round_robin', label: 'Round Robin (All vs All)', desc: 'Every team plays all other teams in the group' },
+                    { id: 'point_system', label: 'Point System (Standings)', desc: 'Rank teams by custom Win / Draw / Loss points' },
+                    { id: 'combined_rr_elim', label: 'Combined: Round Robin → Elimination', desc: 'Group stage first, then Top N advance to knockout' },
+                    { id: 'combined_pts_elim', label: 'Combined: Point System → Elimination', desc: 'Points stage first, then Top N advance to knockout' },
                   ].map(f => {
                     const isSelected = selectedFormat === f.id;
                     return (
@@ -542,7 +570,7 @@ export default function BracketPage() {
                         key={f.id}
                         className={`sync-control-dropdown-item ${isSelected ? 'is-selected' : ''}`}
                         onClick={() => {
-                          setSelectedFormat(f.id as 'single_elimination' | 'round_robin');
+                          setSelectedFormat(f.id as TournamentFormat);
                           setActiveDropdown(null);
                         }}
                       >
@@ -662,7 +690,86 @@ export default function BracketPage() {
 
       {/* Bracket tab */}
       {tab === 'bracket' && (
-        bracketStyle === 'symmetrical' && !isRoundRobinEvent ? (
+        <>
+          {/* Combined Format Stage Progression & Manual Bracket Swap/Bye Tools (Progressive Disclosure) */}
+          {isAdmin && hasMatches && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={() => setShowBracketEditor(p => !p)}
+                >
+                  {showBracketEditor ? '▾ Hide Manual Swap / Bye Editor' : '▸ Manual Swap Teams & Set Byes'}
+                </button>
+                {isCombinedEvent && !hasEliminationStage && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    onClick={() => {
+                      const res = advanceGroupToElimination(event?.id || currentSport);
+                      if (res.message) alert(res.message);
+                    }}
+                  >
+                    Advance Top Teams to Elimination Round →
+                  </button>
+                )}
+              </div>
+              {swapSlotA && (
+                <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 700 }}>
+                  Selected for swap: {swapSlotA.label} — click another scheduled slot to swap (or{' '}
+                  <button type="button" className="btn btn-xs btn-ghost" onClick={() => setSwapSlotA(null)}>Cancel</button>)
+                </span>
+              )}
+            </div>
+          )}
+
+          {showBracketEditor && isAdmin && hasMatches && (
+            <div className="glass-card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>
+                Manual Bracket Adjustment (Scheduled Matches Only)
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {eventMatches.filter(m => m.status === 'scheduled').map(m => (
+                  <div key={m.id} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5 }}>
+                    <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>M#{m.matchNumber || m.slot}</span>
+                    {(['A', 'B'] as const).map(slot => {
+                      const teamName = slot === 'A' ? m.teamA : m.teamB;
+                      const isPicked = swapSlotA?.matchId === m.id && swapSlotA?.slot === slot;
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          className={`btn btn-xs ${isPicked ? 'btn-primary' : 'btn-outline'}`}
+                          onClick={() => {
+                            if (!swapSlotA) {
+                              setSwapSlotA({ matchId: m.id, slot, label: `${teamName} (M#${m.matchNumber || m.slot})` });
+                            } else {
+                              const res = swapBracketTeams(swapSlotA.matchId, swapSlotA.slot, m.id, slot);
+                              if (!res.success && res.message) alert(res.message);
+                              setSwapSlotA(null);
+                            }
+                          }}
+                        >
+                          {teamName}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className={`btn btn-xs ${m.isBye ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => toggleMatchBye(m.id)}
+                      title="Toggle BYE status"
+                    >
+                      {m.isBye ? 'BYE ✓' : 'Set BYE'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {bracketStyle === 'symmetrical' && (!isRoundRobinEvent || hasEliminationStage) ? (
           <TournamentTreeBracket
             initialSportId={currentSport}
             showSportSelector={true}
@@ -714,7 +821,8 @@ export default function BracketPage() {
                 ))}
             </div>
           </div>
-        ) : null
+        ) : null}
+        </>
       )}
 
       {/* Schedule tab */}
