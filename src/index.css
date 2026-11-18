@@ -274,14 +274,20 @@ input, select, textarea {
    ============================================================ */
 .glass-card {
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: border-color var(--transition), box-shadow var(--transition);
+  box-shadow: none;
+  transition: border-color var(--transition), background-color var(--transition);
 }
 
 .glass-card:hover {
-  border-color: var(--border-hover);
+  border-color: var(--border);
+}
+
+.glass-card .glass-card {
+  background: var(--bg-elevated);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* ============================================================
@@ -300,7 +306,7 @@ input, select, textarea {
   flex: 1;
   margin-left: var(--sidebar-width);
   min-height: 100vh;
-  padding: 32px 40px;
+  padding: 24px 28px;
   max-width: 1360px;
   width: calc(100% - var(--sidebar-width));
   box-sizing: border-box;
@@ -1224,10 +1230,10 @@ input, select, textarea {
 }
 
 .sport-tile {
-  padding: 16px;
+  padding: 12px 14px;
   border-radius: var(--radius-md);
   background: var(--bg-card);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2413,7 +2419,7 @@ select.form-input option {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
 
 .bracket-tree-scroll-container {
