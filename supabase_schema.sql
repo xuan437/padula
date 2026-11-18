@@ -833,3 +833,69 @@ INSERT INTO users (
   )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, role = EXCLUDED.role, email = EXCLUDED.email, password = EXCLUDED.password;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- FOREIGN KEY CONSTRAINTS & REFERENTIAL INTEGRITY
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Link Teams to Divisions and Departments
+ALTER TABLE teams
+  ADD COLUMN IF NOT EXISTS division_id TEXT,
+  ADD COLUMN IF NOT EXISTS department_id TEXT;
+
+UPDATE teams
+SET
+  division_id = CASE WHEN division IN (SELECT id FROM divisions) THEN division ELSE NULL END,
+  department_id = CASE WHEN department IN (SELECT id FROM departments) THEN department ELSE NULL END;
+
+ALTER TABLE teams
+  ADD CONSTRAINT fk_teams_division FOREIGN KEY (division_id) REFERENCES divisions(id) ON DELETE SET NULL,
+  ADD CONSTRAINT fk_teams_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL;
+
+-- Link Players to Teams
+ALTER TABLE players
+  ADD CONSTRAINT fk_players_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE;
+
+-- Link Matches to Tournament Events, Venues, Teams, and Officials
+ALTER TABLE matches
+  ADD COLUMN IF NOT EXISTS tournament_event_id TEXT,
+  ADD COLUMN IF NOT EXISTS venue_id TEXT,
+  ADD COLUMN IF NOT EXISTS team_a_id TEXT,
+  ADD COLUMN IF NOT EXISTS team_b_id TEXT,
+  ADD COLUMN IF NOT EXISTS official_id TEXT;
+
+UPDATE matches
+SET tournament_event_id = CASE WHEN event_id IN (SELECT id FROM tournament_events) THEN event_id ELSE NULL END;
+
+ALTER TABLE matches
+  ADD CONSTRAINT fk_matches_event FOREIGN KEY (tournament_event_id) REFERENCES tournament_events(id) ON DELETE CASCADE,
+  ADD CONSTRAINT fk_matches_venue FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE SET NULL,
+  ADD CONSTRAINT fk_matches_team_a FOREIGN KEY (team_a_id) REFERENCES teams(id) ON DELETE RESTRICT,
+  ADD CONSTRAINT fk_matches_team_b FOREIGN KEY (team_b_id) REFERENCES teams(id) ON DELETE RESTRICT,
+  ADD CONSTRAINT fk_matches_official FOREIGN KEY (official_id) REFERENCES officials(id) ON DELETE SET NULL;
+
+-- Link Match Score Audits to Matches and Users
+ALTER TABLE match_score_audits
+  ADD COLUMN IF NOT EXISTS changed_by TEXT;
+
+ALTER TABLE match_score_audits
+  ADD CONSTRAINT fk_score_audits_match FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+  ADD CONSTRAINT fk_score_audits_user FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL;
+
+-- Link Announcements and Audit Logs to Users
+UPDATE announcements
+SET created_by = NULL
+WHERE created_by IS NOT NULL AND created_by NOT IN (SELECT id FROM users);
+
+ALTER TABLE announcements
+  ADD CONSTRAINT fk_announcements_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE audit_logs
+  ALTER COLUMN user_id DROP NOT NULL;
+
+UPDATE audit_logs
+SET user_id = NULL
+WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
+
+ALTER TABLE audit_logs
+  ADD CONSTRAINT fk_audit_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
