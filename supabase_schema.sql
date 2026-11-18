@@ -603,7 +603,10 @@ INSERT INTO divisions (id, name, sport_id) VALUES
   ('div3', 'Men''s Varsity',   's2'),
   ('div4', 'Women''s Varsity', 's2'),
   ('div5', 'Men''s Singles',   's3'),
-  ('div6', 'Women''s Singles', 's3')
+  ('div6', 'Women''s Singles', 's3'),
+  ('div7', 'Open Division',    's_futsal'),
+  ('div8', 'Collegiate 5v5',   's5'),
+  ('div9', 'Open Classical',   's8')
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, sport_id = EXCLUDED.sport_id;
 
@@ -634,7 +637,12 @@ INSERT INTO teams (id, name, sport, department, division, coach, seed, color, pl
   ('t3', 'Blue Sharks',    's1', 'd3', 'div1', 'Coach Alvarez',   3, '#f97316', '["p11", "p12", "p13", "p14", "p15"]'::jsonb, true),
   ('t4', 'Padula Tigers',  's1', 'd4', 'div1', 'Coach Morales',   4, '#ef4444', '["p16", "p17", "p18", "p19", "p20"]'::jsonb, true),
   ('t5', 'Panthers',       's1', 'd5', 'div1', 'Coach Henderson', 5, '#8b5cf6', '["p21", "p22", "p23", "p24", "p25"]'::jsonb, true),
-  ('t6', 'Silver Wolves',  's1', 'd1', 'div1', 'Coach Alvarez',   6, '#d97706', '["p26", "p27", "p28", "p29", "p30"]'::jsonb, true)
+  ('t6', 'Silver Wolves',  's1', 'd1', 'div1', 'Coach Alvarez',   6, '#d97706', '["p26", "p27", "p28", "p29", "p30"]'::jsonb, true),
+  ('t7', 'CSE CyberHawks', 's2', 'd2', 'div3', 'Coach Alvarez',   1, '#0284c7', '["p7", "p8"]'::jsonb, true),
+  ('t8', 'HTM Spikers',    's2', 'd3', 'div3', 'Coach Morales',   2, '#0ea5e9', '["p9"]'::jsonb, true),
+  ('t9', 'BAA Golden Eagles','s_futsal','d1','div7','Coach Rivera',1, '#eab308', '["p10"]'::jsonb, true),
+  ('t10','CSE Phoenix',    's5', 'd2', 'div8', 'Coach Henderson', 1, '#38bdf8', '["p11"]'::jsonb, true),
+  ('t11','SHS Royals',     's_futsal','d5','div7','Coach Morales',2, '#0f2d5c', '["p12"]'::jsonb, true)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, sport = EXCLUDED.sport, department = EXCLUDED.department,
   coach = EXCLUDED.coach, seed = EXCLUDED.seed, color = EXCLUDED.color, players = EXCLUDED.players;
@@ -699,6 +707,60 @@ INSERT INTO players (
     '[{"season": "2025-2026", "team": "Panthers", "matches": 6, "goals": 8}]'::jsonb,
     '[]'::jsonb,
     true
+  ),
+  (
+    'p7', 'Elena Navarro', '2024-007', 'd2', 's2', 't7', '04', 'Outside Hitter',
+    1.45, true, '2004-03-14', 'Dumaguete City, PH', 'Coach Alvarez',
+    4, 2, 19, 6,
+    '[11, 14, 17, 19]'::jsonb,
+    '[{"season": "2025-2026", "team": "CSE CyberHawks", "matches": 8, "goals": 19}]'::jsonb,
+    '[{"matchId": "m2", "matchday": "MD 1", "opponent": "Padula Tigers", "venue": "H", "result": "W 2-1", "minutes": 40, "points": 16, "assists": 3, "rating": 9.0}]'::jsonb,
+    true
+  ),
+  (
+    'p8', 'Rafael Mendoza', '2024-008', 'd2', 's2', 't7', '12', 'Middle Blocker',
+    1.65, true, '2003-08-09', 'Cebu City, PH', 'Coach Alvarez',
+    4, 1, 14, 5,
+    '[9, 12, 13, 14]'::jsonb,
+    '[{"season": "2025-2026", "team": "CSE CyberHawks", "matches": 8, "goals": 14}]'::jsonb,
+    '[]'::jsonb,
+    true
+  ),
+  (
+    'p9', 'Camille Bautista', '2024-009', 'd3', 's2', 't8', '08', 'Libero',
+    1.55, true, '2004-06-21', 'Bacolod City, PH', 'Coach Morales',
+    5, 0, 9, 11,
+    '[7, 8, 9, 11]'::jsonb,
+    '[{"season": "2025-2026", "team": "HTM Spikers", "matches": 7, "goals": 9}]'::jsonb,
+    '[]'::jsonb,
+    true
+  ),
+  (
+    'p10', 'Gabriel Villanueva', '2024-010', 'd1', 's_futsal', 't9', '09', 'Pivot (Forward)',
+    1.70, true, '2003-12-03', 'Dumaguete City, PH', 'Coach Rivera',
+    3, 5, 7, 4,
+    '[2, 4, 5, 7]'::jsonb,
+    '[{"season": "2025-2026", "team": "BAA Golden Eagles", "matches": 5, "goals": 7}]'::jsonb,
+    '[{"matchId": "m7", "matchday": "MD 1", "opponent": "SHS Royals", "venue": "H", "result": "W 4-2", "minutes": 38, "points": 3, "assists": 1, "rating": 9.1}]'::jsonb,
+    true
+  ),
+  (
+    'p11', 'Kevin Soriano', '2024-011', 'd2', 's5', 't10', '01', 'Jungler',
+    1.40, true, '2004-10-11', 'Dumaguete City, PH', 'Coach Henderson',
+    6, 0, 12, 18,
+    '[8, 10, 11, 12]'::jsonb,
+    '[{"season": "2025-2026", "team": "CSE Phoenix", "matches": 6, "goals": 12}]'::jsonb,
+    '[]'::jsonb,
+    true
+  ),
+  (
+    'p12', 'Miguel Torres', '2024-012', 'd5', 's_futsal', 't11', '11', 'Ala (Winger)',
+    1.80, true, '2005-04-27', 'Dumaguete City, PH', 'Coach Morales',
+    3, 3, 5, 3,
+    '[1, 3, 4, 5]'::jsonb,
+    '[{"season": "2025-2026", "team": "SHS Royals", "matches": 5, "goals": 5}]'::jsonb,
+    '[]'::jsonb,
+    true
   )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, student_id = EXCLUDED.student_id, department = EXCLUDED.department,
@@ -708,45 +770,60 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- 7. MATCHES
 INSERT INTO matches (
-  id, sport, division, team_a, team_b, score_a, score_b,
+  id, event_id, sport, division, team_a, team_b, score_a, score_b,
   status, venue, round, round_number, match_number, scheduled_time,
   winner, referee, scorekeeper, coach_a, coach_b, manager, conflict_warning
 ) VALUES
   (
-    'm1', 's1', 'div1', 'Padula Eagles', 'Red Lions', 45, 38,
+    'm1', 'ev-1', 's1', 'div1', 'Padula Eagles', 'Red Lions', 45, 38,
     'live', 'Main Arena Court 1', 'Semi-Final', 2, 1, '2026-11-10T09:00:00Z',
     NULL, 'Prof. Marcus Aurelio', 'Sam Chen', 'Coach Rivera', 'Coach Henderson', 'Director Dave Cruz', NULL
   ),
   (
-    'm2', 's2', 'div3', 'Blue Sharks', 'Padula Tigers', 2, 1,
+    'm2', 'ev-2', 's2', 'div3', 'Blue Sharks', 'Padula Tigers', 2, 1,
     'live', 'Pavilion Court', 'Quarter-Final', 1, 2, '2026-11-10T10:00:00Z',
     NULL, 'Elena Rostova', 'Maria Santos', 'Coach Alvarez', 'Coach Morales', 'Dean Gloria Ramos', NULL
   ),
   (
-    'm3', 's3', 'div5', 'Chris Kim', 'Alex Park', 21, 18,
+    'm3', 'ev-4', 's3', 'div5', 'Chris Kim', 'Alex Park', 21, 18,
     'finished', 'Fieldhouse Annex', 'Gold Final', 3, 1, '2026-11-09T14:00:00Z',
     'Chris Kim', 'Carlos Mendez', 'Lee Park', 'Coach Rivera', 'Coach Alvarez', 'Director Dave Cruz', NULL
   ),
   (
-    'm4', 's1', 'div1', 'Panthers', 'Silver Wolves', 0, 0,
+    'm4', 'ev-1', 's1', 'div1', 'Panthers', 'Silver Wolves', 0, 0,
     'scheduled', 'Main Arena Court 2', 'Quarter-Final', 1, 4, '2026-11-11T09:00:00Z',
     NULL, 'Dante Silva', 'Sam Chen', 'Coach Henderson', 'Coach Morales', 'Engr. Victor Tan',
     'Scorer Sam Chen has multiple concurrent matches scheduled'
   ),
   (
-    'm5', 's4', 'div1', 'Padula Smashers', 'Tiger Spinners', 3, 1,
+    'm5', 'ev-4', 's4', 'div1', 'Padula Smashers', 'Tiger Spinners', 3, 1,
     'live', 'Fieldhouse Annex', 'Semi-Final', 2, 1, '2026-11-10T11:00:00Z',
     NULL, 'Prof. Marcus Aurelio', 'Lee Park', 'Coach Rivera', 'Coach Morales', 'Director Dave Cruz', NULL
   ),
   (
-    'm6', 's1', 'div1', 'Blue Sharks', 'Padula Eagles', 58, 62,
+    'm6', 'ev-1', 's1', 'div1', 'Blue Sharks', 'Padula Eagles', 58, 62,
     'finished', 'Main Arena Court 1', 'Quarter-Final', 1, 1, '2026-11-08T15:30:00Z',
     'Padula Eagles', 'Prof. Marcus Aurelio', 'Sam Chen', 'Coach Alvarez', 'Coach Rivera', 'Director Dave Cruz', NULL
+  ),
+  (
+    'm7', 'ev-3', 's_futsal', 'div7', 'BAA Golden Eagles', 'SHS Royals', 4, 2,
+    'live', 'Main Arena Court 1', 'Semi-Final', 2, 1, '2026-11-12T14:00:00Z',
+    NULL, 'Prof. Marcus Aurelio', 'Sam Chen', 'Coach Rivera', 'Coach Morales', 'Director Dave Cruz', NULL
+  ),
+  (
+    'm8', 'ev-5', 's5', 'div8', 'CSE Phoenix', 'BAA Falcons', 2, 1,
+    'finished', 'Esports Arena', 'Semi-Final', 2, 1, '2026-11-11T16:00:00Z',
+    'CSE Phoenix', 'Carlos Mendez', 'Lee Park', 'Coach Henderson', 'Coach Rivera', 'Dean Gloria Ramos', NULL
+  ),
+  (
+    'm9', 'ev-2', 's2', 'div3', 'CSE CyberHawks', 'HTM Spikers', 0, 0,
+    'scheduled', 'Pavilion Court', 'Semi-Final', 2, 2, '2026-11-13T10:00:00Z',
+    NULL, 'Elena Rostova', 'Maria Santos', 'Coach Alvarez', 'Coach Morales', 'Engr. Victor Tan', NULL
   )
 ON CONFLICT (id) DO UPDATE SET
-  sport = EXCLUDED.sport, division = EXCLUDED.division, team_a = EXCLUDED.team_a, team_b = EXCLUDED.team_b,
-  score_a = EXCLUDED.score_a, score_b = EXCLUDED.score_b, status = EXCLUDED.status,
-  venue = EXCLUDED.venue, round = EXCLUDED.round, winner = EXCLUDED.winner,
+  event_id = EXCLUDED.event_id, sport = EXCLUDED.sport, division = EXCLUDED.division,
+  team_a = EXCLUDED.team_a, team_b = EXCLUDED.team_b, score_a = EXCLUDED.score_a, score_b = EXCLUDED.score_b,
+  status = EXCLUDED.status, venue = EXCLUDED.venue, round = EXCLUDED.round, winner = EXCLUDED.winner,
   referee = EXCLUDED.referee, scorekeeper = EXCLUDED.scorekeeper;
 
 -- 8. TOURNAMENT EVENTS
@@ -754,7 +831,7 @@ INSERT INTO tournament_events (
   id, name, sport, division, category, dates, start_date, end_date, venue, status, archived
 ) VALUES
   (
-    'ev-1', 'Asian College Padula 2026', 's1', 'div1',
+    'ev-1', 'Asian College Padula 2026 — Basketball', 's1', 'div1',
     'Inter-Collegiate Championship', 'Nov 10 – Nov 18, 2026', '2026-11-10', '2026-11-18',
     'Main Arena Court 1', 'published', false
   ),
@@ -762,6 +839,21 @@ INSERT INTO tournament_events (
     'ev-2', 'Dumaguete Collegiate Volleyball Cup 2026', 's2', 'div3',
     'Collegiate Men & Women Division', 'Nov 12 – Nov 20, 2026', '2026-11-12', '2026-11-20',
     'Pavilion Court', 'published', false
+  ),
+  (
+    'ev-3', 'Padula 2026 Futsal Cup', 's_futsal', 'div7',
+    'Team Sports · 5v5 Indoor', 'Nov 12 – Nov 19, 2026', '2026-11-12', '2026-11-19',
+    'Main Arena Court 1', 'ongoing', false
+  ),
+  (
+    'ev-4', 'Padula 2026 Badminton & Racket Open', 's3', 'div5',
+    'Individual & Doubles', 'Nov 09 – Nov 16, 2026', '2026-11-09', '2026-11-16',
+    'Fieldhouse Annex', 'ongoing', false
+  ),
+  (
+    'ev-5', 'Padula 2026 Esports Invitational', 's5', 'div8',
+    'Esports Collegiate 5v5', 'Nov 11 – Nov 18, 2026', '2026-11-11', '2026-11-18',
+    'Esports Arena', 'published', false
   )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, dates = EXCLUDED.dates, status = EXCLUDED.status;
@@ -781,11 +873,28 @@ INSERT INTO announcements (id, title, body, priority, created_by, created_at) VA
     'Digital Scorer Console Verification Active',
     'Referees and certified scorers must authenticate via their official credentials before entering match scores.',
     'normal',
-    'Athletics Governance Board',
+    'u1',
     NOW() - INTERVAL '5 hours'
+  ),
+  (
+    'ann-3',
+    'Futsal & Esports Bracket Schedule Live',
+    'Spectators can now follow live Futsal and Mobile Legends matchups from the public tournament hub.',
+    'normal',
+    'u2',
+    NOW() - INTERVAL '1 hour'
   )
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title, body = EXCLUDED.body, priority = EXCLUDED.priority;
+
+-- 9b. MATCH SCORE AUDITS
+INSERT INTO match_score_audits (
+  id, match_id, caller_name, caller_role, action, old_score_a, old_score_b, new_score_a, new_score_b, winner, reason
+) VALUES
+  ('msa-1', 'm6', 'Sam Chen', 'scorer', 'score_finalize', 58, 60, 58, 62, 'Padula Eagles', 'Final buzzer verified by court referee'),
+  ('msa-2', 'm1', 'Sam Chen', 'scorer', 'score_update', 42, 38, 45, 38, NULL, '3-pointer by #10 Juan dela Cruz')
+ON CONFLICT (id) DO UPDATE SET
+  new_score_a = EXCLUDED.new_score_a, new_score_b = EXCLUDED.new_score_b, winner = EXCLUDED.winner;
 
 -- 10. AUDIT LOGS
 INSERT INTO audit_logs (id, action, user_id, user_name, user_role, details, entity_id, entity_type, created_at) VALUES
