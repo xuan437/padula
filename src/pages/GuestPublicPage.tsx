@@ -1510,27 +1510,26 @@ export default function GuestPublicPage() {
             announcements.map(ann => (
               <div
                 key={ann.id}
-                className="glass-card"
                 style={{
-                  padding: '18px 22px',
-                  borderLeft: `4px solid ${ann.priority === 'urgent' ? '#0284c7' : 'var(--accent)'}`,
+                  padding: '14px 0',
+                  borderBottom: '1px solid var(--border-light)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px', flexWrap: 'wrap' }}>
                   {ann.priority === 'urgent' && (
                     <span style={{
-                      fontSize: '10px',
-                      fontWeight: 800,
+                      fontSize: '11px',
+                      fontWeight: 700,
                       color: '#0284c7',
-                      background: 'rgba(2, 132, 199,0.12)',
-                      padding: '2px 8px',
-                      borderRadius: '10px',
-                      border: '1px solid rgba(2, 132, 199,0.25)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
                     }}>
-                      URGENT
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0284c7' }} />
+                      Urgent
                     </span>
                   )}
-                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
                     {ann.title}
                   </h4>
                 </div>

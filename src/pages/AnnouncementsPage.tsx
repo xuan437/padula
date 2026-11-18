@@ -222,7 +222,7 @@ export default function AnnouncementsPage() {
                   style={{ fontWeight: 700 }}
                 >
                   <option value="normal">Normal Priority (Standard Bulletin)</option>
-                  <option value="urgent">🚨 Urgent Priority (Highlighted in Red)</option>
+                  <option value="urgent">Urgent Priority (Highlighted)</option>
                 </select>
               </div>
 
@@ -321,7 +321,7 @@ export default function AnnouncementsPage() {
                 onClick={() => setPriorityFilter(p)}
                 style={{ fontSize: '11.5px', padding: '4px 10px', textTransform: 'capitalize' }}
               >
-                {p === 'all' ? 'All Priorities' : p === 'urgent' ? '🚨 Urgent' : 'Normal'}
+                {p === 'all' ? 'All Priorities' : p === 'urgent' ? 'Urgent' : 'Normal'}
               </button>
             ))}
           </div>
@@ -379,16 +379,12 @@ export default function AnnouncementsPage() {
             return (
               <div
                 key={ann.id}
-                className="glass-card"
                 style={{
-                  padding: '18px 22px',
-                  borderLeft: isUrgent ? '4px solid #38bdf8' : '4px solid var(--accent)',
-                  background: isUrgent ? 'rgba(56, 189, 248, 0.04)' : 'var(--bg-elevated)',
+                  padding: '16px 0',
+                  borderBottom: '1px solid var(--border-light)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px',
-                  borderRadius: '12px',
-                  transition: 'all 0.15s ease',
+                  gap: '6px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
@@ -396,7 +392,7 @@ export default function AnnouncementsPage() {
                     <h3 style={{
                       margin: 0,
                       fontSize: '15.5px',
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: 'var(--text-primary)',
                       lineHeight: 1.3,
                     }}>
@@ -405,16 +401,15 @@ export default function AnnouncementsPage() {
 
                     {isUrgent && (
                       <span style={{
-                        fontSize: '10px',
-                        fontWeight: 900,
-                        color: '#38bdf8',
-                        background: 'rgba(56, 189, 248,0.12)',
-                        border: '1px solid rgba(56, 189, 248,0.3)',
-                        padding: '2px 8px',
-                        borderRadius: '20px',
-                        letterSpacing: '0.04em',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: '#0284c7',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
                       }}>
-                        🚨 URGENT
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0284c7' }} />
+                        Urgent
                       </span>
                     )}
 
