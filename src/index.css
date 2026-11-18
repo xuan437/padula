@@ -272,22 +272,34 @@ input, select, textarea {
 /* ============================================================
    CLEAN MINIMAL CARDS
    ============================================================ */
+/* ── Borderless, Unboxed Content Layout ── */
 .glass-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  box-shadow: none;
-  transition: border-color var(--transition), background-color var(--transition);
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transition: border-color var(--transition);
 }
 
 .glass-card:hover {
-  border-color: var(--border);
+  border-bottom-color: var(--border) !important;
 }
 
 .glass-card .glass-card {
-  background: var(--bg-elevated);
-  border-color: transparent;
-  box-shadow: none;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  box-shadow: none !important;
+}
+
+/* Preserve solid surface for modal dialogs & printable QR poster */
+[style*="position: fixed"] > .glass-card,
+.qr-poster-printable {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 /* ============================================================
@@ -1023,10 +1035,12 @@ input, select, textarea {
 }
 
 .match-card {
-  padding: 18px;
-  border-radius: var(--radius-lg);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  padding: 16px 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1230,10 +1244,11 @@ input, select, textarea {
 }
 
 .sport-tile {
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
+  padding: 14px 4px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2419,7 +2434,7 @@ select.form-input option {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 24px;
 }
 
 .bracket-tree-scroll-container {
