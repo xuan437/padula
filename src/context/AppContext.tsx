@@ -386,15 +386,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          const legacyNames = ['alex park', 'padula smashers', 'tiger spinners', 'marcus vance'];
           const filtered = parsed.filter(m =>
-            !['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8'].includes(m.id) &&
             !m.isMock &&
-            !m.id?.startsWith('mock-') &&
-            !m.isBye &&
-            !legacyNames.includes((m.teamA || '').toLowerCase()) &&
-            !legacyNames.includes((m.teamB || '').toLowerCase()) &&
-            !legacyNames.includes((m.winner || '').toLowerCase())
+            !m.id?.startsWith('mock-')
           );
           if (filtered.length > 0) return filtered;
         }
@@ -430,7 +424,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          const filtered = parsed.filter(p => !['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].includes(p.id) && !p.isMock && !p.id?.startsWith('mock-'));
+          const filtered = parsed.filter(p => !p.isMock && !p.id?.startsWith('mock-'));
           if (filtered.length > 0) return filtered;
         }
       }
@@ -443,7 +437,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          const filtered = parsed.filter(t => !['t1', 't2', 't3', 't4', 't5', 't6'].includes(t.id) && !t.isMock && !t.id?.startsWith('mock-'));
+          const filtered = parsed.filter(t => !t.isMock && !t.id?.startsWith('mock-'));
           if (filtered.length > 0) return filtered;
         }
       }
@@ -632,45 +626,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           setOfficials(mergedOff);
         }
         if (teamRes.data && teamRes.data.length > 0) {
-          const validTeams = teamRes.data.filter(t => !['t1', 't2', 't3', 't4', 't5', 't6'].includes(t.id) && !t.id?.startsWith('mock-'));
+          const validTeams = teamRes.data.filter(t => !t.id?.startsWith('mock-'));
           setTeams(validTeams.map(t => ({
             id: t.id, name: t.name, sport: t.sport, department: t.department,
-            division: t.division, coach: t.coach, seed: undefined, color: t.color, players: t.players || [],
+            division: t.division, coach: t.coach, seed: t.seed ?? undefined, color: t.color, players: t.players || [],
           })));
         }
         if (playRes.data && playRes.data.length > 0) {
-          const validPlayers = playRes.data.filter(p => !['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].includes(p.id) && !p.id?.startsWith('mock-'));
+          const validPlayers = playRes.data.filter(p => !p.id?.startsWith('mock-'));
           setPlayers(validPlayers.map(p => ({
             id: p.id, name: p.name, studentId: p.student_id, email: p.email, department: p.department,
             sport: p.sport, teamId: p.team_id, jerseyNumber: p.jersey_number,
             position: p.position, gwa: p.gwa ? Number(p.gwa) : undefined, medicalCleared: p.medical_cleared,
+            currentSeasonGoals: p.current_season_goals ?? 0,
+            currentSeasonAssists: p.current_season_assists ?? 0,
+            performanceTrend: p.performance_trend || [],
+            careerHistory: p.career_history || [],
+            matchStats: p.match_stats || [],
           })));
         }
         if (matchRes.data && matchRes.data.length > 0) {
-          const legacyIds = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8'];
-          const legacyNames = ['alex park', 'padula smashers', 'tiger spinners', 'marcus vance'];
-          const toDeleteIds = matchRes.data
-            .filter(m =>
-              legacyIds.includes(m.id) ||
-              m.id?.startsWith('mock-') ||
-              m.is_bye === true ||
-              legacyNames.includes((m.team_a || '').toLowerCase()) ||
-              legacyNames.includes((m.team_b || '').toLowerCase()) ||
-              legacyNames.includes((m.winner || '').toLowerCase())
-            )
-            .map(m => m.id);
-          if (toDeleteIds.length > 0) {
-            supabase.from('matches').delete().in('id', toDeleteIds).then();
-          }
-          const validMatches = matchRes.data.filter(m => !toDeleteIds.includes(m.id));
+          const validMatches = matchRes.data.filter(m => !m.id?.startsWith('mock-'));
           setMatches(validMatches.map(m => ({
-            id: m.id, eventId: m.event_id, sport: m.sport, division: m.division, teamA: m.team_a, teamB: m.team_b,
+            id: m.id, eventId: m.event_id, sport: m.sport, division: m.division, format: m.format || 'single_elimination',
+            teamA: m.team_a, teamB: m.team_b,
             scoreA: m.score_a, scoreB: m.score_b, status: m.status, venue: m.venue, round: m.round,
             roundNumber: m.round_number, slot: m.slot, matchNumber: m.match_number, scheduledTime: m.scheduled_time,
             nextMatchId: m.next_match_id, nextSlot: m.next_slot,
             winner: m.winner, referee: m.referee, scorekeeper: m.scorekeeper,
             coachA: m.coach_a, coachB: m.coach_b, manager: m.manager,
-            finalizedBy: m.finalized_by, finalizedAt: m.finalized_at, isBye: false, scorerId: m.scorer_id,
+            finalizedBy: m.finalized_by, finalizedAt: m.finalized_at, isBye: m.is_bye ?? false, scorerId: m.scorer_id,
             conflictWarning: m.status === 'finished' ? undefined : m.conflict_warning,
           })));
         }
