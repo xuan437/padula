@@ -547,7 +547,7 @@ export default function SportsCompetitionSection({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {(
                 [
-                  { key: 'groupStage', label: 'Group / R1' },
+                  { key: 'groupStage', label: 'Group Stage / Round 1' },
                   { key: 'quarterFinals', label: 'Quarter-Finals' },
                   { key: 'semiFinals', label: 'Semi-Finals' },
                   { key: 'finals', label: 'Finals' },
@@ -714,8 +714,8 @@ export default function SportsCompetitionSection({
               {(
                 [
                   { id: 'format', label: 'Tournament Format' },
-                  { id: 'seriesByRound', label: 'Match Series (Bo1/Bo3/Bo5)' },
-                  { id: 'pointSystem', label: 'Point System (W/D/L)' },
+                  { id: 'seriesByRound', label: 'Match Series (Single / Best of 3 / Best of 5)' },
+                  { id: 'pointSystem', label: 'Point System (Win / Draw / Loss)' },
                   { id: 'tiebreakerOrder', label: 'Tiebreakers' },
                   { id: 'advancingTeamsCount', label: 'Advancing Teams Count' },
                   { id: 'seedingMode', label: 'Bracket Seeding & Byes' },

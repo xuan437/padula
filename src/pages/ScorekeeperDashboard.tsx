@@ -182,7 +182,7 @@ function BasketballScoringDesk(props: ScoringProps) {
             onClick={() => setShowSecondary(s => !s)}
             style={{ width: '100%', justifyContent: 'center', fontSize: '11.5px', fontWeight: 700 }}
           >
-            {showSecondary ? '▾ Hide Secondary Controls (Fouls / Timeouts / Subs)' : '▸ Secondary Controls (Fouls / Timeouts / Subs)'}
+            {showSecondary ? '▾ Hide Secondary Controls (Fouls / Timeouts / Substitutions)' : '▸ Secondary Controls (Fouls / Timeouts / Substitutions)'}
           </button>
           {showSecondary && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px', padding: '10px', borderRadius: '8px', background: 'var(--bg-elevated)' }}>
@@ -194,10 +194,10 @@ function BasketballScoringDesk(props: ScoringProps) {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>Timeouts: <strong>{timeoutsA}</strong></span>
-                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setTimeoutsA(t => t + 1)}>+TO</button>
+                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setTimeoutsA(t => t + 1)}>+Timeout</button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Subs: <strong>{subsA}</strong></span>
+                  <span>Substitutions: <strong>{subsA}</strong></span>
                   <button type="button" className="btn btn-xs btn-outline" onClick={() => setSubsA(s => s + 1)}>+Sub</button>
                 </div>
               </div>
@@ -209,10 +209,10 @@ function BasketballScoringDesk(props: ScoringProps) {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>Timeouts: <strong>{timeoutsB}</strong></span>
-                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setTimeoutsB(t => t + 1)}>+TO</button>
+                  <button type="button" className="btn btn-xs btn-outline" onClick={() => setTimeoutsB(t => t + 1)}>+Timeout</button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Subs: <strong>{subsB}</strong></span>
+                  <span>Substitutions: <strong>{subsB}</strong></span>
                   <button type="button" className="btn btn-xs btn-outline" onClick={() => setSubsB(s => s + 1)}>+Sub</button>
                 </div>
               </div>

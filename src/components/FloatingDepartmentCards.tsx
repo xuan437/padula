@@ -49,7 +49,7 @@ export const DEPARTMENT_CARDS: DepartmentCardData[] = [
   {
     id: 'htm',
     acronym: 'HTM',
-    fullName: 'Hospitality & Tourism Management',
+    fullName: 'Hotel & Tourism Management',
     moniker: 'HTM Chefs',
     primaryColor: '#0284c7',
     glowColor: 'rgba(2, 132, 199, 0.45)',
