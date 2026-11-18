@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import QRCode from 'qrcode';
 import { useApp } from '../context/AppContext';
 import { getSportName, getSportIcon, SPORTS_CATALOG } from '../lib/sports';
 import { isPlaceholder } from '../lib/bracket';
@@ -33,42 +34,25 @@ import type { Match } from '../types';
 
 type PublicTab = 'live' | 'results' | 'standings' | 'brackets' | 'schedule' | 'tally' | 'announcements' | 'predictions';
 
-// ── Real QR Code Component (Scalable SVG) ───────────────────────────────────
+// ── Real Scannable QR Code Component (ISO/IEC 18004 SVG) ────────────────────
 function QRCodeDisplay({ url, size = 110 }: { url: string; size?: number }) {
-  // Deterministic clean QR pattern matrix
-  const matrix = useMemo(() => {
-    const s = 15;
-    const grid: boolean[][] = Array.from({ length: s }, () => Array(s).fill(false));
-    // Draw 3 corner finder patterns (7x7)
-    const drawFinder = (r0: number, c0: number) => {
-      for (let r = 0; r < 7; r++) {
-        for (let c = 0; c < 7; c++) {
-          const isBorder = r === 0 || r === 6 || c === 0 || c === 6;
-          const isCenter = r >= 2 && r <= 4 && c >= 2 && c <= 4;
-          grid[r0 + r][c0 + c] = isBorder || isCenter;
-        }
+  const { modules, moduleCount } = useMemo(() => {
+    const safeText = (url || (typeof window !== 'undefined' ? window.location.href : 'https://padula.asiancollege.edu.ph')).trim();
+    const qr = QRCode.create(safeText, { errorCorrectionLevel: 'M' });
+    const count = qr.modules.size;
+    const grid: boolean[][] = [];
+    for (let r = 0; r < count; r++) {
+      const row: boolean[] = [];
+      for (let c = 0; c < count; c++) {
+        row.push(Boolean(qr.modules.get(r, c)));
       }
-    };
-    drawFinder(0, 0);
-    drawFinder(0, s - 7);
-    drawFinder(s - 7, 0);
-
-    // Fill timing patterns and hash data
-    for (let r = 0; r < s; r++) {
-      for (let c = 0; c < s; c++) {
-        if (
-          (r < 8 && c < 8) ||
-          (r < 8 && c >= s - 8) ||
-          (r >= s - 8 && c < 8)
-        ) {
-          continue;
-        }
-        const val = ((r * 13 + c * 7 + url.length) ^ (r + c)) % 3;
-        grid[r][c] = val === 0 || (r === 7 && c % 2 === 0) || (c === 7 && r % 2 === 0);
-      }
+      grid.push(row);
     }
-    return grid;
+    return { modules: grid, moduleCount: count };
   }, [url]);
+
+  const quietZone = 2;
+  const totalViewSize = moduleCount + quietZone * 2;
 
   return (
     <div style={{
@@ -80,10 +64,27 @@ function QRCodeDisplay({ url, size = 110 }: { url: string; size?: number }) {
       justifyContent: 'center',
       boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
     }}>
-      <svg width={size} height={size} viewBox="0 0 15 15" shapeRendering="crispEdges">
-        {matrix.map((row, r) =>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${totalViewSize} ${totalViewSize}`}
+        shapeRendering="crispEdges"
+        role="img"
+        aria-label={`Scannable QR Code for ${url}`}
+      >
+        <rect x={0} y={0} width={totalViewSize} height={totalViewSize} fill="#ffffff" />
+        {modules.map((row, r) =>
           row.map((filled, c) =>
-            filled ? <rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill="#0a1128" /> : null
+            filled ? (
+              <rect
+                key={`${r}-${c}`}
+                x={c + quietZone}
+                y={r + quietZone}
+                width={1}
+                height={1}
+                fill="#0a1128"
+              />
+            ) : null
           )
         )}
       </svg>
