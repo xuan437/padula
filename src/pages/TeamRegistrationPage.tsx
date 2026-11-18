@@ -88,7 +88,7 @@ function PlayerCard({ player, department, team }: {
             <span>Medical</span>
             <span style={{
               fontSize: '10px', fontWeight: 700,
-              color: player.medicalCleared ? '#34d399' : '#f87171',
+              color: player.medicalCleared ? '#34d399' : '#7dd3fc',
               background: player.medicalCleared ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
               padding: '2px 8px', borderRadius: '20px', letterSpacing: '0.04em',
               display: 'inline-flex', alignItems: 'center', gap: 3,

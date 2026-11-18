@@ -306,8 +306,8 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
     {
       roleId: 'director',
       roleLabel: 'Sports Director',
-      badgeColor: '#ef4444',
-      badgeBg: 'rgba(239, 68, 68, 0.16)',
+      badgeColor: '#38bdf8',
+      badgeBg: 'rgba(56, 189, 248, 0.16)',
       name: 'Demo Director',
       desc: 'Tournament governance, event setup, sports brackets & executive analytics',
       demoEmail: 'demo.director@asiancollege.edu.ph',
@@ -428,7 +428,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
         .login-primary-btn:focus-visible,
         .login-demo-btn:focus-visible,
         .login-link-btn:focus-visible {
-          outline: 2px solid #ef4444;
+          outline: 2px solid #38bdf8;
           outline-offset: 2px;
         }
       `}</style>
@@ -491,7 +491,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
             <div
               style={{
                 fontSize: '11px',
-                color: '#f87171',
+                color: '#7dd3fc',
                 fontWeight: 800,
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
@@ -546,8 +546,8 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
             {cooldownSeconds > 0 ? (
               <div
                 style={{
-                  background: 'rgba(239, 68, 68, 0.16)',
-                  border: '1.5px solid #ef4444',
+                  background: 'rgba(56, 189, 248, 0.16)',
+                  border: '1.5px solid #38bdf8',
                   borderRadius: '10px',
                   padding: '12px 14px',
                   fontSize: '12.5px',
@@ -557,11 +557,11 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '10px',
-                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
                 }}
               >
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <AlertTriangleIcon size={16} color="#ef4444" />
+                  <AlertTriangleIcon size={16} color="#38bdf8" />
                   <div>
                     <strong style={{ display: 'block', color: '#ffffff' }}>Security Cooldown Active</strong>
                     <span style={{ fontSize: '11.5px', color: '#fca5a5' }}>
@@ -570,7 +570,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                   </div>
                 </div>
                 <div style={{
-                  background: '#dc2626',
+                  background: '#0284c7',
                   color: '#fff',
                   fontWeight: 900,
                   fontSize: '13px',
@@ -584,8 +584,8 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
             ) : errorMessage ? (
               <div
                 style={{
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.38)',
+                  background: 'rgba(56, 189, 248, 0.12)',
+                  border: '1px solid rgba(56, 189, 248, 0.38)',
                   borderRadius: '8px',
                   padding: '10px 12px',
                   fontSize: '12px',
@@ -598,7 +598,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                 }}
               >
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <AlertTriangleIcon size={14} color="#ef4444" />
+                  <AlertTriangleIcon size={14} color="#38bdf8" />
                   <span style={{ lineHeight: 1.4 }}>{errorMessage}</span>
                 </div>
                 {errorType === 'not_approved' && (
@@ -606,7 +606,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     type="button"
                     onClick={() => setShowRequestAccessModal(true)}
                     style={{
-                      background: '#dc2626',
+                      background: '#0284c7',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '5px',
@@ -838,7 +838,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                 Need help?{' '}
                 <a
                   href="mailto:sports@asiancollege.edu.ph"
-                  style={{ color: '#f87171', textDecoration: 'none', fontWeight: 600 }}
+                  style={{ color: '#7dd3fc', textDecoration: 'none', fontWeight: 600 }}
                 >
                   Contact Sports Office
                 </a>
@@ -889,7 +889,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                 fontSize: '10.5px',
                 fontWeight: 800,
                 textTransform: 'uppercase',
-                color: '#f87171',
+                color: '#7dd3fc',
                 letterSpacing: '0.08em',
                 marginBottom: '3px',
               }}
@@ -958,7 +958,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
               </button>
             </div>
 
-            <p style={{ fontSize: '12.5px', color: isRemoveMode ? '#b91c1c' : '#4b5563', margin: '0 0 16px', lineHeight: 1.4 }}>
+            <p style={{ fontSize: '12.5px', color: isRemoveMode ? '#0f2d5c' : '#4b5563', margin: '0 0 16px', lineHeight: 1.4 }}>
               {isRemoveMode
                 ? 'Select an account to remove from this device. (This only signs it out and clears it from this browser.)'
                 : <>Choose an official <strong>@asiancollege.edu.ph</strong> account to continue to Padula Sports.</>}
@@ -968,30 +968,30 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
             {cooldownSeconds > 0 ? (
               <div
                 style={{
-                  background: '#fef2f2',
-                  border: '1.5px solid #ef4444',
+                  background: '#e0f2fe',
+                  border: '1.5px solid #38bdf8',
                   borderRadius: '10px',
                   padding: '12px 14px',
                   fontSize: '12.5px',
-                  color: '#991b1b',
+                  color: '#0a1f42',
                   marginBottom: '14px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '10px',
-                  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.15)',
+                  boxShadow: '0 2px 8px rgba(56, 189, 248, 0.15)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <AlertTriangleIcon size={18} color="#dc2626" />
+                  <AlertTriangleIcon size={18} color="#0284c7" />
                   <div>
-                    <strong style={{ display: 'block', color: '#b91c1c' }}>Security Cooldown Active</strong>
+                    <strong style={{ display: 'block', color: '#0f2d5c' }}>Security Cooldown Active</strong>
                     <span style={{ fontSize: '11.5px' }}>3 incorrect password attempts. Please wait before retrying.</span>
                   </div>
                 </div>
                 <div
                   style={{
-                    background: '#dc2626',
+                    background: '#0284c7',
                     color: '#ffffff',
                     fontWeight: 900,
                     fontSize: '13px',
@@ -1007,12 +1007,12 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
             ) : errorMessage ? (
               <div
                 style={{
-                  background: '#fef2f2',
-                  border: '1px solid #fecaca',
+                  background: '#e0f2fe',
+                  border: '1px solid #bae6fd',
                   borderRadius: '8px',
                   padding: '9px 12px',
                   fontSize: '12px',
-                  color: '#b91c1c',
+                  color: '#0f2d5c',
                   marginBottom: '14px',
                 }}
               >
@@ -1050,7 +1050,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                             width: '100%',
                             textAlign: 'left',
                             background: isRemoveMode ? '#fff5f5' : '#f8fafc',
-                            border: isRemoveMode ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                            border: isRemoveMode ? '1px solid #bae6fd' : '1px solid #e2e8f0',
                             borderRadius: '10px',
                             padding: '9px 12px',
                             display: 'flex',
@@ -1106,7 +1106,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                 width: '34px',
                                 height: '34px',
                                 borderRadius: '50%',
-                                background: isDirector ? '#ef4444' : '#3b82f6',
+                                background: isDirector ? '#38bdf8' : '#3b82f6',
                                 color: '#fff',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1142,14 +1142,14 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                   padding: '5px 10px',
                                   fontSize: '11px',
                                   fontWeight: 700,
-                                  color: '#dc2626',
+                                  color: '#0284c7',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '4px',
                                 }}
                               >
-                                <TrashIcon size={12} color="#dc2626" />
+                                <TrashIcon size={12} color="#0284c7" />
                                 <span>Remove</span>
                               </button>
                             ) : (
@@ -1196,7 +1196,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                     transition: 'color 0.15s, background 0.15s',
                                   }}
                                   onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = '#ef4444';
+                                    e.currentTarget.style.color = '#38bdf8';
                                     e.currentTarget.style.background = '#fee2e2';
                                   }}
                                   onMouseLeave={(e) => {
@@ -1266,7 +1266,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                             gap: '6px',
                             transition: 'color 0.15s',
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#38bdf8'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
                         >
                           <TrashIcon size={13} />
@@ -1359,10 +1359,10 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                         width: '100%',
                         padding: '10px 12px',
                         borderRadius: '8px',
-                        border: cooldownSeconds > 0 ? '1.5px solid #ef4444' : '1px solid #d1d5db',
+                        border: cooldownSeconds > 0 ? '1.5px solid #38bdf8' : '1px solid #d1d5db',
                         fontSize: '13px',
                         color: cooldownSeconds > 0 ? '#9ca3af' : '#111827',
-                        background: cooldownSeconds > 0 ? '#fef2f2' : '#ffffff',
+                        background: cooldownSeconds > 0 ? '#e0f2fe' : '#ffffff',
                         boxSizing: 'border-box',
                         outline: 'none',
                         cursor: cooldownSeconds > 0 ? 'not-allowed' : 'text',
@@ -1371,7 +1371,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     />
                     {pasteBlockedWarning && (
                       <div style={{
-                        color: '#dc2626',
+                        color: '#0284c7',
                         fontSize: '11px',
                         marginTop: '4px',
                         fontWeight: 600,
@@ -1654,7 +1654,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     padding: '8px 16px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: '#dc2626',
+                    background: '#0284c7',
                     color: '#ffffff',
                     fontSize: '12px',
                     fontWeight: 700,

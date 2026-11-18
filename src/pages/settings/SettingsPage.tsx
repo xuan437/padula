@@ -251,8 +251,8 @@ export default function SettingsPage() {
             width: '56px',
             height: '56px',
             borderRadius: '50%',
-            background: 'rgba(239, 68, 68, 0.15)',
-            color: '#ef4444',
+            background: 'rgba(56, 189, 248, 0.15)',
+            color: '#38bdf8',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -295,9 +295,9 @@ export default function SettingsPage() {
             textTransform: 'uppercase',
             padding: '3px 10px',
             borderRadius: '20px',
-            background: isDirector ? 'rgba(220, 38, 38, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-            color: isDirector ? '#ef4444' : '#3b82f6',
-            border: isDirector ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid rgba(59, 130, 246, 0.3)',
+            background: isDirector ? 'rgba(2, 132, 199, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+            color: isDirector ? '#38bdf8' : '#3b82f6',
+            border: isDirector ? '1px solid rgba(2, 132, 199, 0.3)' : '1px solid rgba(59, 130, 246, 0.3)',
           }}>
             {isDirector ? 'Sports Director Access' : 'Sports Coordinator Access'}
           </span>
@@ -355,7 +355,7 @@ export default function SettingsPage() {
           zIndex: 9999,
           padding: '12px 18px',
           borderRadius: '8px',
-          background: toast.type === 'success' ? '#16a34a' : '#dc2626',
+          background: toast.type === 'success' ? '#16a34a' : '#0284c7',
           color: '#ffffff',
           fontSize: '13px',
           fontWeight: 600,
@@ -433,8 +433,8 @@ export default function SettingsPage() {
                       fontSize: '9.5px',
                       padding: '2px 6px',
                       borderRadius: '4px',
-                      background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(220,38,38,0.1)',
-                      color: isActive ? '#ffffff' : '#ef4444',
+                      background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(2, 132, 199,0.1)',
+                      color: isActive ? '#ffffff' : '#38bdf8',
                       fontWeight: 700,
                     }}>
                       Director
@@ -474,7 +474,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={handleResetAll}
                 className="btn btn-ghost"
-                style={{ width: '100%', fontSize: '11.5px', padding: '8px', color: '#ef4444' }}
+                style={{ width: '100%', fontSize: '11.5px', padding: '8px', color: '#38bdf8' }}
               >
                 Reset All 8 Sections
               </button>

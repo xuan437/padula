@@ -252,9 +252,9 @@ export default function UsersSecuritySection({
                 borderRadius: '8px',
                 fontSize: '13px',
                 fontWeight: 700,
-                background: forceLogoutTriggered ? '#16a34a' : 'rgba(239, 68, 68, 0.15)',
-                color: forceLogoutTriggered ? '#ffffff' : '#ef4444',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
+                background: forceLogoutTriggered ? '#16a34a' : 'rgba(56, 189, 248, 0.15)',
+                color: forceLogoutTriggered ? '#ffffff' : '#38bdf8',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}

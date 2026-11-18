@@ -86,7 +86,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
         textAlign: 'center',
       }}>
         <div className="glass-card" style={{ maxWidth: '460px', padding: '36px', background: '#0f182c' }}>
-          <AlertTriangleIcon size={40} color="#f87171" />
+          <AlertTriangleIcon size={40} color="#7dd3fc" />
           <h2 style={{ margin: '16px 0 8px', fontSize: '20px', fontWeight: 800 }}>404 — Access Unavailable</h2>
           <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
             Temporary Sports Director login is currently disabled by administrative configuration.
@@ -193,7 +193,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
         width: '100%',
         background: '#0f182c',
         borderRadius: '20px',
-        border: '1px solid rgba(239, 68, 68, 0.25)',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
         boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
         padding: '36px 32px',
         boxSizing: 'border-box',
@@ -201,8 +201,8 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
 
         {/* Interim Notice Banner */}
         <div style={{
-          background: 'rgba(239, 68, 68, 0.12)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
+          background: 'rgba(56, 189, 248, 0.12)',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
           borderRadius: '10px',
           padding: '10px 14px',
           marginBottom: '20px',
@@ -210,7 +210,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
           alignItems: 'center',
           gap: '10px',
         }}>
-          <ShieldIcon size={18} color="#f87171" />
+          <ShieldIcon size={18} color="#7dd3fc" />
           <div style={{ fontSize: '11.5px', color: '#fca5a5', lineHeight: 1.4 }}>
             <strong>Director Interim Login:</strong> Temporary administrative fallback for Sports Director only.
           </div>
@@ -226,7 +226,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
               width: '42px',
               objectFit: 'cover',
               borderRadius: '50%',
-              border: '1.5px solid rgba(220, 38, 38, 0.25)',
+              border: '1.5px solid rgba(2, 132, 199, 0.25)',
             }}
           />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -253,8 +253,8 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
 
         {lockoutSeconds !== null && (
           <div style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.4)',
+            background: 'rgba(56, 189, 248, 0.15)',
+            border: '1px solid rgba(56, 189, 248, 0.4)',
             borderRadius: '8px',
             padding: '10px 12px',
             fontSize: '12px',
@@ -320,8 +320,8 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
               autoComplete="off"
               style={{
                 width: '100%',
-                background: lockoutSeconds !== null ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.05)',
-                border: lockoutSeconds !== null ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(255,255,255,0.15)',
+                background: lockoutSeconds !== null ? 'rgba(56, 189, 248,0.08)' : 'rgba(255,255,255,0.05)',
+                border: lockoutSeconds !== null ? '1px solid rgba(56, 189, 248,0.4)' : '1px solid rgba(255,255,255,0.15)',
                 borderRadius: '8px',
                 padding: '10px 12px',
                 fontSize: '13px',
@@ -333,7 +333,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
             />
             {pasteBlocked && (
               <div style={{
-                color: '#f87171',
+                color: '#7dd3fc',
                 fontSize: '11px',
                 marginTop: '5px',
                 fontWeight: 600,
@@ -348,8 +348,8 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
 
           {errorMessage && (
             <div style={{
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
               borderRadius: '8px',
               padding: '10px 12px',
               fontSize: '12px',
@@ -365,7 +365,7 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
             disabled={isLoading || lockoutSeconds !== null}
             style={{
               width: '100%',
-              background: '#dc2626',
+              background: '#0284c7',
               color: '#fff',
               border: 'none',
               borderRadius: '8px',

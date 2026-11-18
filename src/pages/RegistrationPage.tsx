@@ -838,8 +838,8 @@ export default function RegistrationPage() {
                               borderRadius: '999px',
                               fontSize: '11px',
                               fontWeight: 700,
-                              background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.1)',
-                              color: isActive ? '#059669' : '#dc2626',
+                              background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(56, 189, 248, 0.1)',
+                              color: isActive ? '#059669' : '#0284c7',
                               display: 'inline-flex',
                               alignItems: 'center',
                               whiteSpace: 'nowrap',
@@ -880,7 +880,7 @@ export default function RegistrationPage() {
                                 onClick={() => toggleTeamStatus(t.id, !isActive)}
                                 style={{
                                   fontSize: '11.5px',
-                                  color: isActive ? '#dc2626' : '#059669',
+                                  color: isActive ? '#0284c7' : '#059669',
                                   whiteSpace: 'nowrap',
                                   flexShrink: 0,
                                 }}
@@ -898,8 +898,8 @@ export default function RegistrationPage() {
                                 }}
                                 style={{
                                   fontSize: '11.5px',
-                                  color: '#ef4444',
-                                  borderColor: 'rgba(239,68,68,0.28)',
+                                  color: '#38bdf8',
+                                  borderColor: 'rgba(56, 189, 248,0.28)',
                                   whiteSpace: 'nowrap',
                                   flexShrink: 0,
                                 }}
@@ -998,7 +998,7 @@ export default function RegistrationPage() {
                 left: 0,
                 right: 0,
                 height: '4px',
-                background: 'linear-gradient(90deg, #dc2626 0%, #f59e0b 50%, #3b82f6 100%)',
+                background: 'linear-gradient(90deg, #0284c7 0%, #f59e0b 50%, #3b82f6 100%)',
               }}
             />
 
@@ -1009,13 +1009,13 @@ export default function RegistrationPage() {
                   width: '46px',
                   height: '46px',
                   borderRadius: '12px',
-                  background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(59, 130, 246, 0.15))',
+                  background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.15), rgba(59, 130, 246, 0.15))',
                   border: '1px solid var(--accent-border)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'var(--accent)',
-                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.1)',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.1)',
                   flexShrink: 0,
                 }}>
                   <UserIcon size={24} />
@@ -1454,7 +1454,7 @@ export default function RegistrationPage() {
                     alignItems: 'center',
                     gap: '8px',
                     borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
                   }}
                 >
                   <PlusIcon size={16} />
@@ -1657,8 +1657,8 @@ export default function RegistrationPage() {
                             borderRadius: '12px',
                             fontSize: '11px',
                             fontWeight: 700,
-                            background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)',
-                            color: isActive ? '#059669' : '#dc2626',
+                            background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(56, 189, 248,0.1)',
+                            color: isActive ? '#059669' : '#0284c7',
                           }}>
                             {isActive ? 'Active' : 'Deactivated'}
                           </span>
@@ -1679,7 +1679,7 @@ export default function RegistrationPage() {
                               type="button"
                               className="btn btn-ghost btn-sm"
                               onClick={() => togglePlayerStatus(p.id, !isActive)}
-                              style={{ fontSize: '11.5px', color: isActive ? '#dc2626' : '#059669', padding: '3px 8px' }}
+                              style={{ fontSize: '11.5px', color: isActive ? '#0284c7' : '#059669', padding: '3px 8px' }}
                             >
                               {isActive ? 'Deactivate' : 'Activate'}
                             </button>
@@ -1692,7 +1692,7 @@ export default function RegistrationPage() {
                                   showBanner(`Athlete "${p.name}" deleted.`);
                                 }
                               }}
-                              style={{ fontSize: '11.5px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)', padding: '3px 8px' }}
+                              style={{ fontSize: '11.5px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.28)', padding: '3px 8px' }}
                             >
                               Delete
                             </button>
@@ -1846,8 +1846,8 @@ export default function RegistrationPage() {
                                       borderRadius: '10px',
                                       fontSize: '10.5px',
                                       fontWeight: 700,
-                                      background: invStatus === 'accepted' ? 'rgba(16,185,129,0.14)' : invStatus === 'declined' ? 'rgba(239,68,68,0.14)' : 'rgba(245,158,11,0.14)',
-                                      color: invStatus === 'accepted' ? '#10b981' : invStatus === 'declined' ? '#ef4444' : '#f59e0b',
+                                      background: invStatus === 'accepted' ? 'rgba(16,185,129,0.14)' : invStatus === 'declined' ? 'rgba(56, 189, 248,0.14)' : 'rgba(245,158,11,0.14)',
+                                      color: invStatus === 'accepted' ? '#10b981' : invStatus === 'declined' ? '#38bdf8' : '#f59e0b',
                                     }}>
                                       {invStatus === 'accepted' ? 'Accepted' : invStatus === 'declined' ? 'Declined' : 'Pending'}
                                     </span>
@@ -1883,9 +1883,9 @@ export default function RegistrationPage() {
                                           respondToInvitation(inv.id, 'declined');
                                           showBanner(`Invitation declined for Scorekeeper "${o.name}".`);
                                         }}
-                                        style={{ fontSize: '10px', padding: '2px 7px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.35)', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                        style={{ fontSize: '10px', padding: '2px 7px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.35)', display: 'inline-flex', alignItems: 'center', gap: 3 }}
                                       >
-                                        <XIcon size={10} color="#ef4444" /> Decline
+                                        <XIcon size={10} color="#38bdf8" /> Decline
                                       </button>
                                     </div>
                                   )}
@@ -1900,8 +1900,8 @@ export default function RegistrationPage() {
                           <td style={{ padding: '12px' }}>
                             <span style={{
                               padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700,
-                              background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)',
-                              color: isActive ? '#059669' : '#dc2626',
+                              background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(56, 189, 248,0.1)',
+                              color: isActive ? '#059669' : '#0284c7',
                             }}>
                               {isActive ? 'Active' : 'Deactivated'}
                             </span>
@@ -1912,7 +1912,7 @@ export default function RegistrationPage() {
                                 type="button"
                                 className="btn btn-ghost btn-sm"
                                 onClick={() => toggleOfficialStatus(o.id, !isActive)}
-                                style={{ fontSize: '11.5px', color: isActive ? '#dc2626' : '#059669' }}
+                                style={{ fontSize: '11.5px', color: isActive ? '#0284c7' : '#059669' }}
                               >
                                 {isActive ? 'Deactivate' : 'Activate'}
                               </button>
@@ -1925,7 +1925,7 @@ export default function RegistrationPage() {
                                     showBanner(`${roleLabel} "${o.name}" deleted.`);
                                   }
                                 }}
-                                style={{ fontSize: '11.5px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)' }}
+                                style={{ fontSize: '11.5px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.28)' }}
                               >
                                 Delete
                               </button>
@@ -2064,8 +2064,8 @@ export default function RegistrationPage() {
                                   borderRadius: '10px',
                                   fontSize: '10.5px',
                                   fontWeight: 700,
-                                  background: invStatus === 'accepted' ? 'rgba(16,185,129,0.14)' : invStatus === 'declined' ? 'rgba(239,68,68,0.14)' : 'rgba(245,158,11,0.14)',
-                                  color: invStatus === 'accepted' ? '#10b981' : invStatus === 'declined' ? '#ef4444' : '#f59e0b',
+                                  background: invStatus === 'accepted' ? 'rgba(16,185,129,0.14)' : invStatus === 'declined' ? 'rgba(56, 189, 248,0.14)' : 'rgba(245,158,11,0.14)',
+                                  color: invStatus === 'accepted' ? '#10b981' : invStatus === 'declined' ? '#38bdf8' : '#f59e0b',
                                 }}>
                                   {invStatus === 'accepted' ? 'Accepted' : invStatus === 'declined' ? 'Declined' : 'Pending'}
                                 </span>
@@ -2101,9 +2101,9 @@ export default function RegistrationPage() {
                                       respondToInvitation(inv.id, 'declined');
                                       showBanner(`Invitation declined for Sports Coordinator "${u.name}".`);
                                     }}
-                                    style={{ fontSize: '10px', padding: '2px 7px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.35)', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                    style={{ fontSize: '10px', padding: '2px 7px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.35)', display: 'inline-flex', alignItems: 'center', gap: 3 }}
                                   >
-                                    <XIcon size={10} color="#ef4444" /> Decline
+                                    <XIcon size={10} color="#38bdf8" /> Decline
                                   </button>
                                 </div>
                               )}
@@ -2117,8 +2117,8 @@ export default function RegistrationPage() {
                         <td style={{ padding: '12px' }}>
                           <span style={{
                             padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700,
-                            background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)',
-                            color: isActive ? '#059669' : '#dc2626',
+                            background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(56, 189, 248,0.1)',
+                            color: isActive ? '#059669' : '#0284c7',
                           }}>
                             {isActive ? 'Active' : 'Deactivated'}
                           </span>
@@ -2129,7 +2129,7 @@ export default function RegistrationPage() {
                               type="button"
                               className="btn btn-ghost btn-sm"
                               onClick={() => toggleUserStatus(u.id, !isActive)}
-                              style={{ fontSize: '11.5px', color: isActive ? '#dc2626' : '#059669' }}
+                              style={{ fontSize: '11.5px', color: isActive ? '#0284c7' : '#059669' }}
                             >
                               {isActive ? 'Deactivate' : 'Activate'}
                             </button>
@@ -2142,7 +2142,7 @@ export default function RegistrationPage() {
                                   showBanner(`Sports Coordinator "${u.name}" deleted.`);
                                 }
                               }}
-                              style={{ fontSize: '11.5px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)' }}
+                              style={{ fontSize: '11.5px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.28)' }}
                             >
                               Delete
                             </button>
@@ -2204,16 +2204,16 @@ export default function RegistrationPage() {
                     gap: 6,
                     padding: '3px 10px',
                     borderRadius: '20px',
-                    background: 'rgba(239, 68, 68, 0.12)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                    color: '#f87171',
+                    background: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    color: '#7dd3fc',
                     fontSize: '11px',
                     fontWeight: 800,
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     marginBottom: '6px',
                   }}>
-                    <MailIcon size={12} color="#f87171" />
+                    <MailIcon size={12} color="#7dd3fc" />
                     <span>Official Appointment Letter</span>
                   </div>
                   <h3 style={{ fontSize: '20px', fontWeight: 800, margin: 0, color: '#ffffff', letterSpacing: '-0.01em' }}>
@@ -2245,9 +2245,9 @@ export default function RegistrationPage() {
                     fontWeight: 800,
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
-                    background: liveInv.status === 'accepted' ? 'rgba(16,185,129,0.14)' : liveInv.status === 'declined' ? 'rgba(239,68,68,0.14)' : 'rgba(245,158,11,0.14)',
-                    color: liveInv.status === 'accepted' ? '#10b981' : liveInv.status === 'declined' ? '#ef4444' : '#fbbf24',
-                    border: `1px solid ${liveInv.status === 'accepted' ? 'rgba(16,185,129,0.3)' : liveInv.status === 'declined' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                    background: liveInv.status === 'accepted' ? 'rgba(16,185,129,0.14)' : liveInv.status === 'declined' ? 'rgba(56, 189, 248,0.14)' : 'rgba(245,158,11,0.14)',
+                    color: liveInv.status === 'accepted' ? '#10b981' : liveInv.status === 'declined' ? '#38bdf8' : '#fbbf24',
+                    border: `1px solid ${liveInv.status === 'accepted' ? 'rgba(16,185,129,0.3)' : liveInv.status === 'declined' ? 'rgba(56, 189, 248,0.3)' : 'rgba(245,158,11,0.3)'}`,
                   }}>
                     {liveInv.status === 'accepted' ? 'ACCEPTED' : liveInv.status === 'declined' ? 'DECLINED' : 'AWAITING RESPONSE'}
                   </span>
@@ -2388,11 +2388,11 @@ export default function RegistrationPage() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    background: apiDispatchFeedback.success ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                    color: apiDispatchFeedback.success ? '#10b981' : '#ef4444',
-                    border: `1px solid ${apiDispatchFeedback.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    background: apiDispatchFeedback.success ? 'rgba(16, 185, 129, 0.12)' : 'rgba(56, 189, 248, 0.12)',
+                    color: apiDispatchFeedback.success ? '#10b981' : '#38bdf8',
+                    border: `1px solid ${apiDispatchFeedback.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
                   }}>
-                    {apiDispatchFeedback.success ? <CheckIcon size={14} color="#10b981" /> : <XIcon size={14} color="#ef4444" />}
+                    {apiDispatchFeedback.success ? <CheckIcon size={14} color="#10b981" /> : <XIcon size={14} color="#38bdf8" />}
                     <span>{apiDispatchFeedback.message}</span>
                   </div>
                 )}
@@ -2566,9 +2566,9 @@ export default function RegistrationPage() {
                       showBanner(`${liveInv.roleTitle} "${liveInv.recipientName}" declined the invitation.`);
                     }}
                     style={{
-                      background: 'rgba(239, 68, 68, 0.12)',
-                      color: '#ef4444',
-                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      background: 'rgba(56, 189, 248, 0.12)',
+                      color: '#38bdf8',
+                      border: '1px solid rgba(56, 189, 248, 0.35)',
                       fontWeight: 700,
                       padding: '8px 16px',
                       borderRadius: '6px',
@@ -2577,7 +2577,7 @@ export default function RegistrationPage() {
                       gap: 6,
                     }}
                   >
-                    <XIcon size={13} color="#ef4444" /> Decline Appointment
+                    <XIcon size={13} color="#38bdf8" /> Decline Appointment
                   </button>
                 </div>
               </div>
@@ -2653,8 +2653,8 @@ export default function RegistrationPage() {
                       fontWeight: 800,
                       letterSpacing: '0.06em',
                       color: 'var(--accent)',
-                      background: 'rgba(220, 38, 38, 0.1)',
-                      border: '1px solid rgba(220, 38, 38, 0.25)',
+                      background: 'rgba(2, 132, 199, 0.1)',
+                      border: '1px solid rgba(2, 132, 199, 0.25)',
                       padding: '2px 8px',
                       borderRadius: '6px',
                       textTransform: 'uppercase',
@@ -2723,8 +2723,8 @@ export default function RegistrationPage() {
                             width: '36px',
                             height: '36px',
                             borderRadius: '8px',
-                            background: 'rgba(220, 38, 38, 0.12)',
-                            border: '1px solid rgba(220, 38, 38, 0.25)',
+                            background: 'rgba(2, 132, 199, 0.12)',
+                            border: '1px solid rgba(2, 132, 199, 0.25)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',

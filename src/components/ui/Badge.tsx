@@ -40,9 +40,9 @@ export function EligibilityBadge({ cleared }: { cleared: boolean }) {
     </span>
   ) : (
     <span style={{
-      background: 'rgba(239,68,68,0.1)',
-      border: '1px solid rgba(239,68,68,0.3)',
-      color: '#dc2626',
+      background: 'rgba(56, 189, 248,0.1)',
+      border: '1px solid rgba(56, 189, 248,0.3)',
+      color: '#0284c7',
       fontSize: '10.5px',
       fontWeight: 700,
       padding: '2px 8px',

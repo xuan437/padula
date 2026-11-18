@@ -19,7 +19,7 @@ const C = {
   accentDim: 'var(--accent-light)',
   blue:      '#1e3a8a',
   green:     '#10b981',
-  red:       '#dc2626',
+  red:       '#0284c7',
   textP:     'var(--text-primary)',
   textS:     'var(--text-secondary)',
   textM:     'var(--text-muted)',
@@ -245,7 +245,7 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div style={{
               width: '90px', height: '90px', borderRadius: '50%',
-              background: `linear-gradient(135deg, ${C.accent}, #dc2626)`,
+              background: `linear-gradient(135deg, ${C.accent}, #0284c7)`,
               border: '3px solid rgba(249,115,22,0.6)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '32px', fontWeight: 900, color: '#fff',

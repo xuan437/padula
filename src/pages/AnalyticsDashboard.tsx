@@ -507,7 +507,7 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
           {/* Key StatCard Grid */}
           <div className="stat-grid-4">
             <StatCard
-              icon={<FlameIcon size={18} color="#ef4444" />}
+              icon={<FlameIcon size={18} color="#38bdf8" />}
               value={matches.length}
               label="Total Matches"
               hint={`${liveMatches.length} live right now`}
@@ -562,7 +562,7 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>{wins}W - {losses}L</span>
                       <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)' }}>{winPct}%</span>
-                      <span className="badge-pill" style={{ fontSize: 10, background: streak.includes('W') ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: streak.includes('W') ? '#10b981' : '#ef4444' }}>
+                      <span className="badge-pill" style={{ fontSize: 10, background: streak.includes('W') ? 'rgba(16,185,129,0.12)' : 'rgba(56, 189, 248,0.12)', color: streak.includes('W') ? '#10b981' : '#38bdf8' }}>
                         {streak}
                       </span>
                     </div>
@@ -664,14 +664,14 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                       </td>
                       <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{getSportName(team.sport)}</td>
                       <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700 }}>{wins} - {losses}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 800, color: winPct >= 50 ? '#10b981' : '#ef4444' }}>{winPct}%</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 800, color: winPct >= 50 ? '#10b981' : '#38bdf8' }}>{winPct}%</td>
                       <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{pointsFor}</td>
                       <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{pointsAgainst}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: diff >= 0 ? '#10b981' : '#ef4444', fontVariantNumeric: 'tabular-nums' }}>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: diff >= 0 ? '#10b981' : '#38bdf8', fontVariantNumeric: 'tabular-nums' }}>
                         {diff > 0 ? `+${diff}` : diff}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                        <span className="badge-pill" style={{ fontSize: 10, background: streak.includes('W') ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: streak.includes('W') ? '#10b981' : '#ef4444' }}>
+                        <span className="badge-pill" style={{ fontSize: 10, background: streak.includes('W') ? 'rgba(16,185,129,0.12)' : 'rgba(56, 189, 248,0.12)', color: streak.includes('W') ? '#10b981' : '#38bdf8' }}>
                           {streak}
                         </span>
                       </td>
@@ -689,8 +689,8 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                                 justifyContent: 'center',
                                 fontSize: 9,
                                 fontWeight: 800,
-                                background: res === 'W' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
-                                color: res === 'W' ? '#10b981' : '#ef4444',
+                                background: res === 'W' ? 'rgba(16,185,129,0.2)' : 'rgba(56, 189, 248,0.2)',
+                                color: res === 'W' ? '#10b981' : '#38bdf8',
                               }}
                             >
                               {res}
@@ -808,8 +808,8 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                             className="badge-pill"
                             style={{
                               fontSize: 10,
-                              background: player.medicalCleared ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
-                              color: player.medicalCleared ? '#10b981' : '#ef4444',
+                              background: player.medicalCleared ? 'rgba(16,185,129,0.12)' : 'rgba(56, 189, 248,0.12)',
+                              color: player.medicalCleared ? '#10b981' : '#38bdf8',
                             }}
                           >
                             {player.medicalCleared ? 'Cleared' : 'Pending'}
@@ -839,7 +839,7 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                   style={{
                     padding: 16,
                     cursor: 'pointer',
-                    border: isLive ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--border)',
+                    border: isLive ? '1px solid rgba(56, 189, 248,0.4)' : '1px solid var(--border)',
                   }}
                   onClick={() => setSelectedMatch(match)}
                 >
@@ -851,8 +851,8 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                       className="badge-pill"
                       style={{
                         fontSize: 10,
-                        background: isLive ? 'rgba(239,68,68,0.15)' : isFinished ? 'rgba(16,185,129,0.15)' : 'var(--bg-elevated)',
-                        color: isLive ? '#ef4444' : isFinished ? '#10b981' : 'var(--text-muted)',
+                        background: isLive ? 'rgba(56, 189, 248,0.15)' : isFinished ? 'rgba(16,185,129,0.15)' : 'var(--bg-elevated)',
+                        color: isLive ? '#38bdf8' : isFinished ? '#10b981' : 'var(--text-muted)',
                       }}
                     >
                       {isLive ? '● LIVE' : isFinished ? 'FINAL' : 'SCHEDULED'}
@@ -1114,7 +1114,7 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                       <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{p.name}</span>
                       <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{p.position || ''} #{p.jerseyNumber || ''}</span>
                     </div>
-                    <span style={{ fontSize: 10, color: p.medicalCleared ? '#10b981' : '#ef4444', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    <span style={{ fontSize: 10, color: p.medicalCleared ? '#10b981' : '#38bdf8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                       {p.medicalCleared ? <><CheckIcon size={11} color="#10b981" /> Cleared</> : 'Pending'}
                     </span>
                   </div>

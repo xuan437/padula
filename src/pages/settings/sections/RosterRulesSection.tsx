@@ -133,8 +133,8 @@ export default function RosterRulesSection({
                     textTransform: 'capitalize',
                     padding: '4px 10px',
                     borderRadius: '6px',
-                    background: status === 'active' ? 'rgba(34,197,94,0.1)' : status === 'injured' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                    color: status === 'active' ? '#22c55e' : status === 'injured' ? '#f59e0b' : '#ef4444',
+                    background: status === 'active' ? 'rgba(34,197,94,0.1)' : status === 'injured' ? 'rgba(245,158,11,0.1)' : 'rgba(56, 189, 248,0.1)',
+                    color: status === 'active' ? '#22c55e' : status === 'injured' ? '#f59e0b' : '#38bdf8',
                     border: '1px solid var(--border)',
                   }}
                 >

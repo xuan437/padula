@@ -55,7 +55,7 @@ function BracketMatchCard({ match, matchNum, isNextUp, onAssignVenue, venues, on
         padding: '14px 16px',
         opacity: isTBD ? 0.7 : 1,
         border: isLive
-          ? '1.5px solid #ef4444'
+          ? '1.5px solid #38bdf8'
           : isNextUp
             ? '1.5px solid #0ea5e9'
             : undefined,
@@ -69,12 +69,12 @@ function BracketMatchCard({ match, matchNum, isNextUp, onAssignVenue, venues, on
             padding: '2px 7px',
             borderRadius: '999px',
             background: isLive
-              ? '#dc2626'
+              ? '#0284c7'
               : isNextUp
                 ? '#0ea5e9'
-                : 'rgba(220, 38, 38, 0.14)',
+                : 'rgba(2, 132, 199, 0.14)',
             color: isLive || isNextUp ? '#ffffff' : 'var(--accent)',
-            border: '1px solid rgba(220, 38, 38, 0.3)',
+            border: '1px solid rgba(2, 132, 199, 0.3)',
             letterSpacing: '0.03em',
           }}>
             Match #{matchNum}
@@ -408,7 +408,7 @@ export default function BracketPage() {
               </div>
               <div className="sync-deck-subtitle">
                 {liveMatchesCount > 0 ? (
-                  <strong style={{ color: '#ef4444' }}>{liveMatchesCount} match(es) currently LIVE on court</strong>
+                  <strong style={{ color: '#38bdf8' }}>{liveMatchesCount} match(es) currently LIVE on court</strong>
                 ) : (
                   <span>All courts idle / scheduled</span>
                 )}
@@ -442,9 +442,9 @@ export default function BracketPage() {
                   }
                 }}
                 title={`Delete ${sportName} tournament bracket and clear all scheduled matches`}
-                style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                style={{ color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
               >
-                <TrashIcon size={13} color="#ef4444" />
+                <TrashIcon size={13} color="#38bdf8" />
                 <span>Delete Bracket</span>
               </button>
             )}
@@ -851,7 +851,7 @@ export default function BracketPage() {
                       fontWeight: 900,
                       padding: '2px 8px',
                       borderRadius: '999px',
-                      background: m.status === 'live' ? '#dc2626' : isNext ? '#0ea5e9' : 'rgba(220, 38, 38, 0.14)',
+                      background: m.status === 'live' ? '#0284c7' : isNext ? '#0ea5e9' : 'rgba(2, 132, 199, 0.14)',
                       color: m.status === 'live' || isNext ? '#fff' : 'var(--accent)',
                     }}>
                       Match #{mNum}
@@ -916,7 +916,7 @@ export default function BracketPage() {
                 </span>
                 <span>{row.played}</span>
                 <span style={{ color: '#10b981', fontWeight: 600 }}>{row.won}</span>
-                <span style={{ color: '#ef4444' }}>{row.lost}</span>
+                <span style={{ color: '#38bdf8' }}>{row.lost}</span>
                 <span>{row.pointsFor}</span>
                 <span style={{ fontWeight: 600 }}>{(row.winPct * 100).toFixed(0)}%</span>
               </div>

@@ -361,7 +361,7 @@ export const SportFilter: React.FC<SportFilterProps> = ({
               border: (normalizedVal === 'ALL' || normalizedVal === '') ? '1px solid var(--accent)' : '1px solid var(--border)',
               background: (normalizedVal === 'ALL' || normalizedVal === '') ? 'var(--accent)' : 'var(--bg-surface)',
               color: (normalizedVal === 'ALL' || normalizedVal === '') ? '#ffffff' : 'var(--text-primary)',
-              boxShadow: (normalizedVal === 'ALL' || normalizedVal === '') ? '0 2px 6px -1px rgba(220, 38, 38, 0.4)' : '0 1px 2px rgba(0, 0, 0, 0.04)',
+              boxShadow: (normalizedVal === 'ALL' || normalizedVal === '') ? '0 2px 6px -1px rgba(2, 132, 199, 0.4)' : '0 1px 2px rgba(0, 0, 0, 0.04)',
               transition: 'all 0.15s ease',
               height: 34,
             }}
@@ -405,7 +405,7 @@ export const SportFilter: React.FC<SportFilterProps> = ({
                 border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border)',
                 background: isSelected ? 'var(--accent)' : 'var(--bg-surface)',
                 color: isSelected ? '#ffffff' : 'var(--text-primary)',
-                boxShadow: isSelected ? '0 2px 6px -1px rgba(220, 38, 38, 0.4)' : '0 1px 2px rgba(0, 0, 0, 0.04)',
+                boxShadow: isSelected ? '0 2px 6px -1px rgba(2, 132, 199, 0.4)' : '0 1px 2px rgba(0, 0, 0, 0.04)',
                 transition: 'all 0.15s ease',
                 height: 34,
               }}

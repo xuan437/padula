@@ -1,6 +1,6 @@
 /* ============================================================
    PADULA SPORTS — TOURNAMENT ANALYTICS
-   Athletic Red (#dc2626) + Collegiate Navy Blue design system
+   Athletic Red (#0284c7) + Collegiate Navy Blue design system
    Full light / dark mode via [data-theme] + OS preference fallback
    ============================================================ */
 
@@ -13,7 +13,7 @@
   --accent-border: rgba(56, 189, 248, 0.35);
   --accent-subtle: rgba(56, 189, 248, 0.08);
 
-  --color-live:    #ef4444;
+  --color-live:    #38bdf8;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-info:    #3b82f6;
@@ -56,9 +56,9 @@
   --shadow-lg: 0 10px 15px -3px rgba(10,17,40,0.08), 0 4px 6px -4px rgba(10,17,40,0.04);
 
   /* Status badge tokens — light (Semantic: Red=Live, Green=Finished, Amber=Scheduled) */
-  --badge-live-bg:    #fef2f2;
-  --badge-live-text:  #b91c1c;
-  --badge-live-border:#fecaca;
+  --badge-live-bg:    #e0f2fe;
+  --badge-live-text:  #0f2d5c;
+  --badge-live-border:#bae6fd;
 
   --badge-sched-bg:    #fffbeb;
   --badge-sched-text:  #b45309;
@@ -106,9 +106,9 @@
   --shadow-lg: 0 10px 24px rgba(0,0,0,0.6);
 
   /* Status badge tokens — dark (Semantic: Red=Live, Green=Finished, Amber=Scheduled) */
-  --badge-live-bg:    rgba(239,68,68,0.16);
-  --badge-live-text:  #f87171;
-  --badge-live-border:rgba(239,68,68,0.35);
+  --badge-live-bg:    rgba(56, 189, 248,0.16);
+  --badge-live-text:  #7dd3fc;
+  --badge-live-border:rgba(56, 189, 248,0.35);
 
   --badge-sched-bg:    rgba(245,158,11,0.14);
   --badge-sched-text:  #fbbf24;
@@ -144,16 +144,16 @@
     --border-light: #16243d;
     --border-hover: #2d4673;
 
-    --accent-light:  rgba(220,38,38,0.15);
-    --accent-border: rgba(220,38,38,0.35);
+    --accent-light:  rgba(2, 132, 199,0.15);
+    --accent-border: rgba(2, 132, 199,0.35);
 
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
     --shadow-lg: 0 10px 24px rgba(0,0,0,0.6);
 
-    --badge-live-bg:    rgba(239,68,68,0.16);
-    --badge-live-text:  #f87171;
-    --badge-live-border:rgba(239,68,68,0.35);
+    --badge-live-bg:    rgba(56, 189, 248,0.16);
+    --badge-live-text:  #7dd3fc;
+    --badge-live-border:rgba(56, 189, 248,0.35);
 
     --badge-sched-bg:    rgba(245,158,11,0.14);
     --badge-sched-text:  #fbbf24;
@@ -570,8 +570,8 @@ input, select, textarea {
 }
 
 .logout-btn:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.08);
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
 }
 
 /* ============================================================
@@ -733,14 +733,14 @@ input, select, textarea {
 }
 
 .btn-danger {
-  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
   color: #ffffff;
-  border-color: #dc2626;
-  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.25);
+  border-color: #0284c7;
+  box-shadow: 0 1px 2px rgba(56, 189, 248, 0.25);
 }
 .btn-danger:hover:not(:disabled) {
-  background: #dc2626;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  background: #0284c7;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
 }
 
 .btn-sm {
@@ -1240,7 +1240,7 @@ input, select, textarea {
 }
 
 .sport-tile:hover {
-  border-color: rgba(220, 38, 38, 0.5);
+  border-color: rgba(2, 132, 199, 0.5);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.25);
   background: var(--bg-surface);
@@ -1248,8 +1248,8 @@ input, select, textarea {
 
 .sport-tile.selected {
   border-color: var(--accent) !important;
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(220, 38, 38, 0.04)) !important;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.4), 0 8px 24px -6px rgba(220, 38, 38, 0.3) !important;
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(2, 132, 199, 0.04)) !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.4), 0 8px 24px -6px rgba(2, 132, 199, 0.3) !important;
 }
 
 .sport-tile-header {
@@ -1337,7 +1337,7 @@ select.form-input option {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #ef4444 0%, #f97316 40%, #3b82f6 100%);
+  background: linear-gradient(90deg, #38bdf8 0%, #f97316 40%, #3b82f6 100%);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
@@ -1373,7 +1373,7 @@ select.form-input option {
 }
 
 .sync-deck-pulse-dot.is-live .pulse-ping {
-  background: #ef4444;
+  background: #38bdf8;
   animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
@@ -1391,8 +1391,8 @@ select.form-input option {
 }
 
 .sync-deck-pulse-dot.is-live .pulse-core {
-  background: #ef4444;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  background: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
 }
 
 .sync-deck-pulse-dot.is-idle .pulse-core {
@@ -1417,7 +1417,7 @@ select.form-input option {
 }
 
 .sync-deck-zap {
-  color: #ef4444;
+  color: #38bdf8;
 }
 
 .sync-deck-badge {
@@ -1430,9 +1430,9 @@ select.form-input option {
 }
 
 .sync-deck-badge.badge-live {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28);
 }
 
 .sync-deck-badge.badge-idle {
@@ -1610,7 +1610,7 @@ select.form-input option {
 }
 
 .sync-control-dropdown-item.is-selected {
-  background: rgba(220, 38, 38, 0.12);
+  background: rgba(2, 132, 199, 0.12);
   color: var(--accent);
   font-weight: 700;
 }
@@ -1676,8 +1676,8 @@ select.form-input option {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent);
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.22);
+  background: rgba(2, 132, 199, 0.1);
+  border: 1px solid rgba(2, 132, 199, 0.22);
   border-radius: 20px;
   padding: 3px 10px;
   width: fit-content;
@@ -1722,15 +1722,15 @@ select.form-input option {
 }
 
 .wizard-hide-btn {
-  border: 1px solid rgba(220, 38, 38, 0.28) !important;
-  background: rgba(220, 38, 38, 0.08) !important;
+  border: 1px solid rgba(2, 132, 199, 0.28) !important;
+  background: rgba(2, 132, 199, 0.08) !important;
   border-radius: 8px;
   padding: 6px 14px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .wizard-hide-btn:hover {
-  background: rgba(220, 38, 38, 0.18) !important;
+  background: rgba(2, 132, 199, 0.18) !important;
   border-color: var(--accent) !important;
   transform: translateY(-1px);
 }
@@ -1746,8 +1746,8 @@ select.form-input option {
 
 .wizard-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent, #dc2626), #f59e0b, #10b981);
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.6);
+  background: linear-gradient(90deg, var(--accent, #0284c7), #f59e0b, #10b981);
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.6);
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1816,14 +1816,14 @@ select.form-input option {
   font-size: 11px;
   font-weight: 700;
   color: var(--accent);
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.2);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .wizard-sidebar-hide-btn:hover {
-  background: rgba(220, 38, 38, 0.16);
+  background: rgba(2, 132, 199, 0.16);
   border-color: var(--accent);
 }
 
@@ -1855,9 +1855,9 @@ select.form-input option {
 }
 
 .wizard-step.active {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(220, 38, 38, 0.03));
-  border-color: rgba(220, 38, 38, 0.4);
-  box-shadow: 0 4px 14px -2px rgba(220, 38, 38, 0.2);
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(2, 132, 199, 0.03));
+  border-color: rgba(2, 132, 199, 0.4);
+  box-shadow: 0 4px 14px -2px rgba(2, 132, 199, 0.2);
 }
 
 .wizard-step.done {
@@ -1885,7 +1885,7 @@ select.form-input option {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
 }
 
 .wizard-step.done .wizard-step-num {
@@ -2026,7 +2026,7 @@ select.form-input option {
   font-size: 16px;
   font-weight: 800;
   color: var(--accent);
-  background: rgba(220, 38, 38, 0.1);
+  background: rgba(2, 132, 199, 0.1);
   padding: 2px 10px;
   border-radius: 14px;
 }
@@ -2072,7 +2072,7 @@ select.form-input option {
 
 .form-group .form-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.16);
   outline: none;
   background: var(--bg-surface);
 }
@@ -2109,8 +2109,8 @@ select.form-input option {
   min-width: 38px;
   height: 30px;
   border-radius: 16px;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.25);
+  background: rgba(2, 132, 199, 0.1);
+  border: 1px solid rgba(2, 132, 199, 0.25);
   color: var(--accent);
   font-weight: 800;
   font-size: 12px;
@@ -2160,8 +2160,8 @@ select.form-input option {
 .validation-question {
   padding: 20px 24px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(245, 158, 11, 0.04));
-  border: 1.5px solid rgba(220, 38, 38, 0.25);
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(245, 158, 11, 0.04));
+  border: 1.5px solid rgba(2, 132, 199, 0.25);
   margin-top: 20px;
   display: flex;
   flex-direction: column;
@@ -2227,7 +2227,7 @@ select.form-input option {
   font-size: 10px;
   font-weight: 800;
   color: var(--accent);
-  background: rgba(220, 38, 38, 0.12);
+  background: rgba(2, 132, 199, 0.12);
   padding: 2px 6px;
   border-radius: 6px;
 }

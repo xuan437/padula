@@ -392,10 +392,10 @@ export default function EventSetupPage() {
                           onClick={() => handleDeleteSport(sport.id, sport.name)}
                           title="Delete custom sport"
                           style={{
-                            background: 'rgba(239, 68, 68, 0.12)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            background: 'rgba(56, 189, 248, 0.12)',
+                            border: '1px solid rgba(56, 189, 248, 0.3)',
                             borderRadius: '6px',
-                            color: '#ef4444',
+                            color: '#38bdf8',
                             cursor: 'pointer',
                             padding: '2px 7px',
                             fontSize: '11px',
@@ -482,7 +482,7 @@ export default function EventSetupPage() {
                         removeDivision(div.id);
                       }
                     }}
-                    style={{ fontSize: '11.5px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)' }}
+                    style={{ fontSize: '11.5px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.28)' }}
                   >
                     Delete
                   </button>
@@ -559,7 +559,7 @@ export default function EventSetupPage() {
                         removeVenue(v.id);
                       }
                     }}
-                    style={{ fontSize: '11px', padding: '2px 8px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)' }}
+                    style={{ fontSize: '11px', padding: '2px 8px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.28)' }}
                   >
                     Delete
                   </button>
@@ -621,7 +621,7 @@ export default function EventSetupPage() {
                       removeDepartment(dept.id);
                     }
                   }}
-                  style={{ fontSize: '11.5px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)' }}
+                  style={{ fontSize: '11.5px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.28)' }}
                 >
                   Delete
                 </button>
@@ -982,10 +982,10 @@ export default function EventSetupPage() {
                               deleteBracket(ev.id);
                             }
                           }}
-                          style={{ color: '#f87171', borderColor: 'rgba(239,68,68,0.3)', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          style={{ color: '#7dd3fc', borderColor: 'rgba(56, 189, 248,0.3)', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           title={`Delete bracket matches for ${ev.name}`}
                         >
-                          <TrashIcon size={12} color="#f87171" />
+                          <TrashIcon size={12} color="#7dd3fc" />
                           <span>Delete Bracket</span>
                         </button>
                       )}
@@ -997,7 +997,7 @@ export default function EventSetupPage() {
                             deleteEvent(ev.id);
                           }
                         }}
-                        style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)', borderRadius: '8px' }}
+                        style={{ color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.28)', borderRadius: '8px' }}
                       >
                         Delete
                       </button>

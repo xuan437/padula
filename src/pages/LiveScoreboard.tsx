@@ -94,7 +94,7 @@ export default function LiveScoreboard() {
         {/* TV Top Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span className="padula-athletic-text" style={{ fontSize: 24, color: '#ef4444' }}>
+            <span className="padula-athletic-text" style={{ fontSize: 24, color: '#38bdf8' }}>
               PADULA 2026 TV BROADCAST
             </span>
             <Badge tone={currentTvMatch.status === 'live' ? 'live' : currentTvMatch.status === 'finished' ? 'success' : 'warning'} pulse={currentTvMatch.status === 'live'}>
@@ -136,7 +136,7 @@ export default function LiveScoreboard() {
               <div style={{ fontSize: 34, fontWeight: 900, marginBottom: 14, color: currentTvMatch.winner === currentTvMatch.teamA ? '#34d399' : '#ffffff' }}>
                 {currentTvMatch.teamA}
               </div>
-              <div style={{ fontSize: 96, fontWeight: 900, lineHeight: 1, color: '#ef4444', fontFamily: 'var(--font-display)' }}>
+              <div style={{ fontSize: 96, fontWeight: 900, lineHeight: 1, color: '#38bdf8', fontFamily: 'var(--font-display)' }}>
                 {currentTvMatch.scoreA}
               </div>
             </div>

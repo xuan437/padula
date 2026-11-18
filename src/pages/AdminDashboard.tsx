@@ -91,7 +91,7 @@ function AlertItem({ icon, text, actionLabel, onAction, severity = 'warning' }: 
   onAction: () => void;
   severity?: 'warning' | 'error' | 'info';
 }) {
-  const colors = { warning: '#f59e0b', error: '#ef4444', info: '#3b82f6' };
+  const colors = { warning: '#f59e0b', error: '#38bdf8', info: '#3b82f6' };
   const col = colors[severity];
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: 10, background: `${col}0d`, border: `1px solid ${col}30`, flexWrap: 'wrap' }}>
@@ -118,7 +118,7 @@ function LiveMatchCard({ match, onOpen }: { match: any; onOpen: () => void }) {
   return (
     <div
       className="glass-card"
-      style={{ padding: '16px 20px', cursor: 'pointer', border: isLive ? '1px solid rgba(220,38,38,0.35)' : '1px solid var(--border)' }}
+      style={{ padding: '16px 20px', cursor: 'pointer', border: isLive ? '1px solid rgba(2, 132, 199,0.35)' : '1px solid var(--border)' }}
       onClick={onOpen}
     >
       {/* Header row */}
@@ -129,7 +129,7 @@ function LiveMatchCard({ match, onOpen }: { match: any; onOpen: () => void }) {
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>· {match.round}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {isLive && <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '10px', fontWeight: 800, color: '#dc2626', background: 'rgba(220,38,38,0.12)', padding: '3px 8px', borderRadius: 20 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#dc2626', animation: 'pulse 1.4s infinite' }} />LIVE</span>}
+          {isLive && <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '10px', fontWeight: 800, color: '#0284c7', background: 'rgba(2, 132, 199,0.12)', padding: '3px 8px', borderRadius: 20 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0284c7', animation: 'pulse 1.4s infinite' }} />LIVE</span>}
           {isFinished && <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.12)', padding: '3px 8px', borderRadius: 20 }}>FINISHED</span>}
           {!isLive && !isFinished && <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--bg-elevated)', padding: '3px 8px', borderRadius: 20 }}>SCHEDULED</span>}
           {match.conflictWarning && <span style={{ fontSize: '10px', fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', padding: '3px 8px', borderRadius: 20 }}>Conflict</span>}
@@ -422,7 +422,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
               objectFit: 'cover',
               borderRadius: '50%',
               flexShrink: 0,
-              border: '2px solid rgba(220, 38, 38, 0.25)',
+              border: '2px solid rgba(2, 132, 199, 0.25)',
               filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.25))',
             }}
           />
@@ -458,7 +458,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
 
         {/* ── Summary Cards ──────────────────────────────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 14 }}>
-          <StatCard icon={<LiveIcon size={18} color="#dc2626" />} label="Live Now" value={liveMatches.length} color="#dc2626" linkLabel="View Live" onClick={() => setActiveView('live')} />
+          <StatCard icon={<LiveIcon size={18} color="#0284c7" />} label="Live Now" value={liveMatches.length} color="#0284c7" linkLabel="View Live" onClick={() => setActiveView('live')} />
           <StatCard icon={<ClockIcon size={18} color="#f59e0b" />} label="Upcoming Today" value={upcomingToday.length} color="#f59e0b" linkLabel="See Schedule" onClick={() => setActiveView('live')} />
           <StatCard icon={<CheckIcon size={18} color="#10b981" />} label="Finished Today" value={finishedToday.length} color="#10b981" />
           <StatCard icon={<UsersIcon size={18} color="#3b82f6" />} label="Total Teams" value={teams.filter(t => t.isActive !== false).length} color="#3b82f6" linkLabel="Manage Teams" onClick={() => setActiveView('registration')} />
@@ -567,8 +567,8 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
                       fontWeight: 700,
                       padding: '8px 16px',
                       borderRadius: '8px',
-                      background: 'linear-gradient(135deg, var(--accent) 0%, #b91c1c 100%)',
-                      boxShadow: '0 2px 8px rgba(220, 38, 38, 0.28)',
+                      background: 'linear-gradient(135deg, var(--accent) 0%, #0f2d5c 100%)',
+                      boxShadow: '0 2px 8px rgba(2, 132, 199, 0.28)',
                       border: 'none',
                     }}
                     onClick={() => setActiveView('setup-wizard')}
@@ -692,9 +692,9 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
                         fontWeight: 600,
                         padding: '7px 12px',
                         borderRadius: '8px',
-                        color: '#ef4444',
-                        background: 'rgba(239, 68, 68, 0.06)',
-                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        color: '#38bdf8',
+                        background: 'rgba(56, 189, 248, 0.06)',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
                         transition: 'all 0.15s ease',
                       }}
                       onClick={() => {
@@ -704,7 +704,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
                       }}
                       title="Clear all matches to test bracket registration from scratch"
                     >
-                      <XIcon size={14} color="#ef4444" /> Remove Current Matches
+                      <XIcon size={14} color="#38bdf8" /> Remove Current Matches
                     </button>
                   </div>
                 )}
@@ -722,8 +722,8 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
                     fontWeight: 700,
                     padding: '8px 16px',
                     borderRadius: '8px',
-                    background: 'linear-gradient(135deg, var(--accent) 0%, #b91c1c 100%)',
-                    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.28)',
+                    background: 'linear-gradient(135deg, var(--accent) 0%, #0f2d5c 100%)',
+                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.28)',
                     border: 'none',
                   }}
                   onClick={() => setActiveView('registration')}
@@ -808,7 +808,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
                 flexDirection: 'column',
                 gap: 12,
                 cursor: 'pointer',
-                borderLeft: liveMatches.length > 0 ? '3px solid #ef4444' : '3px solid var(--accent)',
+                borderLeft: liveMatches.length > 0 ? '3px solid #38bdf8' : '3px solid var(--accent)',
                 transition: 'transform 0.15s, box-shadow 0.15s',
               }}
               onClick={() => setActiveView('live')}
@@ -817,7 +817,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <LiveIcon size={18} />
                   </div>
                   <div>
@@ -826,8 +826,8 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
                   </div>
                 </div>
                 {liveMatches.length > 0 && (
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#ef4444', background: 'rgba(239, 68, 68, 0.12)', padding: '2px 8px', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.2s infinite' }} />
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', animation: 'pulse 1.2s infinite' }} />
                     {liveMatches.length} ACTIVE
                   </span>
                 )}
@@ -1170,7 +1170,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <ClockIcon size={22} color="#ef4444" />
+              <ClockIcon size={22} color="#38bdf8" />
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
                 Resolve Scorer Scheduling Conflicts
               </h2>
@@ -1200,7 +1200,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
                         padding: '16px',
                         borderRadius: '10px',
                         background: 'var(--bg-elevated)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '12px',
@@ -1216,23 +1216,23 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
                           </div>
                         </div>
 
-                        <span className="status-badge live" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                        <span className="status-badge live" style={{ background: 'rgba(56, 189, 248,0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248,0.3)' }}>
                           Overlap Conflict
                         </span>
                       </div>
 
                       <div style={{
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        background: 'rgba(56, 189, 248, 0.1)',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
                         borderRadius: '6px',
                         padding: '8px 10px',
                         fontSize: '12px',
-                        color: '#f87171',
+                        color: '#7dd3fc',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
                       }}>
-                        <AlertTriangleIcon size={12} color="#f87171" />
+                        <AlertTriangleIcon size={12} color="#7dd3fc" />
                         <span>{m.conflictWarning}</span>
                       </div>
 

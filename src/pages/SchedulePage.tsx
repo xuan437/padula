@@ -182,7 +182,7 @@ export default function SchedulePage() {
             <LiveIcon size={15} /> Live Scoreboard
             {liveMatchesCount > 0 && (
               <span style={{
-                background: '#ef4444',
+                background: '#38bdf8',
                 color: '#fff',
                 fontSize: 10,
                 fontWeight: 900,
@@ -234,15 +234,15 @@ export default function SchedulePage() {
             alignItems: 'center',
             gap: 14,
             cursor: 'pointer',
-            border: liveMatchesCount > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : undefined,
+            border: liveMatchesCount > 0 ? '1px solid rgba(56, 189, 248, 0.4)' : undefined,
           }}
         >
           <div style={{
             width: 44,
             height: 44,
             borderRadius: 10,
-            background: 'rgba(239, 68, 68, 0.12)',
-            color: '#ef4444',
+            background: 'rgba(56, 189, 248, 0.12)',
+            color: '#38bdf8',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -251,8 +251,8 @@ export default function SchedulePage() {
             <LiveIcon size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-              {liveMatchesCount > 0 && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.2s infinite' }} />}
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {liveMatchesCount > 0 && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', animation: 'pulse 1.2s infinite' }} />}
               Live In Progress
             </div>
             <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)' }}>
@@ -550,17 +550,17 @@ export default function SchedulePage() {
                       key={m.id}
                       style={{
                         borderBottom: '1px solid var(--border)',
-                        background: isLive ? 'rgba(239, 68, 68, 0.04)' : undefined,
+                        background: isLive ? 'rgba(56, 189, 248, 0.04)' : undefined,
                         transition: 'background 0.15s ease',
                       }}
                       onMouseEnter={e => {
                         e.currentTarget.style.background = isLive
-                          ? 'rgba(239, 68, 68, 0.08)'
+                          ? 'rgba(56, 189, 248, 0.08)'
                           : 'var(--bg-elevated)';
                       }}
                       onMouseLeave={e => {
                         e.currentTarget.style.background = isLive
-                          ? 'rgba(239, 68, 68, 0.04)'
+                          ? 'rgba(56, 189, 248, 0.04)'
                           : 'transparent';
                       }}
                     >
@@ -594,13 +594,13 @@ export default function SchedulePage() {
                           <span style={{
                             display: 'inline-block',
                             padding: '4px 10px',
-                            background: isLive ? 'rgba(239,68,68,0.15)' : 'var(--bg-elevated)',
-                            color: isLive ? '#ef4444' : 'var(--text-primary)',
+                            background: isLive ? 'rgba(56, 189, 248,0.15)' : 'var(--bg-elevated)',
+                            color: isLive ? '#38bdf8' : 'var(--text-primary)',
                             borderRadius: '6px',
                             fontWeight: 900,
                             fontSize: '14px',
                             fontVariantNumeric: 'tabular-nums',
-                            border: isLive ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--border)',
+                            border: isLive ? '1px solid rgba(56, 189, 248,0.3)' : '1px solid var(--border)',
                           }}>
                             {m.scoreA ?? 0} – {m.scoreB ?? 0}
                           </span>
@@ -690,8 +690,8 @@ export default function SchedulePage() {
                               style={{
                                 fontSize: '11px',
                                 padding: '3px 8px',
-                                color: '#ef4444',
-                                borderColor: 'rgba(239,68,68,0.28)',
+                                color: '#38bdf8',
+                                borderColor: 'rgba(56, 189, 248,0.28)',
                               }}
                               title="Delete this match fixture"
                             >

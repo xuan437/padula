@@ -166,7 +166,7 @@ export default function SportsCompetitionSection({
   const statusBadge = (field: keyof CompetitionOverride, lockKey?: CoordinatorLockableField) => {
     if (lockKey && isLocked(lockKey)) {
       return (
-        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: 'rgba(239,68,68,0.12)', color: '#ef4444', marginLeft: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: 'rgba(56, 189, 248,0.12)', color: '#38bdf8', marginLeft: 6 }}>
           🔒 Locked by Director
         </span>
       );

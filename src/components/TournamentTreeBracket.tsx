@@ -133,12 +133,12 @@ function MatchNodeBox({
   return (
     <div
       style={{
-        background: isWinner ? 'var(--accent-light, #fef2f2)' : 'var(--bg-card, #ffffff)',
-        color: isWinner ? 'var(--accent, #dc2626)' : 'var(--text-primary, #0f172a)',
+        background: isWinner ? 'var(--accent-light, #e0f2fe)' : 'var(--bg-card, #ffffff)',
+        color: isWinner ? 'var(--accent, #0284c7)' : 'var(--text-primary, #0f172a)',
         border: isWinner
-          ? '1.5px solid var(--accent, #dc2626)'
+          ? '1.5px solid var(--accent, #0284c7)'
           : isLive
-          ? '1.5px solid #ef4444'
+          ? '1.5px solid #38bdf8'
           : '1px solid var(--border, #e2e8f0)',
         borderRadius: '7px',
         padding: '0 8px',
@@ -149,7 +149,7 @@ function MatchNodeBox({
         alignItems: 'center',
         justifyContent: 'space-between',
         position: 'relative',
-        boxShadow: isWinner ? '0 2px 6px rgba(220,38,38,0.14)' : '0 1px 2px rgba(0,0,0,0.05)',
+        boxShadow: isWinner ? '0 2px 6px rgba(2, 132, 199,0.14)' : '0 1px 2px rgba(0,0,0,0.05)',
         transition: 'all 0.15s ease',
       }}
     >
@@ -181,7 +181,7 @@ function MatchNodeBox({
             fontSize: '11px',
             fontWeight: 800,
             fontVariantNumeric: 'tabular-nums',
-            color: isWinner ? 'var(--accent, #dc2626)' : 'var(--text-secondary, #64748b)',
+            color: isWinner ? 'var(--accent, #0284c7)' : 'var(--text-secondary, #64748b)',
             background: 'var(--bg-elevated, #f1f5f9)',
             padding: '1px 5px',
             borderRadius: '4px',
@@ -202,7 +202,7 @@ function MatchNodeBox({
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            background: '#ef4444',
+            background: '#38bdf8',
             boxShadow: '0 0 0 2px #fff',
           }}
           title="Live Match"
@@ -247,7 +247,7 @@ function MatchNumberBadge({
         letterSpacing: '0.03em',
         whiteSpace: 'nowrap',
         background: isLive
-          ? '#dc2626'
+          ? '#0284c7'
           : isNextUp
           ? '#0ea5e9'
           : isFinished
@@ -257,16 +257,16 @@ function MatchNumberBadge({
           ? '#ffffff'
           : isFinished
           ? '#10b981'
-          : 'var(--accent, #dc2626)',
+          : 'var(--accent, #0284c7)',
         border: isLive
           ? '1.5px solid #fca5a5'
           : isNextUp
           ? '1.5px solid #7dd3fc'
           : isFinished
           ? '1px solid rgba(16, 185, 129, 0.45)'
-          : '1px solid rgba(220, 38, 38, 0.4)',
+          : '1px solid rgba(2, 132, 199, 0.4)',
         boxShadow: isLive
-          ? '0 2px 8px rgba(220, 38, 38, 0.4)'
+          ? '0 2px 8px rgba(2, 132, 199, 0.4)'
           : isNextUp
           ? '0 2px 8px rgba(14, 165, 233, 0.4)'
           : '0 1px 4px rgba(0,0,0,0.18)',
@@ -784,8 +784,8 @@ export default function TournamentTreeBracket({
                   }
                 }}
                 style={{
-                  color: '#ef4444',
-                  borderColor: 'rgba(239, 68, 68, 0.35)',
+                  color: '#38bdf8',
+                  borderColor: 'rgba(56, 189, 248, 0.35)',
                   fontSize: '11.5px',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -796,7 +796,7 @@ export default function TournamentTreeBracket({
                 }}
                 title={`Delete ${sportMeta.name} tournament bracket`}
               >
-                <TrashIcon size={13} color="#ef4444" />
+                <TrashIcon size={13} color="#38bdf8" />
                 <span>Delete Bracket</span>
               </button>
             </div>
@@ -961,7 +961,7 @@ export default function TournamentTreeBracket({
               padding: '12px 12px',
               borderRadius: '14px',
               border: '2px solid var(--accent)',
-              boxShadow: '0 8px 24px rgba(220,38,38,0.18)',
+              boxShadow: '0 8px 24px rgba(2, 132, 199,0.18)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
@@ -979,14 +979,14 @@ export default function TournamentTreeBracket({
                 fontSize: '9.5px',
                 fontWeight: 900,
                 background: treeData.matchLabels.final.status === 'live'
-                  ? '#dc2626'
+                  ? '#0284c7'
                   : treeData.matchLabels.final.isNextUp
                   ? '#0ea5e9'
-                  : 'rgba(220, 38, 38, 0.14)',
+                  : 'rgba(2, 132, 199, 0.14)',
                 color: treeData.matchLabels.final.status === 'live' || treeData.matchLabels.final.isNextUp
                   ? '#ffffff'
                   : 'var(--accent)',
-                border: '1px solid rgba(220, 38, 38, 0.35)',
+                border: '1px solid rgba(2, 132, 199, 0.35)',
               }}>
                 Match #{treeData.matchLabels.final.num}
                 {treeData.matchLabels.final.status === 'live' ? ' • LIVE' : treeData.matchLabels.final.isNextUp ? ' • NEXT' : ''}
@@ -1003,7 +1003,7 @@ export default function TournamentTreeBracket({
 
             <div style={{
               background: treeData.final.isLive
-                ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+                ? 'linear-gradient(135deg, #38bdf8, #0284c7)'
                 : (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD')
                   ? 'linear-gradient(135deg, #f59e0b, #d97706)'
                   : 'var(--bg-card)',
@@ -1126,12 +1126,12 @@ export default function TournamentTreeBracket({
                       padding: '9px 12px',
                       borderRadius: '10px',
                       background: isLive
-                        ? 'rgba(220, 38, 38, 0.12)'
+                        ? 'rgba(2, 132, 199, 0.12)'
                         : item.isNextUp
                         ? 'rgba(2, 132, 199, 0.12)'
                         : 'var(--bg-elevated)',
                       border: isLive
-                        ? '1.5px solid rgba(220, 38, 38, 0.55)'
+                        ? '1.5px solid rgba(2, 132, 199, 0.55)'
                         : item.isNextUp
                         ? '1.5px solid rgba(2, 132, 199, 0.65)'
                         : '1px solid var(--border-light)',
@@ -1161,7 +1161,7 @@ export default function TournamentTreeBracket({
                         <span style={{
                           fontSize: '11.5px',
                           fontWeight: 900,
-                          color: isLive ? '#ef4444' : item.isNextUp ? '#0284c7' : isFin ? '#10b981' : 'var(--accent)',
+                          color: isLive ? '#38bdf8' : item.isNextUp ? '#0284c7' : isFin ? '#10b981' : 'var(--accent)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1184,7 +1184,7 @@ export default function TournamentTreeBracket({
                         letterSpacing: '0.04em',
                         textTransform: 'uppercase',
                         background: isLive
-                          ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)'
+                          ? 'linear-gradient(135deg, #38bdf8 0%, #0f2d5c 100%)'
                           : item.isNextUp
                           ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
                           : isFin
@@ -1194,7 +1194,7 @@ export default function TournamentTreeBracket({
                         boxShadow: item.isNextUp
                           ? '0 0 10px rgba(2, 132, 199, 0.4)'
                           : isLive
-                          ? '0 0 10px rgba(239, 68, 68, 0.4)'
+                          ? '0 0 10px rgba(56, 189, 248, 0.4)'
                           : 'none',
                       }}>
                         {isLive ? '● LIVE' : item.isNextUp ? '▶ PLAY NEXT' : isFin ? '✓ FINAL' : 'QUEUED'}

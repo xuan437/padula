@@ -661,11 +661,11 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
 
       {!isLocked && match.conflictWarning && (
         <div style={{
-          background: '#ef444415', border: '1px solid #ef444440', borderRadius: '6px',
-          padding: '8px 12px', fontSize: '12px', color: '#ef4444', fontWeight: 600,
+          background: '#38bdf815', border: '1px solid #38bdf840', borderRadius: '6px',
+          padding: '8px 12px', fontSize: '12px', color: '#38bdf8', fontWeight: 600,
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          <AlertTriangleIcon size={13} color="#ef4444" />
+          <AlertTriangleIcon size={13} color="#38bdf8" />
           <span>{match.conflictWarning}</span>
         </div>
       )}
@@ -851,8 +851,8 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
       )}
 
       {error && (
-        <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <AlertTriangleIcon size={12} color="#ef4444" /> {error}
+        <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <AlertTriangleIcon size={12} color="#38bdf8" /> {error}
         </div>
       )}
 

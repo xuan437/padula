@@ -180,8 +180,8 @@ export default function DigitalLedClock() {
               width: 7,
               height: 7,
               borderRadius: '50%',
-              background: '#ef4444',
-              boxShadow: '0 0 8px #ef4444',
+              background: '#38bdf8',
+              boxShadow: '0 0 8px #38bdf8',
               animation: 'pulse 1.4s infinite',
               flexShrink: 0,
             }}

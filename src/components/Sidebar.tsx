@@ -10,7 +10,7 @@ import {
 } from './Icons';
 
 const ROLE_META: Record<UserRole, { label: string; color: string }> = {
-  director:    { label: 'Sports Director',    color: '#dc2626' },
+  director:    { label: 'Sports Director',    color: '#0284c7' },
   coordinator: { label: 'Sports Coordinator', color: '#2563eb' },
   scorer:      { label: 'Scorer',             color: '#059669' },
   player:      { label: 'Varsity Athlete',    color: '#d97706' },
@@ -534,8 +534,8 @@ const Sidebar: React.FC = () => {
                 gap: 5,
                 padding: '8px 10px',
                 borderRadius: 8,
-                border: '1px solid rgba(239,68,68,0.3)',
-                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(56, 189, 248,0.3)',
+                background: 'rgba(56, 189, 248,0.1)',
                 color: 'var(--badge-live-text)',
                 fontSize: 12,
                 fontWeight: 700,

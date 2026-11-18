@@ -175,16 +175,16 @@ export default function AccessRequestsPage() {
               fontWeight: 800,
               padding: '3px 10px',
               borderRadius: '999px',
-              background: 'rgba(220, 38, 38, 0.15)',
-              color: '#ef4444',
-              border: '1px solid rgba(220, 38, 38, 0.3)',
+              background: 'rgba(2, 132, 199, 0.15)',
+              color: '#38bdf8',
+              border: '1px solid rgba(2, 132, 199, 0.3)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
             }}>
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#38bdf8', display: 'inline-block' }} />
               {pendingCount} Pending Review
             </span>
           ) : (
@@ -267,8 +267,8 @@ export default function AccessRequestsPage() {
             width: '44px',
             height: '44px',
             borderRadius: '12px',
-            background: 'rgba(220, 38, 38, 0.1)',
-            border: '1px solid rgba(220, 38, 38, 0.25)',
+            background: 'rgba(2, 132, 199, 0.1)',
+            border: '1px solid rgba(2, 132, 199, 0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -600,7 +600,7 @@ export default function AccessRequestsPage() {
                       ? '#f59e0b'
                       : isApproved
                       ? '#10b981'
-                      : '#ef4444',
+                      : '#38bdf8',
                   }}
                 />
 
@@ -770,7 +770,7 @@ export default function AccessRequestsPage() {
                         onClick={() => setDeclineTargetId(req.id)}
                         className="btn btn-sm btn-ghost"
                         style={{
-                          color: '#dc2626',
+                          color: '#0284c7',
                           fontWeight: 600,
                           fontSize: '12.5px',
                           display: 'inline-flex',
@@ -1002,20 +1002,20 @@ export default function AccessRequestsPage() {
             onClick={e => e.stopPropagation()}
           >
             {/* Top Red Accent Bar */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: '#dc2626' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: '#0284c7' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
                 width: '38px',
                 height: '38px',
                 borderRadius: '10px',
-                background: 'rgba(220, 38, 38, 0.12)',
+                background: 'rgba(2, 132, 199, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <AlertTriangleIcon size={20} color="#dc2626" />
+                <AlertTriangleIcon size={20} color="#0284c7" />
               </div>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)' }}>
                 Decline Access Request
@@ -1047,7 +1047,7 @@ export default function AccessRequestsPage() {
                 type="button"
                 className="btn btn-sm btn-primary"
                 onClick={handleDeclineConfirm}
-                style={{ background: '#dc2626', borderColor: '#dc2626', padding: '8px 18px', fontWeight: 700 }}
+                style={{ background: '#0284c7', borderColor: '#0284c7', padding: '8px 18px', fontWeight: 700 }}
               >
                 Confirm Decline
               </button>

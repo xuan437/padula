@@ -214,7 +214,7 @@ export default function PlayerDashboard() {
           className="glass-card"
           style={{
             padding: '20px 24px',
-            background: 'linear-gradient(135deg, rgba(220,38,38,0.12) 0%, rgba(15,23,42,0.85) 100%)',
+            background: 'linear-gradient(135deg, rgba(2, 132, 199,0.12) 0%, rgba(15,23,42,0.85) 100%)',
             border: '1.5px solid var(--accent)',
             borderRadius: '16px',
             display: 'flex',
@@ -237,7 +237,7 @@ export default function PlayerDashboard() {
               fontFamily: 'var(--font-sports)',
               fontWeight: 900,
               fontSize: '22px',
-              boxShadow: '0 4px 14px rgba(220,38,38,0.3)',
+              boxShadow: '0 4px 14px rgba(2, 132, 199,0.3)',
             }}>
               #{myPlayerProfile.jerseyNumber || '00'}
             </div>
@@ -249,8 +249,8 @@ export default function PlayerDashboard() {
                 <span style={{
                   fontSize: '10px',
                   fontWeight: 700,
-                  color: myPlayerProfile.medicalCleared ? '#10b981' : '#ef4444',
-                  background: myPlayerProfile.medicalCleared ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                  color: myPlayerProfile.medicalCleared ? '#10b981' : '#38bdf8',
+                  background: myPlayerProfile.medicalCleared ? 'rgba(16,185,129,0.12)' : 'rgba(56, 189, 248,0.12)',
                   padding: '2px 8px',
                   borderRadius: '20px',
                   display: 'inline-flex',
@@ -609,7 +609,7 @@ export default function PlayerDashboard() {
                       <button
                         className="btn btn-sm btn-ghost"
                         onClick={() => setPlayerToRemove(p)}
-                        style={{ fontSize: '11.5px', padding: '4px 8px', color: '#ef4444' }}
+                        style={{ fontSize: '11.5px', padding: '4px 8px', color: '#38bdf8' }}
                       >
                         Remove
                       </button>
@@ -818,7 +818,7 @@ export default function PlayerDashboard() {
                         <button
                           className="btn btn-sm btn-ghost"
                           onClick={() => setPlayerToRemove(p)}
-                          style={{ fontSize: '11px', padding: '3px 9px', color: '#ef4444' }}
+                          style={{ fontSize: '11px', padding: '3px 9px', color: '#38bdf8' }}
                         >
                           Remove
                         </button>
@@ -1159,7 +1159,7 @@ export default function PlayerDashboard() {
               </button>
               <button
                 className="btn btn-primary"
-                style={{ background: '#ef4444', borderColor: '#ef4444' }}
+                style={{ background: '#38bdf8', borderColor: '#38bdf8' }}
                 onClick={handleConfirmRemove}
               >
                 Remove Athlete

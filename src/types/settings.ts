@@ -301,7 +301,7 @@ export interface SchoolBranding {
   campusName: string;
   tournamentTitle: string;
   logoUrl: string;
-  primaryColor: string; // e.g. "#dc2626"
+  primaryColor: string; // e.g. "#0284c7"
   accentColor: string;  // e.g. "#f59e0b"
   themeMode: 'dark' | 'light' | 'auto';
   timeZone: string;     // e.g. "Asia/Manila"

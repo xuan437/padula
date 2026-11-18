@@ -29,7 +29,7 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
           <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
             <XIcon size={18} />
           </button>
-          <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(220, 38, 38, 0.1)', color: 'var(--accent)', marginBottom: 12 }}>
+          <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(2, 132, 199, 0.1)', color: 'var(--accent)', marginBottom: 12 }}>
             <SparklesIcon size={24} />
           </div>
           <h3 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 8px' }}>Prediction Pending</h3>
@@ -63,7 +63,7 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
     }}>
       <div className="glass-card" onClick={e => e.stopPropagation()} style={{
         maxWidth: 680, width: '100%', maxHeight: '92vh', overflowY: 'auto', padding: 24,
-        position: 'relative', border: '1px solid rgba(220, 38, 38, 0.35)',
+        position: 'relative', border: '1px solid rgba(2, 132, 199, 0.35)',
         boxShadow: '0 24px 60px rgba(0,0,0,0.55)'
       }}>
         {/* Close Button */}
@@ -78,8 +78,8 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #dc2626, #ef4444)',
-            color: '#fff', boxShadow: '0 2px 10px rgba(220,38,38,0.4)'
+            width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+            color: '#fff', boxShadow: '0 2px 10px rgba(2, 132, 199,0.4)'
           }}>
             <SparklesIcon size={19} />
           </div>
@@ -89,7 +89,7 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
                 Padula Neural AI Match Intelligence v4.0 MAX
               </span>
               {isLive && (
-                <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 12, background: 'rgba(220,38,38,0.18)', color: '#ef4444', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 12, background: 'rgba(2, 132, 199,0.18)', color: '#38bdf8', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <span className="live-dot" /> LIVE IN-GAME PREDICTION
                 </span>
               )}
@@ -108,8 +108,8 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
         <div style={{
           padding: '14px 18px',
           borderRadius: 12,
-          background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.14), rgba(59, 130, 246, 0.10))',
-          border: '1.5px solid rgba(220, 38, 38, 0.35)',
+          background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.14), rgba(59, 130, 246, 0.10))',
+          border: '1.5px solid rgba(2, 132, 199, 0.35)',
           marginBottom: 16,
           display: 'flex',
           alignItems: 'center',
@@ -205,7 +205,7 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
           <div style={{ width: '100%', height: 12, background: 'rgba(59, 130, 246, 0.4)', borderRadius: 6, overflow: 'hidden', display: 'flex' }}>
             <div style={{
               width: `${winProbA}%`,
-              background: 'linear-gradient(90deg, #dc2626, #ef4444)',
+              background: 'linear-gradient(90deg, #0284c7, #38bdf8)',
               transition: 'width 0.6s ease',
             }} />
             <div style={{
@@ -224,7 +224,7 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
 
         {/* Tactical AI Summary */}
         <div style={{
-          padding: '12px 14px', borderRadius: 8, background: 'rgba(220, 38, 38, 0.06)',
+          padding: '12px 14px', borderRadius: 8, background: 'rgba(2, 132, 199, 0.06)',
           borderLeft: '3px solid var(--accent)', marginBottom: 16
         }}>
           <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -292,7 +292,7 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Point Differential:</span>
-                    <strong style={{ color: stats.pointDiff >= 0 ? '#10b981' : '#ef4444' }}>
+                    <strong style={{ color: stats.pointDiff >= 0 ? '#10b981' : '#38bdf8' }}>
                       {stats.pointDiff >= 0 ? `+${stats.pointDiff}` : stats.pointDiff} ({stats.avgPointDiff >= 0 ? `+${stats.avgPointDiff}` : stats.avgPointDiff}/g)
                     </strong>
                   </div>
@@ -313,8 +313,8 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
                         stats.recentForm.map((r, i) => (
                           <span key={i} style={{
                             fontSize: 10, fontWeight: 800, padding: '1px 5px', borderRadius: 4,
-                            background: r === 'W' ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.16)',
-                            color: r === 'W' ? '#10b981' : '#ef4444',
+                            background: r === 'W' ? 'rgba(16,185,129,0.16)' : 'rgba(56, 189, 248,0.16)',
+                            color: r === 'W' ? '#10b981' : '#38bdf8',
                           }}>
                             {r}
                           </span>
@@ -340,7 +340,7 @@ export default function AIPredictionModal({ match, onClose }: AIPredictionModalP
                       {stats.pastMatches.slice(-3).reverse().map(pm => (
                         <div key={pm.matchId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'var(--text-secondary)' }}>
                           <span>
-                            <strong style={{ color: pm.result === 'W' ? '#10b981' : '#ef4444' }}>{pm.result}</strong> vs {pm.opponent}
+                            <strong style={{ color: pm.result === 'W' ? '#10b981' : '#38bdf8' }}>{pm.result}</strong> vs {pm.opponent}
                           </span>
                           <span style={{ fontWeight: 700 }}>{pm.teamScore}–{pm.opponentScore}</span>
                         </div>

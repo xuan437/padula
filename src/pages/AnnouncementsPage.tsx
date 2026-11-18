@@ -142,11 +142,11 @@ export default function AnnouncementsPage() {
         </div>
 
         <div className="glass-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <AlertTriangleIcon size={20} color="#ef4444" />
+          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <AlertTriangleIcon size={20} color="#38bdf8" />
           </div>
           <div>
-            <div style={{ fontSize: '22px', fontWeight: 900, color: '#ef4444' }}>{urgentCount}</div>
+            <div style={{ fontSize: '22px', fontWeight: 900, color: '#38bdf8' }}>{urgentCount}</div>
             <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Urgent Notices</div>
           </div>
         </div>
@@ -382,8 +382,8 @@ export default function AnnouncementsPage() {
                 className="glass-card"
                 style={{
                   padding: '18px 22px',
-                  borderLeft: isUrgent ? '4px solid #ef4444' : '4px solid var(--accent)',
-                  background: isUrgent ? 'rgba(239, 68, 68, 0.04)' : 'var(--bg-elevated)',
+                  borderLeft: isUrgent ? '4px solid #38bdf8' : '4px solid var(--accent)',
+                  background: isUrgent ? 'rgba(56, 189, 248, 0.04)' : 'var(--bg-elevated)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '8px',
@@ -407,9 +407,9 @@ export default function AnnouncementsPage() {
                       <span style={{
                         fontSize: '10px',
                         fontWeight: 900,
-                        color: '#ef4444',
-                        background: 'rgba(239,68,68,0.12)',
-                        border: '1px solid rgba(239,68,68,0.3)',
+                        color: '#38bdf8',
+                        background: 'rgba(56, 189, 248,0.12)',
+                        border: '1px solid rgba(56, 189, 248,0.3)',
                         padding: '2px 8px',
                         borderRadius: '20px',
                         letterSpacing: '0.04em',
@@ -448,15 +448,15 @@ export default function AnnouncementsPage() {
                       style={{
                         fontSize: '11px',
                         padding: '3px 8px',
-                        color: '#ef4444',
-                        borderColor: 'rgba(239,68,68,0.25)',
+                        color: '#38bdf8',
+                        borderColor: 'rgba(56, 189, 248,0.25)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '4px',
                       }}
                       title="Delete this bulletin"
                     >
-                      <TrashIcon size={12} color="#ef4444" />
+                      <TrashIcon size={12} color="#38bdf8" />
                       <span>Delete</span>
                     </button>
                   )}

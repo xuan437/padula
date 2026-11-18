@@ -119,7 +119,7 @@ export default function OfficialsHubPage() {
               objectFit: 'cover',
               borderRadius: '50%',
               flexShrink: 0,
-              border: '2px solid rgba(220, 38, 38, 0.25)',
+              border: '2px solid rgba(2, 132, 199, 0.25)',
               filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.25))',
             }}
           />
@@ -326,9 +326,9 @@ export default function OfficialsHubPage() {
                             gap: 4,
                             padding: '3px 10px',
                             borderRadius: '8px',
-                            background: 'rgba(239,68,68,0.1)',
-                            color: '#dc2626',
-                            border: '1px solid rgba(239,68,68,0.25)',
+                            background: 'rgba(56, 189, 248,0.1)',
+                            color: '#0284c7',
+                            border: '1px solid rgba(56, 189, 248,0.25)',
                             fontSize: '11px',
                             fontWeight: 800,
                           }}>
@@ -714,7 +714,7 @@ export default function OfficialsHubPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {filteredOfficials.map(official => {
                 const badgeColor =
-                  official.role === 'referee' ? '#ef4444' :
+                  official.role === 'referee' ? '#38bdf8' :
                     official.role === 'scorekeeper' ? '#10b981' :
                       official.role === 'coach' ? '#3b82f6' : '#f59e0b';
                 return (
@@ -737,7 +737,7 @@ export default function OfficialsHubPage() {
                               }
                             }
                           }}
-                          style={{ fontSize: '11px', padding: '2px 8px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.28)' }}
+                          style={{ fontSize: '11px', padding: '2px 8px', color: '#38bdf8', borderColor: 'rgba(56, 189, 248,0.28)' }}
                         >
                           Delete
                         </button>

@@ -99,8 +99,8 @@ export default function MockModeBanner() {
           type="button"
           onClick={() => quickSwitch('jsamane@asiancollege.edu.ph')}
           style={{
-            background: isDirector ? '#dc2626' : 'rgba(255,255,255,0.08)',
-            border: isDirector ? '1px solid #f87171' : '1px solid rgba(255,255,255,0.16)',
+            background: isDirector ? '#0284c7' : 'rgba(255,255,255,0.08)',
+            border: isDirector ? '1px solid #7dd3fc' : '1px solid rgba(255,255,255,0.16)',
             color: '#fff',
             borderRadius: 6,
             padding: '2px 9px',

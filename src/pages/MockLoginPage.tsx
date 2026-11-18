@@ -43,7 +43,7 @@ export default function MockLoginPage() {
           maxWidth: '680px',
           background: '#0f182c',
           borderRadius: '24px',
-          border: '1px solid rgba(220, 38, 38, 0.35)',
+          border: '1px solid rgba(2, 132, 199, 0.35)',
           boxShadow: '0 24px 80px rgba(0, 0, 0, 0.7)',
           padding: '38px',
           display: 'flex',
@@ -62,7 +62,7 @@ export default function MockLoginPage() {
                 width: '42px',
                 objectFit: 'cover',
                 borderRadius: '50%',
-                border: '1.5px solid rgba(220, 38, 38, 0.25)',
+                border: '1.5px solid rgba(2, 132, 199, 0.25)',
                 filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.2))',
               }}
             />
@@ -108,9 +108,9 @@ export default function MockLoginPage() {
             style={{
               padding: '12px 14px',
               borderRadius: '10px',
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
-              color: '#f87171',
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              color: '#7dd3fc',
               fontSize: '12.5px',
               fontWeight: 600,
             }}
@@ -141,8 +141,8 @@ export default function MockLoginPage() {
                   width: '42px',
                   height: '42px',
                   borderRadius: '10px',
-                  background: 'rgba(220, 38, 38, 0.2)',
-                  color: '#ef4444',
+                  background: 'rgba(2, 132, 199, 0.2)',
+                  color: '#38bdf8',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -154,7 +154,7 @@ export default function MockLoginPage() {
                 <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
                   1. Mr. John Eric Samane (Sports Director)
                 </div>
-                <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 700 }}>
+                <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 700 }}>
                   jsamane@asiancollege.edu.ph
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>

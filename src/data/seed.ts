@@ -233,7 +233,7 @@ export const PUBLIC_GUEST_USER: User = {
 
 export const INITIAL_DEPARTMENTS: Department[] = [
   { id: 'd1', name: 'Business Administration & Accountancy', shortName: 'BAA', color: '#eab308' },
-  { id: 'd2', name: 'Hotel & Tourism Management',            shortName: 'HTM', color: '#dc2626' },
+  { id: 'd2', name: 'Hotel & Tourism Management',            shortName: 'HTM', color: '#0284c7' },
   { id: 'd3', name: 'Computer Studies & Engineering',        shortName: 'CSE', color: '#9333ea' },
   { id: 'd4', name: 'Diploma Programs Department',           shortName: 'DPD', color: '#059669' },
   { id: 'd5', name: 'Senior High School Department',         shortName: 'SHS', color: '#0284c7' },

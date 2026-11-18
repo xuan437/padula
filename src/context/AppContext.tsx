@@ -52,8 +52,8 @@ function createStaffInvitationRecord(params: {
   const roleTitle = params.role === 'director'
     ? 'Sports Director'
     : params.role === 'coordinator'
-    ? 'Sports Coordinator'
-    : 'Official Scorekeeper';
+      ? 'Sports Coordinator'
+      : 'Official Scorekeeper';
   const subject = `[Asian College Padula 2026] Official Appointment & Portal Credentials — ${roleTitle}`;
   const letterBody = [
     `Dear ${params.recipientName},`,
@@ -332,7 +332,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           return merged;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_STAFF;
   });
 
@@ -363,7 +363,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           return merged;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_USERS;
   });
 
@@ -377,7 +377,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           if (filtered.length > 0) return filtered;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_EVENTS;
   });
   const [matches, setMatches] = useState<Match[]>(() => {
@@ -399,7 +399,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           if (filtered.length > 0) return filtered;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_MATCHES;
   });
   const [officials, setOfficials] = useState<GameOfficial[]>(() => {
@@ -421,7 +421,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           return merged;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_OFFICIALS;
   });
   const [players, setPlayers] = useState<Player[]>(() => {
@@ -434,7 +434,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           if (filtered.length > 0) return filtered;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_PLAYERS;
   });
   const [teams, setTeams] = useState<Team[]>(() => {
@@ -447,7 +447,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           if (filtered.length > 0) return filtered;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_TEAMS;
   });
   const [departments, setDepartments] = useState<Department[]>(() => {
@@ -467,7 +467,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           if (filtered.length > 0) return filtered;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_ANNOUNCEMENTS;
   });
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT);
@@ -494,14 +494,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           return merged;
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_STAFF_INVITATIONS;
   });
   const [latestInvitation, setLatestInvitation] = useState<StaffInvitation | null>(null);
   const clearLatestInvitation = useCallback(() => setLatestInvitation(null), []);
 
   useEffect(() => {
-    try { localStorage.setItem('padula_staff_invitations', JSON.stringify(staffInvitations)); } catch {}
+    try { localStorage.setItem('padula_staff_invitations', JSON.stringify(staffInvitations)); } catch { }
   }, [staffInvitations]);
 
   // ── Access Requests State (Login Portal -> Sports Director Desk) ───────────
@@ -515,14 +515,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           return parsed.filter((r: any) => !r.id?.startsWith('req-seed-'));
         }
       }
-    } catch {}
+    } catch { }
     return [];
   });
 
   useEffect(() => {
     try {
       localStorage.setItem('padula_access_requests', JSON.stringify(accessRequests));
-    } catch {}
+    } catch { }
   }, [accessRequests]);
   const lastScoreEntryTimeRef = useRef<Record<string, number>>({});
   const eventsRef = useRef<TournamentEvent[]>(events);
@@ -532,19 +532,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Persist core tournament entities to localStorage so state survives reloads
   useEffect(() => {
-    try { localStorage.setItem('padula_events', JSON.stringify(events)); } catch {}
+    try { localStorage.setItem('padula_events', JSON.stringify(events)); } catch { }
   }, [events]);
   useEffect(() => {
-    try { localStorage.setItem('padula_matches', JSON.stringify(matches)); } catch {}
+    try { localStorage.setItem('padula_matches', JSON.stringify(matches)); } catch { }
   }, [matches]);
   useEffect(() => {
-    try { localStorage.setItem('padula_teams', JSON.stringify(teams)); } catch {}
+    try { localStorage.setItem('padula_teams', JSON.stringify(teams)); } catch { }
   }, [teams]);
   useEffect(() => {
-    try { localStorage.setItem('padula_players', JSON.stringify(players)); } catch {}
+    try { localStorage.setItem('padula_players', JSON.stringify(players)); } catch { }
   }, [players]);
   useEffect(() => {
-    try { localStorage.setItem('padula_announcements', JSON.stringify(announcements)); } catch {}
+    try { localStorage.setItem('padula_announcements', JSON.stringify(announcements)); } catch { }
   }, [announcements]);
 
   // â”€â”€ 1. Fetch initial data from Supabase if tables exist â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -857,10 +857,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       id: uid('al'),
       action,
       userId,
-      userName:   userToRecord?.name ?? 'System',
-      userRole:   userToRecord?.role ?? 'guest',
+      userName: userToRecord?.name ?? 'System',
+      userRole: userToRecord?.role ?? 'guest',
       details,
-      timestamp:  new Date(nowMs).toISOString(),
+      timestamp: new Date(nowMs).toISOString(),
       entityId,
       entityType,
       beforeValue,
@@ -906,7 +906,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (user && user.role !== 'guest') {
       try {
         localStorage.setItem('padula_current_user', JSON.stringify(user));
-      } catch {}
+      } catch { }
       addAuditLog(
         'login',
         `${user.role === 'director' ? 'Sports Director' : user.role === 'coordinator' ? 'Sports Coordinator' : 'Official Scorer'} ${user.name} logged in`,
@@ -917,7 +917,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     } else {
       try {
         localStorage.removeItem('padula_current_user');
-      } catch {}
+      } catch { }
       if (prev && prev.role !== 'guest') {
         addAuditLog(
           'logout',
@@ -957,7 +957,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const inv = createdInvitation;
       setStaffInvitations(prev => {
         const updated = [inv, ...prev.filter(i => i.recipientEmail.toLowerCase() !== cleanEmail)];
-        try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch {}
+        try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch { }
         return updated;
       });
       setLatestInvitation(inv);
@@ -990,7 +990,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       setRegisteredUsers(prev => {
         const updated = [enrichedUser, ...prev.filter(u => u.email?.toLowerCase() !== cleanEmail)];
-        try { localStorage.setItem('padula_registered_users', JSON.stringify(updated)); } catch {}
+        try { localStorage.setItem('padula_registered_users', JSON.stringify(updated)); } catch { }
         return updated;
       });
 
@@ -1010,7 +1010,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       setStaff(prev => {
         const updated = [newStaffMember, ...prev.filter(s => s.email?.toLowerCase() !== cleanEmail)];
-        try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+        try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
         return updated;
       });
 
@@ -1021,7 +1021,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               ? { ...o, contact: cleanEmail, password: generatedPassword, invitationStatus: 'pending' as InvitationStatus, invitationId: inv.id }
               : o
           );
-          try { localStorage.setItem('padula_officials', JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem('padula_officials', JSON.stringify(updated)); } catch { }
           return updated;
         });
       }
@@ -1039,7 +1039,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const updated = [newUser, ...prev.filter(u => u.email?.toLowerCase() !== cleanEmail)];
       try {
         localStorage.setItem('padula_registered_users', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
     addAuditLog('login', `Account registered: ${newUser.name} (${newUser.email}) - ${newUser.role}`);
@@ -1059,7 +1059,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     setStaffInvitations(prev => {
       const updated = prev.map(i => i.id === invitationId ? updatedInv : i);
-      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch { }
       return updated;
     });
 
@@ -1077,7 +1077,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           ? { ...s, status: nextStaffStatus, invitationStatus: decision }
           : s
       );
-      try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
       return updated;
     });
 
@@ -1087,7 +1087,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           ? { ...u, status: nextStaffStatus, isActive: isAccepted, invitationStatus: decision }
           : u
       );
-      try { localStorage.setItem('padula_registered_users', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_registered_users', JSON.stringify(updated)); } catch { }
       return updated;
     });
 
@@ -1097,7 +1097,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           ? { ...o, isActive: isAccepted, invitationStatus: decision }
           : o
       );
-      try { localStorage.setItem('padula_officials', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_officials', JSON.stringify(updated)); } catch { }
       return updated;
     });
 
@@ -1160,7 +1160,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       setStaffInvitations(prev => {
         const updated = prev.map(i => i.id === invitationId ? updatedInv : i);
-        try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch {}
+        try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch { }
         return updated;
       });
 
@@ -1191,7 +1191,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const updated = prev.map(u => u.id === userId ? { ...u, isActive: active } : u);
       try {
         localStorage.setItem('padula_registered_users', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
     addAuditLog('login', `User account ${active ? 'activated' : 'deactivated'} for user ID: ${userId}`, userId, 'User');
@@ -1211,18 +1211,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const updated = prev.filter(u => u.id !== userId);
       try {
         localStorage.setItem('padula_registered_users', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
     if (target) {
       setStaff(prev => {
         const updated = prev.filter(s => s.id !== userId && s.email.toLowerCase() !== target.email?.toLowerCase());
-        try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+        try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
         return updated;
       });
       setOfficials(prev => {
         const updated = prev.filter(o => o.id !== userId && o.contact?.toLowerCase() !== target.email?.toLowerCase() && o.name.toLowerCase() !== target.name.toLowerCase());
-        try { localStorage.setItem('padula_officials', JSON.stringify(updated)); } catch {}
+        try { localStorage.setItem('padula_officials', JSON.stringify(updated)); } catch { }
         return updated;
       });
     }
@@ -1236,7 +1236,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const updated = prev.map(o => o.id === officialId ? { ...o, isActive: active } : o);
       try {
         localStorage.setItem('padula_officials', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
     addAuditLog('official_register', `Official ${active ? 'activated' : 'deactivated'} (ID: ${officialId})`, officialId, 'GameOfficial');
@@ -1252,7 +1252,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const updated = prev.filter(o => o.id !== officialId);
       try {
         localStorage.setItem('padula_officials', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
     if (target) {
@@ -1262,7 +1262,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             u.id !== officialId &&
             !(u.role === 'scorer' && (u.name.toLowerCase() === target.name.toLowerCase() || (target.contact && u.email.toLowerCase() === target.contact.toLowerCase())))
           );
-          try { localStorage.setItem('padula_registered_users', JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem('padula_registered_users', JSON.stringify(updated)); } catch { }
           return updated;
         });
         setStaff(prev => {
@@ -1270,7 +1270,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             s.id !== officialId &&
             !(s.role === 'scorer' && (s.name.toLowerCase() === target.name.toLowerCase() || (target.contact && s.email.toLowerCase() === target.contact.toLowerCase())))
           );
-          try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
           return updated;
         });
       }
@@ -1383,9 +1383,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           }
         });
         setStaff(currentStaffList);
-        try { localStorage.setItem('padula_staff', JSON.stringify(currentStaffList)); } catch {}
+        try { localStorage.setItem('padula_staff', JSON.stringify(currentStaffList)); } catch { }
       }
-    } catch {}
+    } catch { }
 
     // 3. Find record
     const member = currentStaffList.find(s => s.email.toLowerCase() === cleanEmail);
@@ -1470,7 +1470,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     setStaff(prev => {
       const updated = prev.map(s => s.id === member.id ? updatedMember : s);
-      try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
       return updated;
     });
 
@@ -1536,7 +1536,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     setStaffInvitations(prev => {
       const u = [invitation, ...prev.filter(i => i.recipientEmail.toLowerCase() !== cleanEmail)];
-      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(u)); } catch {}
+      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(u)); } catch { }
       return u;
     });
     setLatestInvitation(invitation);
@@ -1557,7 +1557,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const updated = [newStaff, ...staff];
     setStaff(updated);
-    try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
 
     supabase.from('staff').insert([{
       id: newStaff.id,
@@ -1599,7 +1599,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     setStaffInvitations(prev => {
       const u = [invitation, ...prev.filter(i => i.recipientEmail.toLowerCase() !== cleanEmail)];
-      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(u)); } catch {}
+      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(u)); } catch { }
       return u;
     });
     setLatestInvitation(invitation);
@@ -1622,7 +1622,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const updated = [newStaff, ...staff];
     setStaff(updated);
-    try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
 
     // Also register as official so they appear in dropdowns, Officials Hub, and Scoring Desk!
     const newOfficial: GameOfficial = {
@@ -1640,7 +1640,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
     setOfficials(prev => {
       const u = [newOfficial, ...prev];
-      try { localStorage.setItem('padula_officials', JSON.stringify(u)); } catch {}
+      try { localStorage.setItem('padula_officials', JSON.stringify(u)); } catch { }
       return u;
     });
 
@@ -1706,7 +1706,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const nextStatus: StaffStatus = target.status === 'disabled' ? 'active' : 'disabled';
     const updated = staff.map(s => s.id === staffId ? { ...s, status: nextStatus } : s);
     setStaff(updated);
-    try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
 
     supabase.from('staff').update({ status: nextStatus }).eq('id', staffId).then();
 
@@ -1727,7 +1727,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const updated = staff.filter(s => s.id !== staffId);
     setStaff(updated);
-    try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
 
     supabase.from('staff').delete().eq('id', staffId).then();
     addAuditLog('account_remove', `Removed staff member ${target.name} (${target.email})`, staffId, 'Staff');
@@ -1760,7 +1760,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     setAccessRequests(prev => {
       const updated = [newReq, ...prev.filter(r => r.email.toLowerCase() !== cleanEmail || r.status !== 'pending')];
-      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch { }
       return updated;
     });
 
@@ -1808,7 +1808,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     setAccessRequests(prev => {
       const updated = prev.map(r => r.id === requestId ? updatedReq : r);
-      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch { }
       return updated;
     });
 
@@ -1843,7 +1843,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     setAccessRequests(prev => {
       const updated = prev.map(r => r.id === requestId ? updatedReq : r);
-      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch { }
       return updated;
     });
 
@@ -1865,7 +1865,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const removeAccessRequest = useCallback((requestId: string) => {
     setAccessRequests(prev => {
       const updated = prev.filter(r => r.id !== requestId);
-      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem('padula_access_requests', JSON.stringify(updated)); } catch { }
       return updated;
     });
     supabase.from('access_requests').delete().eq('id', requestId).then();
@@ -1879,7 +1879,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const clearAllAccessRequests = useCallback(() => {
     setAccessRequests([]);
-    try { localStorage.removeItem('padula_access_requests'); } catch {}
+    try { localStorage.removeItem('padula_access_requests'); } catch { }
     supabase.from('access_requests').delete().neq('id', 'keep_none').then();
     addAuditLog(
       'delete_mock_data',
@@ -1910,7 +1910,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('padula_officials', JSON.stringify(INITIAL_OFFICIALS));
       localStorage.setItem('padula_announcements', JSON.stringify(INITIAL_ANNOUNCEMENTS));
       localStorage.removeItem('padula_mock_data_deleted');
-    } catch {}
+    } catch { }
     addAuditLog(
       'event_create',
       'Loaded realistic Padula 2026 tournament demo dataset (BAA Falcons, CSE Titans, HTM Chefs, DPD Vanguards, SHS Royals across 6 competitions).',
@@ -1941,8 +1941,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const demoDisplayName = member.role === 'director'
       ? 'Demo Director'
       : member.role === 'coordinator'
-      ? 'Demo Coordinator'
-      : 'Demo Scorer';
+        ? 'Demo Coordinator'
+        : 'Demo Scorer';
 
     const loggedUser: User = {
       id: member.id,
@@ -1993,7 +1993,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       localStorage.setItem('padula_mock_data_deleted', 'true');
       localStorage.removeItem('padula_mock_mode');
-    } catch {}
+    } catch { }
 
     // 3. Log audit trail
     addAuditLog('delete_mock_data', 'Sports Director purged all mock accounts, matches, teams, and sample data.', undefined, 'System');
@@ -2009,7 +2009,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setMatches([]);
     try {
       localStorage.removeItem('padula_offline_queue');
-    } catch {}
+    } catch { }
     supabase.from('matches').delete().neq('id', 'keep_none').then();
     addAuditLog('sensitive_action', 'Sports Director purged all active matches to test fresh bracket registration.', undefined, 'System');
   }, [addAuditLog]);
@@ -2117,7 +2117,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const updated = [newOfficial, ...prev];
       try {
         localStorage.setItem('padula_officials', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
     addAuditLog('official_register', `Registered ${officialData.role}: ${officialData.name}`, newOfficial.id, 'GameOfficial');
@@ -2440,24 +2440,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setMatches(prev => prev.map(m =>
           m.id === matchId
             ? {
-                ...m,
-                seriesWinsA: nextWinsA,
-                seriesWinsB: nextWinsB,
-                scoreA: 0,
-                scoreB: 0,
-                status: 'live' as const,
-                timeline: [
-                  ...(m.timeline || []),
-                  {
-                    id: uid('tl'),
-                    time: `Game ${nextWinsA + nextWinsB}`,
-                    team: scoreA > scoreB ? 'A' : 'B',
-                    type: 'milestone',
-                    description: `${winningTeam} won Game ${nextWinsA + nextWinsB} (${scoreA}–${scoreB}). Series: ${nextWinsA}–${nextWinsB} (Best of ${bestOf}).`,
-                    scoreSnapshot: `${nextWinsA} - ${nextWinsB}`,
-                  },
-                ],
-              }
+              ...m,
+              seriesWinsA: nextWinsA,
+              seriesWinsB: nextWinsB,
+              scoreA: 0,
+              scoreB: 0,
+              status: 'live' as const,
+              timeline: [
+                ...(m.timeline || []),
+                {
+                  id: uid('tl'),
+                  time: `Game ${nextWinsA + nextWinsB}`,
+                  team: scoreA > scoreB ? 'A' : 'B',
+                  type: 'milestone',
+                  description: `${winningTeam} won Game ${nextWinsA + nextWinsB} (${scoreA}–${scoreB}). Series: ${nextWinsA}–${nextWinsB} (Best of ${bestOf}).`,
+                  scoreSnapshot: `${nextWinsA} - ${nextWinsB}`,
+                },
+              ],
+            }
             : m
         ));
         addAuditLog(
@@ -2800,8 +2800,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // Only accept teams of the event's sport (or auto-select all active teams for that sport when teamIds is omitted/empty)
     const rawSportTeams = (teamIds && teamIds.length > 0)
       ? teamIds
-          .map(id => allTeams.find(t => t.id === id))
-          .filter((t): t is Team => !!t && t.sport === event!.sport)
+        .map(id => allTeams.find(t => t.id === id))
+        .filter((t): t is Team => !!t && t.sport === event!.sport)
       : allTeams.filter(t => t.isActive !== false && t.sport === event!.sport);
 
     const sportTeams = seedingMode === 'random'
@@ -3982,8 +3982,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const a = ensureTeam(m.teamA);
       const b = ensureTeam(m.teamB);
       a.played++; b.played++;
-      a.pointsFor    += m.scoreA; a.pointsAgainst += m.scoreB;
-      b.pointsFor    += m.scoreB; b.pointsAgainst += m.scoreA;
+      a.pointsFor += m.scoreA; a.pointsAgainst += m.scoreB;
+      b.pointsFor += m.scoreB; b.pointsAgainst += m.scoreA;
       if (m.scoreA === m.scoreB && !m.winner) {
         a.drawn = (a.drawn || 0) + 1;
         b.drawn = (b.drawn || 0) + 1;
@@ -4044,9 +4044,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     for (const m of finishedMatches) {
       if (!m.winner) continue;
       const rLower = (m.round || '').toLowerCase();
-      const winnerTeam  = teams.find(t => t.name === m.winner);
-      const loserName   = m.winner === m.teamA ? m.teamB : m.teamA;
-      const loserTeam   = teams.find(t => t.name === loserName);
+      const winnerTeam = teams.find(t => t.name === m.winner);
+      const loserName = m.winner === m.teamA ? m.teamB : m.teamA;
+      const loserTeam = teams.find(t => t.name === loserName);
 
       const isGrandFinal =
         rLower.includes('championship') ||
@@ -4056,7 +4056,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       if (isGrandFinal) {
         if (winnerTeam) { const r = ensureDept(winnerTeam.department); r.gold++; r.total++; }
-        if (loserTeam)  { const r = ensureDept(loserTeam.department);  r.silver++; r.total++; }
+        if (loserTeam) { const r = ensureDept(loserTeam.department); r.silver++; r.total++; }
       } else if (rLower.includes('bronze') || rLower.includes('third')) {
         if (winnerTeam) { const r = ensureDept(winnerTeam.department); r.bronze++; r.total++; }
       }

@@ -554,7 +554,7 @@ export default function SetupWizardPage() {
               objectFit: 'cover',
               borderRadius: '50%',
               flexShrink: 0,
-              border: '2px solid rgba(220, 38, 38, 0.25)',
+              border: '2px solid rgba(2, 132, 199, 0.25)',
               filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.25))',
             }}
           />

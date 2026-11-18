@@ -139,7 +139,7 @@ export default function AIPredictionsPage() {
           <div className="glass-card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
             <div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Live Matches</div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ fontSize: 16, fontWeight: 900, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span className="live-dot" /> {allLiveMatches.length}
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function AIPredictionsPage() {
           onClick={() => setActiveTab('live')}
           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          <FlameIcon size={14} color={activeTab === 'live' ? '#fff' : '#ef4444'} />
+          <FlameIcon size={14} color={activeTab === 'live' ? '#fff' : '#38bdf8'} />
           <span>Live Match Winner Predictions ({allLiveMatches.length})</span>
         </button>
         <button
@@ -249,7 +249,7 @@ export default function AIPredictionsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {liveMatches.length === 0 ? (
             <div className="glass-card" style={{ padding: 44, textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(220, 38, 38, 0.1)', color: 'var(--accent)', marginBottom: 12 }}>
+              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(2, 132, 199, 0.1)', color: 'var(--accent)', marginBottom: 12 }}>
                 <FlameIcon size={28} />
               </div>
               <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 6px' }}>No Live Matches Currently On Court</h3>
@@ -280,8 +280,8 @@ export default function AIPredictionsPage() {
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 14,
-                      border: '1.5px solid rgba(220, 38, 38, 0.4)',
-                      boxShadow: '0 10px 32px rgba(220, 38, 38, 0.12)',
+                      border: '1.5px solid rgba(2, 132, 199, 0.4)',
+                      boxShadow: '0 10px 32px rgba(2, 132, 199, 0.12)',
                       cursor: 'pointer',
                     }}
                     onClick={() => setSelectedMatchForModal(match)}
@@ -293,7 +293,7 @@ export default function AIPredictionsPage() {
                         <span>{getSportName(match.sport)} · {match.round}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 12, background: 'rgba(220, 38, 38, 0.18)', color: '#ef4444', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 12, background: 'rgba(2, 132, 199, 0.18)', color: '#38bdf8', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                           <span className="live-dot" /> LIVE
                         </span>
                         <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 800 }}>
@@ -326,8 +326,8 @@ export default function AIPredictionsPage() {
                         gap: 8,
                         padding: '6px 14px',
                         borderRadius: 10,
-                        background: 'rgba(220, 38, 38, 0.1)',
-                        border: '1px solid rgba(220, 38, 38, 0.3)',
+                        background: 'rgba(2, 132, 199, 0.1)',
+                        border: '1px solid rgba(2, 132, 199, 0.3)',
                       }}>
                         <span style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent)' }}>{match.scoreA}</span>
                         <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)' }}>:</span>
@@ -424,7 +424,7 @@ export default function AIPredictionsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {upcomingMatches.length === 0 ? (
             <div className="glass-card" style={{ padding: 48, textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(220, 38, 38, 0.1)', color: 'var(--accent)', marginBottom: 12 }}>
+              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(2, 132, 199, 0.1)', color: 'var(--accent)', marginBottom: 12 }}>
                 <SparklesIcon size={28} />
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 6px' }}>No Upcoming Scheduled Matches in Selected Sport</h3>
@@ -462,7 +462,7 @@ export default function AIPredictionsPage() {
                         {getSportIcon(match.sport, 14, 'var(--accent)')}
                         <span>{getSportName(match.sport)} · {match.round || 'Round Match'}</span>
                       </div>
-                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(220, 38, 38, 0.15)', color: 'var(--accent)', fontWeight: 800 }}>
+                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(2, 132, 199, 0.15)', color: 'var(--accent)', fontWeight: 800 }}>
                         {pred.confidence} ({pred.confidencePct}%)
                       </span>
                     </div>
@@ -551,7 +551,7 @@ export default function AIPredictionsPage() {
          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'simulator' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="glass-card" style={{ padding: 24, border: '1px solid rgba(220, 38, 38, 0.25)' }}>
+          <div className="glass-card" style={{ padding: 24, border: '1px solid rgba(2, 132, 199, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -644,12 +644,12 @@ export default function AIPredictionsPage() {
 
           {/* Simulation Output Card */}
           {simResult && (
-            <div className="glass-card" style={{ padding: 24, border: '1px solid var(--accent)', boxShadow: '0 8px 30px rgba(220, 38, 38, 0.15)' }}>
+            <div className="glass-card" style={{ padding: 24, border: '1px solid var(--accent)', boxShadow: '0 8px 30px rgba(2, 132, 199, 0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <FlameIcon size={14} /> AI Simulated Winner: {simResult.predictedWinner} ({simResult.predictedWinnerProb}%)
                 </div>
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(220, 38, 38, 0.15)', color: 'var(--accent)', fontWeight: 800 }}>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(2, 132, 199, 0.15)', color: 'var(--accent)', fontWeight: 800 }}>
                   {simResult.confidence} ({simResult.confidencePct}% Model Confidence)
                 </span>
               </div>
@@ -713,7 +713,7 @@ export default function AIPredictionsPage() {
               </div>
 
               {/* Narrative Summary */}
-              <div style={{ padding: 14, borderRadius: 8, background: 'rgba(220, 38, 38, 0.05)', borderLeft: '3px solid var(--accent)', marginBottom: 18 }}>
+              <div style={{ padding: 14, borderRadius: 8, background: 'rgba(2, 132, 199, 0.05)', borderLeft: '3px solid var(--accent)', marginBottom: 18 }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 4 }}>
                   Tactical &amp; Past Performance Breakdown
                 </div>
@@ -826,8 +826,8 @@ export default function AIPredictionsPage() {
                                     fontWeight: 800,
                                     padding: '1px 5px',
                                     borderRadius: 4,
-                                    background: r === 'W' ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.16)',
-                                    color: r === 'W' ? '#10b981' : '#ef4444',
+                                    background: r === 'W' ? 'rgba(16,185,129,0.16)' : 'rgba(56, 189, 248,0.16)',
+                                    color: r === 'W' ? '#10b981' : '#38bdf8',
                                   }}
                                 >
                                   {r}

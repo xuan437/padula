@@ -72,8 +72,8 @@ export default function ScorerDashboard() {
         className="glass-card"
         style={{
           padding: '24px',
-          background: 'linear-gradient(135deg, rgba(220,38,38,0.14) 0%, rgba(15,23,42,0.85) 100%)',
-          border: '1px solid rgba(220,38,38,0.3)',
+          background: 'linear-gradient(135deg, rgba(2, 132, 199,0.14) 0%, rgba(15,23,42,0.85) 100%)',
+          border: '1px solid rgba(2, 132, 199,0.3)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -87,7 +87,7 @@ export default function ScorerDashboard() {
               width: '64px',
               height: '64px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--accent) 0%, #991b1b 100%)',
+              background: 'linear-gradient(135deg, var(--accent) 0%, #0a1f42 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -95,7 +95,7 @@ export default function ScorerDashboard() {
               fontWeight: 900,
               color: '#fff',
               border: '2px solid rgba(255,255,255,0.2)',
-              boxShadow: '0 4px 16px rgba(220,38,38,0.35)',
+              boxShadow: '0 4px 16px rgba(2, 132, 199,0.35)',
               flexShrink: 0,
             }}
           >
@@ -155,7 +155,7 @@ export default function ScorerDashboard() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
+              boxShadow: '0 4px 12px rgba(2, 132, 199,0.3)',
             }}
           >
             <FlameIcon size={16} /> Go to Scoring Desk
@@ -176,12 +176,12 @@ export default function ScorerDashboard() {
           </div>
         </div>
 
-        <div className="glass-card" style={{ padding: '16px 20px', borderLeft: '3px solid #ef4444' }}>
+        <div className="glass-card" style={{ padding: '16px 20px', borderLeft: '3px solid #38bdf8' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#ef4444' }}>Active Live Now</span>
-            <FlameIcon size={18} color="#ef4444" />
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#38bdf8' }}>Active Live Now</span>
+            <FlameIcon size={18} color="#38bdf8" />
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 900, color: '#ef4444' }}>{liveMatches.length}</div>
+          <div style={{ fontSize: '26px', fontWeight: 900, color: '#38bdf8' }}>{liveMatches.length}</div>
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
             {liveMatches.length > 0 ? 'Requires immediate scoring' : 'No active game in progress'}
           </div>
@@ -216,8 +216,8 @@ export default function ScorerDashboard() {
           className="glass-card"
           style={{
             padding: '20px 24px',
-            border: currentFocusMatch.status === 'live' ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border)',
-            background: currentFocusMatch.status === 'live' ? 'rgba(239,68,68,0.06)' : 'var(--bg-card)',
+            border: currentFocusMatch.status === 'live' ? '1px solid rgba(56, 189, 248,0.5)' : '1px solid var(--border)',
+            background: currentFocusMatch.status === 'live' ? 'rgba(56, 189, 248,0.06)' : 'var(--bg-card)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
@@ -229,8 +229,8 @@ export default function ScorerDashboard() {
                   textTransform: 'uppercase',
                   padding: '3px 8px',
                   borderRadius: '6px',
-                  background: currentFocusMatch.status === 'live' ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)',
-                  color: currentFocusMatch.status === 'live' ? '#ef4444' : '#3b82f6',
+                  background: currentFocusMatch.status === 'live' ? 'rgba(56, 189, 248,0.2)' : 'rgba(59,130,246,0.2)',
+                  color: currentFocusMatch.status === 'live' ? '#38bdf8' : '#3b82f6',
                 }}
               >
                 {currentFocusMatch.status === 'live' ? '● CURRENT LIVE MATCH' : 'NEXT SCHEDULED MATCH'}

@@ -203,7 +203,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
               </div>
             </div>
             <div style={{
-              background: isLive ? '#dc2626' : '#0f2d5c',
+              background: isLive ? '#0284c7' : '#0f2d5c',
               color: '#fff',
               fontWeight: 900,
               fontSize: '20px',
@@ -285,7 +285,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
               style={{
                 background: '#FF0000',
                 color: '#ffffff',
-                borderColor: '#dc2626',
+                borderColor: '#0284c7',
                 fontWeight: 700,
                 fontSize: '12px',
               }}
@@ -365,7 +365,7 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
           </button>
         </div>
 
-        <div style={{ fontSize: '12px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <div style={{ fontSize: '12px', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           Asian College Athletics • Dumaguete
         </div>
         <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#0a1128', margin: '6px 0 2px' }}>
@@ -996,7 +996,7 @@ export default function GuestPublicPage() {
                           fontWeight: 800,
                           padding: '2px 8px',
                           borderRadius: '999px',
-                          background: ctx.format === 'round_robin' ? 'rgba(59,130,246,0.14)' : 'rgba(220,38,38,0.14)',
+                          background: ctx.format === 'round_robin' ? 'rgba(59,130,246,0.14)' : 'rgba(2, 132, 199,0.14)',
                           color: ctx.format === 'round_robin' ? '#3b82f6' : 'var(--accent)',
                         }}>
                           {ctx.formatLabel}
@@ -1084,8 +1084,8 @@ export default function GuestPublicPage() {
                         style={{
                           padding: '10px 12px',
                           borderRadius: '10px',
-                          background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(59, 130, 246, 0.10))',
-                          border: '1px solid rgba(220, 38, 38, 0.3)',
+                          background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(59, 130, 246, 0.10))',
+                          border: '1px solid rgba(2, 132, 199, 0.3)',
                           marginBottom: '12px',
                           cursor: 'pointer',
                         }}
@@ -1200,7 +1200,7 @@ export default function GuestPublicPage() {
                           fontWeight: 800,
                           padding: '2px 8px',
                           borderRadius: '999px',
-                          background: ctx.format === 'round_robin' ? 'rgba(59,130,246,0.14)' : 'rgba(220,38,38,0.14)',
+                          background: ctx.format === 'round_robin' ? 'rgba(59,130,246,0.14)' : 'rgba(2, 132, 199,0.14)',
                           color: ctx.format === 'round_robin' ? '#3b82f6' : 'var(--accent)',
                         }}>
                           {ctx.formatLabel}
@@ -1512,7 +1512,7 @@ export default function GuestPublicPage() {
                 className="glass-card"
                 style={{
                   padding: '18px 22px',
-                  borderLeft: `4px solid ${ann.priority === 'urgent' ? '#dc2626' : 'var(--accent)'}`,
+                  borderLeft: `4px solid ${ann.priority === 'urgent' ? '#0284c7' : 'var(--accent)'}`,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
@@ -1520,11 +1520,11 @@ export default function GuestPublicPage() {
                     <span style={{
                       fontSize: '10px',
                       fontWeight: 800,
-                      color: '#dc2626',
-                      background: 'rgba(220,38,38,0.12)',
+                      color: '#0284c7',
+                      background: 'rgba(2, 132, 199,0.12)',
                       padding: '2px 8px',
                       borderRadius: '10px',
-                      border: '1px solid rgba(220,38,38,0.25)',
+                      border: '1px solid rgba(2, 132, 199,0.25)',
                     }}>
                       URGENT
                     </span>
@@ -1551,7 +1551,7 @@ export default function GuestPublicPage() {
       {tab === 'predictions' && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Header Card */}
-          <div className="glass-card" style={{ padding: '20px 24px', border: '1px solid rgba(220, 38, 38, 0.25)' }}>
+          <div className="glass-card" style={{ padding: '20px 24px', border: '1px solid rgba(2, 132, 199, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1680,7 +1680,7 @@ export default function GuestPublicPage() {
           {/* Live Matches Winner Predictions */}
           {liveMatches.length > 0 && (
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: '#ef4444', marginBottom: 12, letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: '#38bdf8', marginBottom: 12, letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span className="live-dot" /> Live Match Winner Predictions ({liveMatches.length})
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
@@ -1692,7 +1692,7 @@ export default function GuestPublicPage() {
                     <div
                       key={m.id}
                       className="glass-card"
-                      style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, cursor: 'pointer', border: '1.5px solid rgba(220,38,38,0.4)' }}
+                      style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, cursor: 'pointer', border: '1.5px solid rgba(2, 132, 199,0.4)' }}
                       onClick={() => setSelectedAiMatch(m)}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1761,7 +1761,7 @@ export default function GuestPublicPage() {
                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                           {getSportName(m.sport)} · {m.round}
                         </span>
-                        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(220,38,38,0.12)', color: 'var(--accent)', fontWeight: 700 }}>
+                        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(2, 132, 199,0.12)', color: 'var(--accent)', fontWeight: 700 }}>
                           {pred.confidence}
                         </span>
                       </div>

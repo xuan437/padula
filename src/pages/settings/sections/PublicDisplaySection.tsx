@@ -10,7 +10,7 @@ interface Props {
 }
 
 const TV_THEMES: { id: ScoreboardTheme; label: string; previewBg: string }[] = [
-  { id: 'asian_crimson', label: 'Asian College Crimson (Official)', previewBg: '#dc2626' },
+  { id: 'asian_crimson', label: 'Asian College Crimson (Official)', previewBg: '#0284c7' },
   { id: 'dark_obsidian', label: 'Dark Obsidian (High Contrast)', previewBg: '#0f172a' },
   { id: 'navy_broadcast', label: 'Navy Blue Broadcast Arena', previewBg: '#1e3a8a' },
 ];
