@@ -497,6 +497,43 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
           </div>
         )}
 
+        {/* ── Quick-Start Workflow Guide (Progressive Disclosure) ───────────── */}
+        <details className="glass-card" style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+          <summary style={{ cursor: 'pointer', fontSize: 12.5, fontWeight: 800, color: 'var(--text-primary)', userSelect: 'none' }}>
+            🧭 Tournament Navigation Guide (4 Steps: Setup → Register → Bracket → Score Live)
+          </summary>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginTop: 12 }}>
+            {[
+              { step: '1. Rules & Formats', desc: 'Set formats, series (Bo1/Bo3/Bo5), point system & locks', view: 'settings' },
+              { step: '2. Events & Venues', desc: 'Create competitions, sports & playing venues', view: 'event-setup' },
+              { step: '3. Teams & Scorers', desc: 'Register athletes, teams & 1-sport scorers', view: 'registration' },
+              { step: '4. Brackets & Live', desc: 'Generate brackets, swap teams & track live scores', view: 'bracket' },
+            ].map(item => (
+              <button
+                key={item.view}
+                type="button"
+                onClick={() => setActiveView(item.view)}
+                className="btn btn-ghost"
+                style={{
+                  textAlign: 'left',
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-elevated)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: 3,
+                  height: 'auto',
+                }}
+              >
+                <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--accent)' }}>{item.step} →</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'normal', lineHeight: 1.35 }}>{item.desc}</span>
+              </button>
+            ))}
+          </div>
+        </details>
+
         {/* ── Quick Actions ───────────────────────────────────────────────── */}
         <div>
           <SectionDivider label="Quick Actions" />

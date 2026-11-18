@@ -20,6 +20,7 @@ const ROLE_META: Record<UserRole, { label: string; color: string }> = {
 interface NavItem {
   id: string;
   label: string;
+  hint?: string;
   icon: React.FC<{ size?: number; color?: string; className?: string }>;
   badge?: number;
 }
@@ -47,6 +48,8 @@ const Sidebar: React.FC = () => {
   }, [theme]);
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [navSearch, setNavSearch] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   // Close drawer on view/navigation change
   useEffect(() => {
@@ -84,37 +87,37 @@ const Sidebar: React.FC = () => {
         {
           heading: 'Competition',
           items: [
-            { id: 'event-setup', label: 'Event Setup', icon: CalendarIcon },
-            { id: 'bracket',     label: 'Brackets', icon: TrophyIcon },
-            { id: 'schedule',    label: 'Schedule & Results', icon: CalendarIcon },
-            { id: 'scorekeeper', label: 'Scorer Desk', icon: ClipboardIcon },
-            { id: 'live',        label: 'Live Scoreboard', icon: LiveIcon, badge: liveCount || undefined },
+            { id: 'event-setup', label: 'Event Setup', hint: 'Create tournaments, sports & venues', icon: CalendarIcon },
+            { id: 'bracket',     label: 'Brackets & Standings', hint: 'Manage matchups, seeding & standings', icon: TrophyIcon },
+            { id: 'schedule',    label: 'Schedule & Results', hint: 'Filter fixtures by sport, date & venue', icon: CalendarIcon },
+            { id: 'scorekeeper', label: 'Scorer Desk', hint: 'Enter live scores & finalize matches', icon: ClipboardIcon },
+            { id: 'live',        label: 'Live Scoreboard', hint: 'Real-time arena scoreboard', icon: LiveIcon, badge: liveCount || undefined },
           ],
         },
         {
           heading: 'People',
           items: [
-            { id: 'registration', label: 'Registration', icon: UsersIcon },
-            { id: 'player',       label: 'Player List',  icon: UserIcon },
-            { id: 'officials',    label: 'Match Assignments', icon: ShieldIcon },
+            { id: 'registration', label: 'Registration', hint: 'Register teams, athletes & scorers', icon: UsersIcon },
+            { id: 'player',       label: 'Player List', hint: 'Browse rosters & player cards', icon: UserIcon },
+            { id: 'officials',    label: 'Match Assignments', hint: 'Assign scorers, referees & courts', icon: ShieldIcon },
           ],
         },
         {
           heading: 'Analytics',
           items: [
-            { id: 'analytics',   label: 'Analytics & Reports', icon: BarChartIcon },
-            { id: 'scorers',     label: 'Leaderboards', icon: TrophyIcon },
-            { id: 'predictions', label: 'Predictions', icon: SparklesIcon },
+            { id: 'analytics',   label: 'Analytics & Reports', hint: 'Print certificates, standings & audits', icon: BarChartIcon },
+            { id: 'scorers',     label: 'Leaderboards', hint: 'Top performers & MVP race', icon: TrophyIcon },
+            { id: 'predictions', label: 'Predictions', hint: 'AI win probability & forecasts', icon: SparklesIcon },
           ],
         },
         {
           heading: 'Admin',
           items: [
-            { id: 'settings', label: 'Settings', icon: SettingsIcon },
-            { id: 'access-requests', label: 'Access Requests', icon: ShieldIcon, badge: pendingAccessCount || undefined },
-            { id: 'announcements', label: 'Announcements', icon: FileTextIcon },
-            { id: 'audit',         label: 'Audit Trail', icon: LockIcon },
-            { id: 'archive',       label: 'Archive', icon: CalendarIcon },
+            { id: 'settings', label: 'Settings', hint: 'Formats, locks, scorer rules & lists', icon: SettingsIcon },
+            { id: 'access-requests', label: 'Access Requests', hint: 'Approve @asiancollege.edu.ph staff', icon: ShieldIcon, badge: pendingAccessCount || undefined },
+            { id: 'announcements', label: 'Announcements', hint: 'Broadcast updates to spectators', icon: FileTextIcon },
+            { id: 'audit',         label: 'Audit Trail', hint: 'Track every score & settings change', icon: LockIcon },
+            { id: 'archive',       label: 'Archive', hint: 'Past seasons & completed events', icon: CalendarIcon },
           ],
         },
       ];
@@ -326,57 +329,112 @@ const Sidebar: React.FC = () => {
 
         {/* Grouped Navigation */}
         <nav className="sidebar-nav">
-          {groups.map(group => (
-            <div key={group.heading} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <div
+          {groups.reduce((sum, g) => sum + g.items.length, 0) > 7 && (
+            <div style={{ padding: '2px 6px 6px' }}>
+              <input
+                type="text"
+                value={navSearch}
+                onChange={e => setNavSearch(e.target.value)}
+                placeholder="Quick jump..."
+                aria-label="Quick jump navigation"
                 style={{
-                  fontSize: 10,
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'var(--text-muted)',
-                  padding: '4px 10px 2px',
+                  width: '100%',
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-elevated)',
+                  color: 'var(--text-primary)',
+                  outline: 'none',
                 }}
-              >
-                {group.heading}
-              </div>
-              {group.items.map(item => {
-                const IconComp = item.icon;
-                const isActive = activeView === item.id || (item.id === 'player' && (activeView === 'player' || activeView === 'players' || activeView === 'player-stats'));
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`nav-btn ${isActive ? 'active' : ''}`}
-                    onClick={() => setActiveView(item.id)}
-                  >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                      <span className="nav-icon">
-                        <IconComp size={16} />
-                      </span>
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.label}
-                      </span>
-                    </span>
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 800,
-                          padding: '1px 6px',
-                          borderRadius: 999,
-                          background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--badge-live-bg)',
-                          color: isActive ? '#ffffff' : 'var(--badge-live-text)',
-                        }}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              />
             </div>
-          ))}
+          )}
+
+          {groups.map(group => {
+            const q = navSearch.trim().toLowerCase();
+            const visibleItems = q
+              ? group.items.filter(
+                  it =>
+                    it.label.toLowerCase().includes(q) ||
+                    (it.hint || '').toLowerCase().includes(q)
+                )
+              : group.items;
+            if (visibleItems.length === 0) return null;
+
+            const hasActiveChild = visibleItems.some(
+              it => activeView === it.id || (it.id === 'player' && (activeView === 'player' || activeView === 'players' || activeView === 'player-stats'))
+            );
+            const isCollapsed = !q && !hasActiveChild && !!collapsedGroups[group.heading];
+
+            return (
+              <div key={group.heading} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCollapsedGroups(prev => ({
+                      ...prev,
+                      [group.heading]: !prev[group.heading],
+                    }))
+                  }
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'var(--text-muted)',
+                    padding: '4px 10px 2px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span>{group.heading}</span>
+                  <span>{isCollapsed ? '▸' : '▾'}</span>
+                </button>
+                {!isCollapsed && visibleItems.map(item => {
+                  const IconComp = item.icon;
+                  const isActive = activeView === item.id || (item.id === 'player' && (activeView === 'player' || activeView === 'players' || activeView === 'player-stats'));
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      title={item.hint || item.label}
+                      className={`nav-btn ${isActive ? 'active' : ''}`}
+                      onClick={() => setActiveView(item.id)}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <span className="nav-icon">
+                          <IconComp size={16} />
+                        </span>
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.label}
+                        </span>
+                      </span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            padding: '1px 6px',
+                            borderRadius: 999,
+                            background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--badge-live-bg)',
+                            color: isActive ? '#ffffff' : 'var(--badge-live-text)',
+                          }}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </nav>
 
         {/* Sidebar Footer: User Card + Theme Toggle + Exit to Public View */}
