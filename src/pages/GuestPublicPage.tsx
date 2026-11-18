@@ -977,14 +977,15 @@ export default function GuestPublicPage() {
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-              gap: '16px',
+              gap: '20px',
+              alignItems: 'stretch',
             }}>
               {liveMatches.map(m => {
                 const sportMeta = SPORTS_CATALOG.find(s => s.id === m.sport);
                 const livePred = predictMatch(m.teamA, m.teamB, m.sport, matches, teams, players, m);
                 const ctx = getMatchContext(m);
                 return (
-                  <div key={m.id} className="scoreboard-card glass-card" style={{ padding: '20px' }}>
+                  <div key={m.id} className="scoreboard-card glass-card" style={{ padding: '18px 0', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     {/* Header: Sport, Format & LIVE badge */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -1035,17 +1036,18 @@ export default function GuestPublicPage() {
                       </span>
                     </div>
 
-                    {/* Team vs Team with score in center (fully responsive) */}
+                    {/* Team vs Team with score in center (consistent height across grid) */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: '12px',
                       padding: '8px 0 16px',
+                      minHeight: '68px',
                     }}>
                       {/* Team A */}
-                      <div style={{ flex: 1, textAlign: 'left' }}>
-                        <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                      <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                        <div style={{ fontSize: '15.5px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25 }}>
                           {m.teamA}
                         </div>
                       </div>
@@ -1103,9 +1105,9 @@ export default function GuestPublicPage() {
                           <div style={{ width: `${livePred.winProbA}%`, background: 'var(--accent)' }} />
                           <div style={{ width: `${livePred.winProbB}%`, background: '#3b82f6' }} />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '10.5px', color: 'var(--text-muted)' }}>
                           <span>Past Perf: {livePred.statsA.eloRating} Elo ({livePred.statsA.wins}W–{livePred.statsA.losses}L) vs {livePred.statsB.eloRating} Elo ({livePred.statsB.wins}W–{livePred.statsB.losses}L)</span>
-                          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Full AI Forecast ↗</span>
+                          <span style={{ color: 'var(--accent)', fontWeight: 700, whiteSpace: 'nowrap' }}>Full AI Forecast ↗</span>
                         </div>
                       </div>
                     )}
@@ -1137,6 +1139,7 @@ export default function GuestPublicPage() {
 
                     {/* Footer: Officials & Share Action */}
                     <div style={{
+                      marginTop: 'auto',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -1144,17 +1147,16 @@ export default function GuestPublicPage() {
                       color: 'var(--text-muted)',
                       borderTop: '1px solid var(--border-light)',
                       paddingTop: '10px',
-                      flexWrap: 'wrap',
-                      gap: '8px',
+                      gap: '10px',
                     }}>
-                      <span>
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         Scorer: <strong>{m.scorekeeper || 'Official Desk'}</strong> · Ref: <strong>{m.referee || 'Certified Official'}</strong>
                       </span>
                       <button
                         type="button"
                         className="btn btn-sm btn-primary"
                         onClick={() => setShareMatch(m)}
-                        style={{ padding: '4px 10px', fontSize: '11px' }}
+                        style={{ padding: '5px 10px', fontSize: '11px', flexShrink: 0, whiteSpace: 'nowrap' }}
                       >
                         Share Live Stream
                       </button>
