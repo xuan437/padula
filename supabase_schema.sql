@@ -581,7 +581,8 @@ INSERT INTO departments (id, name, short_name, color) VALUES
   ('d2', 'Computer Studies & Engineering',        'CSE',         '#3b82f6'),
   ('d3', 'Hospitality & Tourism Management',       'HTM',         '#f97316'),
   ('d4', 'Diploma Program Department',      'DPD',         '#ef4444'),
-  ('d5', 'Senior Department',                     'Senior Dept', '#8b5cf6')
+  ('d5', 'Senior Department',                     'Senior Dept', '#8b5cf6'),
+  ('d6', 'College of Arts & Sciences',            'CAS',         '#0ea5e9')
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, short_name = EXCLUDED.short_name, color = EXCLUDED.color;
 
@@ -761,7 +762,50 @@ INSERT INTO players (
     '[{"season": "2025-2026", "team": "SHS Royals", "matches": 5, "goals": 5}]'::jsonb,
     '[]'::jsonb,
     true
-  )
+  ),
+  ('p13', 'Carlo Mendoza',      '2024-013', 'd1', 's1', 't1', '03', 'Shooting Guard',    1.65, true, '2004-01-12', 'Dumaguete City, PH', 'Coach Rivera',    4, 0, 16, 7,  '[10,12,14,16]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p14', 'Paolo Aquino',       '2024-014', 'd1', 's1', 't1', '14', 'Power Forward',     1.72, true, '2003-10-08', 'Bacolod City, PH',   'Coach Rivera',    4, 0, 14, 5,  '[9,11,13,14]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p15', 'Andre Bautista',     '2024-015', 'd1', 's1', 't1', '21', 'Center',            1.80, true, '2003-04-19', 'Cebu City, PH',      'Coach Rivera',    4, 0, 11, 3,  '[7,9,10,11]'::jsonb,   '[]'::jsonb, '[]'::jsonb, true),
+  ('p16', 'Luis Navarro',       '2024-016', 'd2', 's1', 't2', '02', 'Point Guard',       1.58, true, '2004-06-22', 'Dumaguete City, PH', 'Coach Henderson', 5, 0, 18, 9,  '[11,13,16,18]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p17', 'Marco Villanueva',   '2024-017', 'd2', 's1', 't2', '11', 'Small Forward',     1.74, true, '2003-08-30', 'Dumaguete City, PH', 'Coach Henderson', 5, 0, 15, 6,  '[10,12,14,15]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p18', 'Jerald Ramos',       '2024-018', 'd2', 's1', 't2', '24', 'Power Forward',     1.90, true, '2003-11-15', 'Iloilo City, PH',    'Coach Henderson', 5, 0, 13, 4,  '[8,10,12,13]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p19', 'Bryan Castillo',     '2024-019', 'd2', 's1', 't2', '34', 'Center',            1.82, true, '2002-12-03', 'Dumaguete City, PH', 'Coach Henderson', 5, 0, 10, 2,  '[6,8,9,10]'::jsonb,    '[]'::jsonb, '[]'::jsonb, true),
+  ('p20', 'Nathaniel Cruz',     '2024-020', 'd3', 's1', 't3', '06', 'Point Guard',       1.62, true, '2004-02-14', 'Dumaguete City, PH', 'Coach Alvarez',   4, 0, 17, 8,  '[11,13,15,17]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p21', 'Victor Ocampo',      '2024-021', 'd3', 's1', 't3', '08', 'Shooting Guard',    1.78, true, '2003-07-07', 'Cebu City, PH',      'Coach Alvarez',   4, 0, 14, 5,  '[9,11,13,14]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p22', 'Dennis Flores',      '2024-022', 'd3', 's1', 't3', '19', 'Small Forward',     1.88, true, '2003-09-25', 'Dumaguete City, PH', 'Coach Alvarez',   4, 0, 12, 4,  '[7,9,11,12]'::jsonb,   '[]'::jsonb, '[]'::jsonb, true),
+  ('p23', 'Joshua Pascual',     '2024-023', 'd3', 's1', 't3', '27', 'Power Forward',     1.95, true, '2004-05-03', 'Bacolod City, PH',   'Coach Alvarez',   4, 0, 9,  3,  '[5,7,8,9]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p24', 'Jerome Diaz',        '2024-024', 'd4', 's1', 't4', '01', 'Point Guard',       1.68, true, '2004-08-17', 'Dumaguete City, PH', 'Coach Morales',   3, 0, 15, 7,  '[10,12,14,15]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p25', 'Adrian Salazar',     '2024-025', 'd4', 's1', 't4', '09', 'Shooting Guard',    1.76, true, '2003-03-21', 'Dumaguete City, PH', 'Coach Morales',   3, 0, 13, 5,  '[8,10,12,13]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p26', 'Kenneth Morales',    '2024-026', 'd4', 's1', 't4', '16', 'Small Forward',     1.84, true, '2003-06-11', 'Cebu City, PH',      'Coach Morales',   3, 0, 11, 4,  '[7,8,10,11]'::jsonb,   '[]'::jsonb, '[]'::jsonb, true),
+  ('p27', 'Tristan Mercado',    '2024-027', 'd4', 's1', 't4', '29', 'Center',            1.92, true, '2002-11-28', 'Dumaguete City, PH', 'Coach Morales',   3, 0, 10, 2,  '[6,8,9,10]'::jsonb,    '[]'::jsonb, '[]'::jsonb, true),
+  ('p28', 'Sean Fernandez',     '2024-028', 'd5', 's1', 't5', '04', 'Point Guard',       1.70, true, '2005-01-19', 'Dumaguete City, PH', 'Coach Henderson', 3, 0, 14, 6,  '[9,11,13,14]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p29', 'Lance Gutierrez',    '2024-029', 'd5', 's1', 't5', '13', 'Shooting Guard',    1.85, true, '2005-04-02', 'Dumaguete City, PH', 'Coach Henderson', 3, 0, 11, 4,  '[7,8,10,11]'::jsonb,   '[]'::jsonb, '[]'::jsonb, true),
+  ('p30', 'Ethan Velasco',      '2024-030', 'd5', 's1', 't5', '22', 'Small Forward',     1.77, true, '2005-07-24', 'Bacolod City, PH',   'Coach Henderson', 3, 0, 9,  3,  '[5,7,8,9]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p31', 'Francis Romero',     '2024-031', 'd1', 's1', 't6', '05', 'Point Guard',       1.63, true, '2004-03-10', 'Dumaguete City, PH', 'Coach Alvarez',   3, 0, 16, 7,  '[10,12,14,16]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p32', 'Aldrin Herrera',     '2024-032', 'd1', 's1', 't6', '17', 'Shooting Guard',    1.79, true, '2003-12-18', 'Cebu City, PH',      'Coach Alvarez',   3, 0, 13, 5,  '[8,10,12,13]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p33', 'Cedric Aguilar',     '2024-033', 'd1', 's1', 't6', '25', 'Power Forward',     1.86, true, '2003-05-06', 'Dumaguete City, PH', 'Coach Alvarez',   3, 0, 11, 3,  '[7,9,10,11]'::jsonb,   '[]'::jsonb, '[]'::jsonb, true),
+  ('p34', 'Bea Dela Rosa',      '2024-034', 'd2', 's2', 't7', '02', 'Setter',            1.52, true, '2004-09-14', 'Dumaguete City, PH', 'Coach Alvarez',   4, 0, 14, 19, '[9,11,13,14]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p35', 'Clarisse Ong',       '2024-035', 'd2', 's2', 't7', '07', 'Opposite Hitter',   1.61, true, '2004-11-29', 'Cebu City, PH',      'Coach Alvarez',   4, 0, 17, 4,  '[11,13,15,17]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p36', 'Hannah Alcantara',   '2024-036', 'd2', 's2', 't7', '15', 'Libero',            1.59, true, '2003-08-05', 'Dumaguete City, PH', 'Coach Alvarez',   4, 0, 6,  12, '[4,5,6,6]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p37', 'Sophia Lim',         '2024-037', 'd3', 's2', 't8', '03', 'Setter',            1.48, true, '2004-04-12', 'Bacolod City, PH',   'Coach Morales',   4, 0, 12, 21, '[8,10,11,12]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p38', 'Nicole Sy',          '2024-038', 'd3', 's2', 't8', '10', 'Outside Hitter',    1.66, true, '2003-10-20', 'Dumaguete City, PH', 'Coach Morales',   4, 0, 18, 5,  '[12,14,16,18]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p39', 'Alyssa Tan',         '2024-039', 'd3', 's2', 't8', '14', 'Middle Blocker',    1.71, true, '2004-01-27', 'Cebu City, PH',      'Coach Morales',   4, 0, 15, 3,  '[10,12,14,15]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p40', 'Bianca Yu',          '2024-040', 'd3', 's2', 't8', '18', 'Opposite Hitter',   1.64, true, '2003-06-16', 'Dumaguete City, PH', 'Coach Morales',   4, 0, 13, 4,  '[8,10,12,13]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p41', 'Mateo Evangelista',  '2024-041', 'd1', 's_futsal', 't9', '01', 'Goalkeeper',   1.69, true, '2004-02-09', 'Dumaguete City, PH', 'Coach Rivera',    3, 0, 0,  2,  '[0,0,1,2]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p42', 'Lucas De Leon',      '2024-042', 'd1', 's_futsal', 't9', '05', 'Fixo (Defender)',1.74,true, '2003-07-18', 'Bacolod City, PH',   'Coach Rivera',    3, 2, 3,  4,  '[1,2,2,3]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p43', 'Julian Magno',       '2024-043', 'd1', 's_futsal', 't9', '07', 'Ala (Winger)', 1.67, true, '2004-09-23', 'Dumaguete City, PH', 'Coach Rivera',    3, 4, 5,  3,  '[2,3,4,5]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p44', 'Diego Perez',        '2024-044', 'd1', 's_futsal', 't9', '10', 'Universal',    1.73, true, '2003-11-02', 'Cebu City, PH',      'Coach Rivera',    3, 3, 4,  5,  '[1,2,3,4]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p45', 'Renz Tolentino',     '2024-045', 'd5', 's_futsal', 't11','01', 'Goalkeeper',   1.81, true, '2005-03-15', 'Dumaguete City, PH', 'Coach Morales',   3, 0, 0,  1,  '[0,0,1,1]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p46', 'Anton Rivera',       '2024-046', 'd5', 's_futsal', 't11','04', 'Fixo (Defender)',1.75,true, '2005-06-28', 'Dumaguete City, PH', 'Coach Morales',   3, 1, 2,  3,  '[1,1,2,2]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p47', 'Kobe Manalo',        '2024-047', 'd5', 's_futsal', 't11','08', 'Pivot (Forward)',1.79,true,'2005-08-19', 'Dumaguete City, PH', 'Coach Morales',   3, 4, 4,  2,  '[1,2,3,4]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p48', 'Vince Santiago',     '2024-048', 'd5', 's_futsal', 't11','12', 'Universal',    1.83, true, '2005-10-04', 'Bacolod City, PH',   'Coach Morales',   3, 2, 3,  4,  '[1,2,2,3]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p49', 'Zackary Chua',       '2024-049', 'd2', 's5', 't10', '02', 'Mid Lane',          1.50, true, '2004-04-05', 'Dumaguete City, PH', 'Coach Henderson', 6, 0, 14, 16, '[9,11,13,14]'::jsonb,  '[]'::jsonb, '[]'::jsonb, true),
+  ('p50', 'Aaron Uy',           '2024-050', 'd2', 's5', 't10', '03', 'Exp Lane',          1.60, true, '2003-09-12', 'Cebu City, PH',      'Coach Henderson', 6, 0, 11, 14, '[7,9,10,11]'::jsonb,   '[]'::jsonb, '[]'::jsonb, true),
+  ('p51', 'Noah Villareal',     '2024-051', 'd2', 's5', 't10', '04', 'Gold Lane',         1.54, true, '2004-07-21', 'Dumaguete City, PH', 'Coach Henderson', 6, 0, 16, 12, '[10,12,14,16]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p52', 'Gelo Bautista',      '2024-052', 'd2', 's5', 't10', '05', 'Roamer',            1.68, true, '2003-12-30', 'Iloilo City, PH',    'Coach Henderson', 6, 0, 5,  24, '[3,4,4,5]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true),
+  ('p53', 'Chris Kim',          '2024-053', 'd6', 's3', 't1',  '09', 'Singles Specialist',1.55, true, '2003-05-11', 'Dumaguete City, PH', 'Coach Rivera',    4, 0, 21, 0,  '[15,18,19,21]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p54', 'Alex Park',          '2024-054', 'd6', 's3', 't2',  '10', 'Singles Specialist',1.62, true, '2004-01-08', 'Cebu City, PH',      'Coach Alvarez',   4, 0, 18, 0,  '[14,16,17,18]'::jsonb, '[]'::jsonb, '[]'::jsonb, true),
+  ('p55', 'Samantha Reyes',     '2024-055', 'd6', 's8', 't3',  '01', 'Board 1',           1.42, true, '2004-03-25', 'Dumaguete City, PH', 'Coach Rivera',    5, 0, 4,  0,  '[2,3,3,4]'::jsonb,     '[]'::jsonb, '[]'::jsonb, true)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, student_id = EXCLUDED.student_id, department = EXCLUDED.department,
   sport = EXCLUDED.sport, team_id = EXCLUDED.team_id, jersey_number = EXCLUDED.jersey_number,
@@ -819,6 +863,11 @@ INSERT INTO matches (
     'm9', 'ev-2', 's2', 'div3', 'CSE CyberHawks', 'HTM Spikers', 0, 0,
     'scheduled', 'Pavilion Court', 'Semi-Final', 2, 2, '2026-11-13T10:00:00Z',
     NULL, 'Elena Rostova', 'Maria Santos', 'Coach Alvarez', 'Coach Morales', 'Engr. Victor Tan', NULL
+  ),
+  (
+    'm10', 'ev-6', 's8', 'div9', 'Samantha Reyes', 'Christian Santos', 1, 0,
+    'finished', 'Chess Hall', 'Round 1', 1, 1, '2026-11-10T13:00:00Z',
+    'Samantha Reyes', 'Carlos Mendez', 'Lee Park', 'Coach Rivera', 'Coach Henderson', 'Director Dave Cruz', NULL
   )
 ON CONFLICT (id) DO UPDATE SET
   event_id = EXCLUDED.event_id, sport = EXCLUDED.sport, division = EXCLUDED.division,
@@ -854,6 +903,11 @@ INSERT INTO tournament_events (
     'ev-5', 'Padula 2026 Esports Invitational', 's5', 'div8',
     'Esports Collegiate 5v5', 'Nov 11 – Nov 18, 2026', '2026-11-11', '2026-11-18',
     'Esports Arena', 'published', false
+  ),
+  (
+    'ev-6', 'Padula 2026 Chess Classical', 's8', 'div9',
+    'Board Sports · FIDE Classical', 'Nov 10 – Nov 15, 2026', '2026-11-10', '2026-11-15',
+    'Chess Hall', 'published', false
   )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, dates = EXCLUDED.dates, status = EXCLUDED.status;
@@ -883,6 +937,30 @@ INSERT INTO announcements (id, title, body, priority, created_by, created_at) VA
     'normal',
     'u2',
     NOW() - INTERVAL '1 hour'
+  ),
+  (
+    'ann-4',
+    'Badminton & Table Tennis Quarter-Finals',
+    'Matches at Fieldhouse Annex begin promptly at 08:30 AM. Warm-up courts open 30 minutes prior.',
+    'normal',
+    'u1',
+    NOW() - INTERVAL '45 minutes'
+  ),
+  (
+    'ann-5',
+    'Medical Clearance Reminder for Varsity Athletes',
+    'Athletes with pending medical clearance must submit signed forms before Semi-Final tip-off.',
+    'urgent',
+    'u1',
+    NOW() - INTERVAL '30 minutes'
+  ),
+  (
+    'ann-6',
+    'Chess Hall Classical Round Robin Pairings',
+    'Round 2 classical pairings are posted on the Brackets & Standings page.',
+    'normal',
+    'u2',
+    NOW() - INTERVAL '15 minutes'
   )
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title, body = EXCLUDED.body, priority = EXCLUDED.priority;
@@ -892,7 +970,11 @@ INSERT INTO match_score_audits (
   id, match_id, caller_name, caller_role, action, old_score_a, old_score_b, new_score_a, new_score_b, winner, reason
 ) VALUES
   ('msa-1', 'm6', 'Sam Chen', 'scorer', 'score_finalize', 58, 60, 58, 62, 'Padula Eagles', 'Final buzzer verified by court referee'),
-  ('msa-2', 'm1', 'Sam Chen', 'scorer', 'score_update', 42, 38, 45, 38, NULL, '3-pointer by #10 Juan dela Cruz')
+  ('msa-2', 'm1', 'Sam Chen', 'scorer', 'score_update', 42, 38, 45, 38, NULL, '3-pointer by #10 Juan dela Cruz'),
+  ('msa-3', 'm3', 'Lee Park', 'scorer', 'score_finalize', 19, 18, 21, 18, 'Chris Kim', 'Gold medal match finalized'),
+  ('msa-4', 'm7', 'Sam Chen', 'scorer', 'score_update', 3, 2, 4, 2, NULL, 'Goal by #09 Gabriel Villanueva'),
+  ('msa-5', 'm8', 'Lee Park', 'scorer', 'score_finalize', 1, 1, 2, 1, 'CSE Phoenix', 'Game 3 nexus push completed'),
+  ('msa-6', 'm10', 'Lee Park', 'scorer', 'score_finalize', 0, 0, 1, 0, 'Samantha Reyes', 'Checkmate on move 42')
 ON CONFLICT (id) DO UPDATE SET
   new_score_a = EXCLUDED.new_score_a, new_score_b = EXCLUDED.new_score_b, winner = EXCLUDED.winner;
 
@@ -900,7 +982,10 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO audit_logs (id, action, user_id, user_name, user_role, details, entity_id, entity_type, created_at) VALUES
   ('al-1', 'login', 'u1', 'Alex Rivera', 'director', 'Sports Director authorized master session.', 'u1', 'User', NOW() - INTERVAL '30 minutes'),
   ('al-2', 'match_start', 'u3', 'Sam Chen', 'scorer', 'Official match clock started: Padula Eagles vs Red Lions', 'm1', 'Match', NOW() - INTERVAL '25 minutes'),
-  ('al-3', 'score_update', 'u3', 'Sam Chen', 'scorer', 'Score update verified: Padula Eagles 45 – Red Lions 38', 'm1', 'Match', NOW() - INTERVAL '15 minutes')
+  ('al-3', 'score_update', 'u3', 'Sam Chen', 'scorer', 'Score update verified: Padula Eagles 45 – Red Lions 38', 'm1', 'Match', NOW() - INTERVAL '15 minutes'),
+  ('al-4', 'score_finalize', 'u3', 'Sam Chen', 'scorer', 'Finalized Basketball Quarter-Final: Padula Eagles 62 – Blue Sharks 58', 'm6', 'Match', NOW() - INTERVAL '12 minutes'),
+  ('al-5', 'event_create', 'u1', 'Mr. John Eric Samane', 'director', 'Published Padula 2026 Futsal Cup schedule', 'ev-3', 'TournamentEvent', NOW() - INTERVAL '8 minutes'),
+  ('al-6', 'score_finalize', 'u4', 'Maria Santos', 'scorer', 'Finalized Esports Semi-Final: CSE Phoenix 2 – BAA Falcons 1', 'm8', 'Match', NOW() - INTERVAL '5 minutes')
 ON CONFLICT (id) DO UPDATE SET
   details = EXCLUDED.details, created_at = EXCLUDED.created_at;
 
