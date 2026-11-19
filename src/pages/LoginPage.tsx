@@ -342,6 +342,12 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
   const matchingInvite = staffInvitations.find(
     i => i.recipientEmail.toLowerCase() === activeEmailForCheck
   );
+  const chooserAccounts = Array.from(
+    new Set([
+      ...recentAccounts.map(a => a.trim().toLowerCase()),
+      ...staffInvitations.map(i => (i.recipientEmail || '').trim().toLowerCase()).filter(Boolean),
+    ])
+  );
 
   return (
     <div
@@ -1022,8 +1028,8 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
 
             {!isTypingCustom ? (
               <div>
-                {/* Remembered Accounts List */}
-                {recentAccounts.length === 0 ? (
+                {/* Remembered & Invited Accounts List */}
+                {chooserAccounts.length === 0 ? (
                   <div style={{
                     padding: '24px 16px',
                     textAlign: 'center',
@@ -1040,16 +1046,20 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     </div>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-                    {recentAccounts.map(email => {
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px', maxHeight: '260px', overflowY: 'auto' }}>
+                    {chooserAccounts.map(email => {
                       const isDirector = email === 'jsamane@asiancollege.edu.ph';
+                      const accountInvite = staffInvitations.find(
+                        i => (i.recipientEmail || '').trim().toLowerCase() === email
+                      );
+                      const needsCustomStep = isDirector || Boolean(accountInvite);
                       return (
                         <div
                           key={email}
                           style={{
                             width: '100%',
                             textAlign: 'left',
-                            background: isRemoveMode ? '#fff5f5' : '#f8fafc',
+                            background: isRemoveMode ? '#e0f2fe' : '#f8fafc',
                             border: isRemoveMode ? '1px solid #bae6fd' : '1px solid #e2e8f0',
                             borderRadius: '10px',
                             padding: '9px 12px',
@@ -1070,7 +1080,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                 return;
                               }
                               setSelectedEmail(email);
-                              if (isDirector) {
+                              if (needsCustomStep) {
                                 setIsTypingCustom(true);
                                 setCustomEmail(email);
                                 setPassword('');
@@ -1083,7 +1093,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                 e.preventDefault();
                                 if (isRemoveMode) {
                                   removeAccount(email);
-                                } else if (isDirector) {
+                                } else if (needsCustomStep) {
                                   setIsTypingCustom(true);
                                   setCustomEmail(email);
                                   setPassword('');
@@ -1106,7 +1116,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                 width: '34px',
                                 height: '34px',
                                 borderRadius: '50%',
-                                background: isDirector ? '#38bdf8' : '#3b82f6',
+                                background: isDirector ? '#38bdf8' : '#0284c7',
                                 color: '#fff',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1116,11 +1126,25 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                 flexShrink: 0,
                               }}
                             >
-                              {isDirector ? 'JS' : email[0].toUpperCase()}
+                              {isDirector ? 'JS' : (accountInvite?.recipientName?.[0] || email[0]).toUpperCase()}
                             </div>
                             <div style={{ minWidth: 0, flex: 1 }}>
-                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {isDirector ? 'Mr. John Eric Samane' : email.split('@')[0]}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {isDirector ? 'Mr. John Eric Samane' : (accountInvite?.recipientName || email.split('@')[0])}
+                                </span>
+                                {accountInvite && (
+                                  <span style={{
+                                    fontSize: '10px',
+                                    fontWeight: 700,
+                                    color: '#0284c7',
+                                    background: '#e0f2fe',
+                                    padding: '1px 6px',
+                                    borderRadius: '999px',
+                                  }}>
+                                    📩 Letter Received
+                                  </span>
+                                )}
                               </div>
                               <div style={{ fontSize: '11.5px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {email}
@@ -1136,8 +1160,8 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                 onClick={(e) => removeAccount(email, e)}
                                 title="Remove account from device"
                                 style={{
-                                  background: '#fee2e2',
-                                  border: '1px solid #fca5a5',
+                                  background: '#e0f2fe',
+                                  border: '1px solid #bae6fd',
                                   borderRadius: '6px',
                                   padding: '5px 10px',
                                   fontSize: '11px',
@@ -1158,7 +1182,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                   type="button"
                                   onClick={() => {
                                     setSelectedEmail(email);
-                                    if (isDirector) {
+                                    if (needsCustomStep) {
                                       setIsTypingCustom(true);
                                       setCustomEmail(email);
                                       setPassword('');
@@ -1385,47 +1409,102 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                   </div>
                 )}
 
-                {/* Matching Invitation Card if found */}
+                {/* Matching Invitation Letter & Credentials Viewer */}
                 {matchingInvite && (
                   <div
                     style={{
                       background: '#f8fafc',
                       border: '1px solid #cbd5e1',
-                      borderRadius: '8px',
-                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      padding: '12px',
                       fontSize: '11.5px',
                       marginBottom: '12px',
                       color: '#1e293b',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
                     }}
                   >
-                    <div style={{ fontWeight: 800, color: '#0f172a' }}>
-                      Official Appointment Letter Found ({matchingInvite.roleTitle})
+                    <div style={{ fontWeight: 800, color: '#0f2d5c', fontSize: '12.5px' }}>
+                      📩 Official Appointment Letter Received ({matchingInvite.roleTitle})
                     </div>
-                    <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>
-                      From: <strong>{matchingInvite.sentBy}</strong> · Status: <strong>{matchingInvite.status.toUpperCase()}</strong>
+                    <div style={{ fontSize: '11px', color: '#475569' }}>
+                      From: <strong>{matchingInvite.sentBy}</strong> ({matchingInvite.sentByEmail}) · Assigned: <strong>{matchingInvite.assignedSportOrDept}</strong> · Status: <strong>{matchingInvite.status.toUpperCase()}</strong>
                     </div>
-                    {matchingInvite.status === 'pending' && (
+
+                    {/* Assigned Login Credentials */}
+                    <div style={{
+                      background: '#e0f2fe',
+                      border: '1px solid #bae6fd',
+                      borderRadius: '8px',
+                      padding: '8px 10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      flexWrap: 'wrap',
+                    }}>
+                      <div style={{ fontSize: '11px', color: '#0f2d5c' }}>
+                        <div>Login Email: <strong style={{ fontFamily: 'monospace' }}>{matchingInvite.recipientEmail}</strong></div>
+                        <div>Temporary Password: <strong style={{ fontFamily: 'monospace' }}>{matchingInvite.generatedPassword}</strong></div>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          respondToInvitation(matchingInvite.id, 'accepted');
-                          executeGoogleSignIn(matchingInvite.recipientEmail, password || matchingInvite.generatedPassword);
-                        }}
+                        onClick={() => setPassword(matchingInvite.generatedPassword)}
                         style={{
-                          marginTop: '8px',
-                          background: '#059669',
-                          color: '#fff',
+                          background: '#0f2d5c',
+                          color: '#ffffff',
                           border: 'none',
                           borderRadius: '6px',
-                          padding: '6px 10px',
-                          fontSize: '11px',
+                          padding: '5px 10px',
+                          fontSize: '10.5px',
                           fontWeight: 700,
                           cursor: 'pointer',
                         }}
                       >
-                        ✓ Accept Invitation &amp; Sign In
+                        Use Assigned Password
                       </button>
-                    )}
+                    </div>
+
+                    {/* Full Sent Letter Content */}
+                    <pre style={{
+                      margin: 0,
+                      padding: '10px',
+                      borderRadius: '8px',
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      color: '#334155',
+                      fontSize: '11px',
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      maxHeight: '140px',
+                      overflowY: 'auto',
+                    }}>
+                      {matchingInvite.letterBody}
+                    </pre>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (matchingInvite.status === 'pending') {
+                          respondToInvitation(matchingInvite.id, 'accepted');
+                        }
+                        executeGoogleSignIn(matchingInvite.recipientEmail, matchingInvite.generatedPassword);
+                      }}
+                      style={{
+                        background: '#0284c7',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✓ Accept Appointment &amp; Sign In
+                    </button>
                   </div>
                 )}
 

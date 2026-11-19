@@ -743,14 +743,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           })));
         }
         if (invRes && invRes.data && invRes.data.length > 0) {
-          setStaffInvitations(invRes.data.map((inv: any) => ({
+          const fromDb: StaffInvitation[] = invRes.data.map((inv: any) => ({
             id: inv.id, recipientName: inv.recipient_name, recipientEmail: inv.recipient_email,
             role: inv.role, roleTitle: inv.role_title, assignedSportOrDept: inv.assigned_sport_or_dept,
             generatedPassword: inv.generated_password, status: inv.status,
             sentBy: inv.sent_by, sentByEmail: inv.sent_by_email,
             sentAt: inv.sent_at, respondedAt: inv.responded_at,
             subject: inv.subject, letterBody: inv.letter_body,
-          })));
+          }));
+          setStaffInvitations(prev => {
+            const merged = [...fromDb];
+            prev.forEach(localInv => {
+              const localEmail = (localInv.recipientEmail || '').toLowerCase();
+              if (!merged.some(d => d.id === localInv.id || (d.recipientEmail || '').toLowerCase() === localEmail)) {
+                merged.push(localInv);
+              }
+            });
+            return merged;
+          });
         }
         if (settingsRes && settingsRes.data && settingsRes.data.data) {
           const syncedSettings = updateStoredSettings(settingsRes.data.data, 'Supabase Sync');
@@ -1583,6 +1593,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setLatestInvitation(invitation);
     autoDispatchStaffInvitation(invitation);
 
+    supabase.from('staff_invitations').upsert([{
+      id: invitation.id,
+      recipient_name: invitation.recipientName,
+      recipient_email: invitation.recipientEmail,
+      role: invitation.role,
+      role_title: invitation.roleTitle,
+      assigned_sport_or_dept: invitation.assignedSportOrDept,
+      generated_password: invitation.generatedPassword,
+      status: invitation.status,
+      sent_by: invitation.sentBy,
+      sent_by_email: invitation.sentByEmail,
+      sent_at: invitation.sentAt,
+      subject: invitation.subject,
+      letter_body: invitation.letterBody,
+    }], { onConflict: 'id' }).then();
+
     const newStaff: StaffMember = {
       id: `staff-coord-${Date.now()}`,
       name: name.trim(),
@@ -1651,6 +1677,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
     setLatestInvitation(invitation);
     autoDispatchStaffInvitation(invitation);
+
+    supabase.from('staff_invitations').upsert([{
+      id: invitation.id,
+      recipient_name: invitation.recipientName,
+      recipient_email: invitation.recipientEmail,
+      role: invitation.role,
+      role_title: invitation.roleTitle,
+      assigned_sport_or_dept: invitation.assignedSportOrDept,
+      generated_password: invitation.generatedPassword,
+      status: invitation.status,
+      sent_by: invitation.sentBy,
+      sent_by_email: invitation.sentByEmail,
+      sent_at: invitation.sentAt,
+      subject: invitation.subject,
+      letter_body: invitation.letterBody,
+    }], { onConflict: 'id' }).then();
 
     const assignedComp = currentUser.role === 'coordinator' ? currentUser.assignedCompetitionId : undefined;
     const newStaff: StaffMember = {
