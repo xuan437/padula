@@ -201,11 +201,9 @@ const Sidebar: React.FC = () => {
             aria-label="Open Navigation Menu"
             style={{
               background: 'transparent',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
+              border: 'none',
+              padding: 6,
               color: 'var(--text-primary)',
-              minHeight: 44,
-              minWidth: 44,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -224,7 +222,7 @@ const Sidebar: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {liveCount > 0 && (
             <button
               type="button"
@@ -233,18 +231,16 @@ const Sidebar: React.FC = () => {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 5,
-                background: 'var(--badge-live-bg)',
-                border: '1px solid var(--badge-live-border)',
-                color: 'var(--badge-live-text)',
-                borderRadius: 20,
-                padding: '4px 8px',
-                fontSize: 10.5,
-                fontWeight: 800,
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent)',
+                padding: '4px 6px',
+                fontSize: 11.5,
+                fontWeight: 700,
                 cursor: 'pointer',
-                minHeight: 36,
               }}
             >
-              <span className="live-dot" /> LIVE ({liveCount})
+              <span className="live-dot" /> Live ({liveCount})
             </button>
           )}
 
@@ -253,19 +249,17 @@ const Sidebar: React.FC = () => {
             onClick={toggleTheme}
             aria-label="Toggle Theme"
             style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              color: 'var(--text-primary)',
-              minHeight: 44,
-              minWidth: 44,
+              background: 'transparent',
+              border: 'none',
+              padding: 6,
+              color: 'var(--text-secondary)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
             }}
           >
-            {theme === 'dark' ? <SunIcon size={16} color="#f59e0b" /> : <MoonIcon size={16} color="#6366f1" />}
+            {theme === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
           </button>
         </div>
       </div>
@@ -454,10 +448,9 @@ const Sidebar: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              padding: '9px 10px',
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
+              padding: '4px 6px',
+              background: 'transparent',
+              border: 'none',
             }}
           >
             <div
@@ -511,11 +504,11 @@ const Sidebar: React.FC = () => {
             >
               {theme === 'dark' ? (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <SunIcon size={14} color="#f59e0b" /> Light
+                  <SunIcon size={14} /> Light
                 </span>
               ) : (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <MoonIcon size={14} color="#6366f1" /> Dark
+                  <MoonIcon size={14} /> Dark
                 </span>
               )}
             </button>
