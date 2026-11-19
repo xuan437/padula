@@ -29,6 +29,7 @@ import {
   Eye,
   EyeOff,
   Lock,
+  Unlock,
   AlertTriangle,
   ArrowRight,
   Clock,
@@ -266,6 +267,10 @@ export function EyeOffIcon({ className = '', size = 18, color, strokeWidth = 1.7
 
 export function LockIcon({ className = '', size = 18, color, strokeWidth = 1.75 }: IconProps) {
   return <Lock size={size} color={color} strokeWidth={strokeWidth} className={className} />;
+}
+
+export function UnlockIcon({ className = '', size = 18, color, strokeWidth = 1.75 }: IconProps) {
+  return <Unlock size={size} color={color} strokeWidth={strokeWidth} className={className} />;
 }
 
 export function AlertTriangleIcon({ className = '', size = 18, color, strokeWidth = 1.75 }: IconProps) {

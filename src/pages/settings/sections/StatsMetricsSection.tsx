@@ -4,6 +4,8 @@ import {
   BarChartIcon,
   TrophyIcon,
   CheckIcon,
+  MedalIcon,
+  AwardIcon,
 } from '../../../components/Icons';
 
 interface Props {
@@ -95,7 +97,7 @@ export default function StatsMetricsSection({
           {/* Gold */}
           <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <span style={{ fontSize: '18px' }}>🥇</span>
+              <MedalIcon size={16} color="#f59e0b" />
               <span style={{ fontSize: '12px', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase' }}>
                 Gold Medal
               </span>
@@ -117,7 +119,7 @@ export default function StatsMetricsSection({
           {/* Silver */}
           <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(148, 163, 184, 0.08)', border: '1px solid rgba(148, 163, 184, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <span style={{ fontSize: '18px' }}>🥈</span>
+              <MedalIcon size={16} color="#94a3b8" />
               <span style={{ fontSize: '12px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>
                 Silver Medal
               </span>
@@ -139,7 +141,7 @@ export default function StatsMetricsSection({
           {/* Bronze */}
           <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(217, 119, 6, 0.08)', border: '1px solid rgba(217, 119, 6, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <span style={{ fontSize: '18px' }}>🥉</span>
+              <MedalIcon size={16} color="#d97706" />
               <span style={{ fontSize: '12px', fontWeight: 800, color: '#d97706', textTransform: 'uppercase' }}>
                 Bronze Medal
               </span>
@@ -161,7 +163,7 @@ export default function StatsMetricsSection({
           {/* 4th Place */}
           <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <span style={{ fontSize: '18px' }}>🎖️</span>
+              <AwardIcon size={16} color="var(--text-muted)" />
               <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                 4th Place
               </span>

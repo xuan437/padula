@@ -4,6 +4,9 @@ import { useApp } from '../../../context/AppContext';
 import {
   SettingsIcon,
   CheckIcon,
+  FileTextIcon,
+  RefreshIcon,
+  LayersIcon,
 } from '../../../components/Icons';
 
 interface Props {
@@ -101,7 +104,7 @@ export default function SystemManagementSection({
             className="btn btn-primary"
             style={{ fontSize: '13px', padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
           >
-            💾 Export Full Settings Backup (JSON)
+            <FileTextIcon size={15} /> Export Full Settings Backup (JSON)
           </button>
 
           <input
@@ -118,7 +121,7 @@ export default function SystemManagementSection({
             className="btn btn-outline"
             style={{ fontSize: '13px', padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
           >
-            📂 Restore / Import Settings Snapshot
+            <RefreshIcon size={15} /> Restore / Import Settings Snapshot
           </button>
         </div>
       </div>
@@ -182,9 +185,13 @@ export default function SystemManagementSection({
                 color: archiveSuccess ? '#ffffff' : '#3b82f6',
                 border: '1px solid rgba(59, 130, 246, 0.3)',
                 cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
             >
-              {archiveSuccess ? '✓ Season Successfully Archived' : '📦 Archive Finished Tournament Event'}
+              {archiveSuccess ? <><CheckIcon size={14} /> Season Successfully Archived</> : <><LayersIcon size={14} /> Archive Finished Tournament Event</>}
             </button>
           </div>
         </div>

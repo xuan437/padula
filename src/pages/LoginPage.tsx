@@ -12,6 +12,7 @@ import {
   AlertTriangleIcon,
   UserIcon,
   TrashIcon,
+  MailIcon,
 } from '../components/Icons';
 import { shouldShowDemo, verifyGoogleServerToken } from '../lib/config';
 
@@ -1141,8 +1142,11 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                                     background: '#e0f2fe',
                                     padding: '1px 6px',
                                     borderRadius: '999px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
                                   }}>
-                                    📩 Letter Received
+                                    <MailIcon size={11} color="#0284c7" /> Letter Received
                                   </span>
                                 )}
                               </div>
@@ -1403,7 +1407,8 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                         alignItems: 'center',
                         gap: '4px',
                       }}>
-                        <span>⚠️ Copy/paste is disabled for passwords. Please type your password directly.</span>
+                        <AlertTriangleIcon size={13} color="#0284c7" />
+                        <span>Copy/paste is disabled for passwords. Please type your password directly.</span>
                       </div>
                     )}
                   </div>
@@ -1426,7 +1431,9 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     }}
                   >
                     <div style={{ fontWeight: 800, color: '#0f2d5c', fontSize: '12.5px' }}>
-                      📩 Official Appointment Letter Received ({matchingInvite.roleTitle})
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <MailIcon size={14} color="#0f2d5c" /> Official Appointment Letter Received ({matchingInvite.roleTitle})
+                      </span>
                     </div>
                     <div style={{ fontSize: '11px', color: '#475569' }}>
                       From: <strong>{matchingInvite.sentBy}</strong> ({matchingInvite.sentByEmail}) · Assigned: <strong>{matchingInvite.assignedSportOrDept}</strong> · Status: <strong>{matchingInvite.status.toUpperCase()}</strong>

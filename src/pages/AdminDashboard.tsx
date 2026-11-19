@@ -500,7 +500,7 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
         {/* ── Quick-Start Workflow Guide (Progressive Disclosure) ───────────── */}
         <details className="glass-card" style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
           <summary style={{ cursor: 'pointer', fontSize: 12.5, fontWeight: 800, color: 'var(--text-primary)', userSelect: 'none' }}>
-            🧭 Tournament Navigation Guide (4 Steps: Setup → Register → Bracket → Score Live)
+            Tournament Navigation Guide (4 Steps: Setup → Register → Bracket → Score Live)
           </summary>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginTop: 12 }}>
             {[

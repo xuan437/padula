@@ -341,7 +341,8 @@ export default function DirectorTempLoginPage({ onBackToPublic }: { onBackToPubl
                 alignItems: 'center',
                 gap: '4px',
               }}>
-                <span>⚠️ Paste is disabled for password security. Please type manually.</span>
+                <AlertTriangleIcon size={13} color="#7dd3fc" />
+                <span>Paste is disabled for password security. Please type manually.</span>
               </div>
             )}
           </div>

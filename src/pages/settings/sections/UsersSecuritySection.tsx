@@ -6,6 +6,8 @@ import {
   ShieldIcon,
   UsersIcon,
   LockIcon,
+  TrophyIcon,
+  FileTextIcon,
 } from '../../../components/Icons';
 
 interface Props {
@@ -150,8 +152,9 @@ export default function UsersSecuritySection({
                 <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginBottom: '8px' }}>
                   {assignedStaff ? assignedStaff.email : 'Awaiting assignment'}
                 </div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#38bdf8' }}>
-                  🏆 {slot.assignedCompetitionName || 'Not assigned to sport'}
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <TrophyIcon size={13} color="#38bdf8" />
+                  <span>{slot.assignedCompetitionName || 'Not assigned to sport'}</span>
                 </div>
               </div>
             );
@@ -380,7 +383,7 @@ export default function UsersSecuritySection({
             className="btn btn-outline btn-sm"
             style={{ fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            📥 Export Filtered Audit Trail (CSV)
+            <FileTextIcon size={14} /> Export Filtered Audit Trail (CSV)
           </button>
         </div>
 

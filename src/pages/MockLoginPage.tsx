@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import padulaTitleImg from '../assets/padula-title.png';
 import schoolLogo from '../assets/logo.png';
-import { ShieldIcon, ClipboardIcon, FlameIcon } from '../components/Icons';
+import { ShieldIcon, ClipboardIcon, FlameIcon, AlertTriangleIcon } from '../components/Icons';
 
 export default function MockLoginPage() {
   const { signInMockAccount, setActiveView } = useApp();
@@ -115,7 +115,9 @@ export default function MockLoginPage() {
               fontWeight: 600,
             }}
           >
-            ⚠️ {errorMessage}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <AlertTriangleIcon size={14} color="#7dd3fc" /> {errorMessage}
+            </span>
           </div>
         )}
 

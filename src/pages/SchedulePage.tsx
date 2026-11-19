@@ -363,9 +363,9 @@ export default function SchedulePage() {
             style={{ width: '150px', fontSize: '13px' }}
           >
             <option value="all">All Statuses</option>
-            <option value="live">🔴 Live Now</option>
-            <option value="scheduled">🟡 Scheduled</option>
-            <option value="finished">🟢 Finalized</option>
+            <option value="live">Live Now</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="finished">Finalized</option>
           </select>
 
           {/* Venue Filter */}

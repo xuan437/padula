@@ -16,6 +16,9 @@ import {
   CheckIcon,
   AlertTriangleIcon,
   RefreshIcon,
+  LockIcon,
+  UnlockIcon,
+  ChevronRightIcon,
 } from '../../../components/Icons';
 
 interface Props {
@@ -166,8 +169,8 @@ export default function SportsCompetitionSection({
   const statusBadge = (field: keyof CompetitionOverride, lockKey?: CoordinatorLockableField) => {
     if (lockKey && isLocked(lockKey)) {
       return (
-        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: 'rgba(56, 189, 248,0.12)', color: '#38bdf8', marginLeft: 6 }}>
-          🔒 Locked by Director
+        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', marginLeft: 6, display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}>
+          <LockIcon size={11} color="#38bdf8" /> Locked by Director
         </span>
       );
     }
@@ -707,10 +710,10 @@ export default function SportsCompetitionSection({
 
           {/* Director: Coordinator Permission Locks */}
           <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
               COORDINATOR PERMISSION LOCKS (LOCK OPTIONS COORDINATORS CANNOT CHANGE)
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 8 }}>
               {(
                 [
                   { id: 'format', label: 'Tournament Format' },
@@ -729,9 +732,24 @@ export default function SportsCompetitionSection({
                     type="button"
                     onClick={() => toggleDirectorLock(item.id)}
                     className={`btn btn-sm ${locked ? 'btn-primary' : 'btn-outline'}`}
-                    style={{ fontSize: 11.5 }}
+                    style={{
+                      fontSize: 11.5,
+                      width: '100%',
+                      justifyContent: 'flex-start',
+                      textAlign: 'left',
+                      whiteSpace: 'normal',
+                      padding: '8px 12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
                   >
-                    {locked ? '🔒 Locked' : '🔓 Editable'}: {item.label}
+                    <span style={{ display: 'inline-flex', flexShrink: 0 }}>
+                      {locked ? <LockIcon size={13} color="#ffffff" /> : <UnlockIcon size={13} color="var(--accent)" />}
+                    </span>
+                    <span>
+                      <strong>{locked ? 'Locked' : 'Editable'}:</strong> {item.label}
+                    </span>
                   </button>
                 );
               })}
@@ -744,9 +762,32 @@ export default function SportsCompetitionSection({
               type="button"
               className="btn btn-sm btn-ghost"
               onClick={() => setShowAdvancedLists(p => !p)}
-              style={{ fontWeight: 700, padding: '6px 10px' }}
+              style={{
+                fontWeight: 700,
+                padding: '8px 12px',
+                width: '100%',
+                maxWidth: '100%',
+                justifyContent: 'flex-start',
+                textAlign: 'left',
+                whiteSpace: 'normal',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
             >
-              {showAdvancedLists ? '▾ Hide Master Dropdown Lists (Venues, Departments, Divisions)' : '▸ Show Master Dropdown Lists (Venues, Departments, Divisions)'}
+              <span style={{
+                display: 'inline-flex',
+                flexShrink: 0,
+                transform: showAdvancedLists ? 'rotate(90deg)' : 'none',
+                transition: 'transform 0.15s ease',
+              }}>
+                <ChevronRightIcon size={14} />
+              </span>
+              <span>
+                {showAdvancedLists
+                  ? 'Hide Master Dropdown Lists (Venues, Departments, Divisions)'
+                  : 'Show Master Dropdown Lists (Venues, Departments, Divisions)'}
+              </span>
             </button>
 
             {showAdvancedLists && (
