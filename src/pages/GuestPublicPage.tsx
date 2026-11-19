@@ -99,6 +99,9 @@ const STREAM_APPS = {
     shortName: 'Facebook',
     rtmpUrl: 'rtmps://live-api-s.facebook.com:443/rtmp/',
     producerUrl: 'https://www.facebook.com/live/producer',
+    iosScheme: 'fb://composer',
+    androidPackage: 'com.facebook.katana',
+    androidIntent: 'intent://facewebmodal/f?href=https://www.facebook.com/live/producer#Intent;package=com.facebook.katana;scheme=fb;S.browser_fallback_url=https%3A%2F%2Fwww.facebook.com%2Flive%2Fproducer;end',
     bg: '#1877F2',
     border: '#38bdf8',
   },
@@ -108,6 +111,9 @@ const STREAM_APPS = {
     shortName: 'TikTok',
     rtmpUrl: 'rtmp://push.tiktokv.com/live/',
     producerUrl: 'https://www.tiktok.com/live',
+    iosScheme: 'snssdk1233://live',
+    androidPackage: 'com.zhiliaoapp.musically',
+    androidIntent: 'intent://live#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1233;S.browser_fallback_url=https%3A%2F%2Fwww.tiktok.com%2Flive;end',
     bg: '#0f172a',
     border: '#38bdf8',
   },
@@ -117,6 +123,9 @@ const STREAM_APPS = {
     shortName: 'YouTube',
     rtmpUrl: 'rtmp://a.rtmp.youtube.com/live2',
     producerUrl: 'https://studio.youtube.com/',
+    iosScheme: 'vnd.youtube://www.youtube.com/live_dashboard_splash',
+    androidPackage: 'com.google.android.youtube',
+    androidIntent: 'intent://www.youtube.com/live_dashboard_splash#Intent;package=com.google.android.youtube;scheme=https;S.browser_fallback_url=https%3A%2F%2Fstudio.youtube.com%2F;end',
     bg: '#0f2d5c',
     border: '#0ea5e9',
   },
@@ -392,16 +401,101 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isAndroid = /Android/i.test(userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+  const isMobileDevice = isAndroid || isIOS;
+  const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const shareTargetUrl = streamUrl.trim() || liveMatchUrl;
+
   const copyText = (notice?: string, customValue?: string) => {
     const payload = customValue ?? text;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(payload);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(payload).catch(() => {});
       setCopied(true);
-      if (notice) setPlatformNotice(notice);
-      setTimeout(() => {
-        setCopied(false);
-        setPlatformNotice(null);
-      }, 3600);
+    }
+    if (notice) setPlatformNotice(notice);
+    setTimeout(() => {
+      setCopied(false);
+      setPlatformNotice(null);
+    }, 3600);
+  };
+
+  const launchInstalledMobileApp = (platform: 'facebook' | 'tiktok' | 'youtube') => {
+    const cfg = STREAM_APPS[platform];
+    copyText(
+      isMobileDevice
+        ? `Opening installed ${cfg.shortName} app... Live score caption & link copied to clipboard!`
+        : `Opened ${cfg.name} studio! Live score caption & RTMP/URL copied.`
+    );
+
+    if (isAndroid) {
+      window.location.href = cfg.androidIntent;
+      return;
+    }
+
+    if (isIOS) {
+      let switchedToApp = false;
+      const handleVisibility = () => {
+        if (document.hidden) {
+          switchedToApp = true;
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+      window.location.href = cfg.iosScheme;
+      window.setTimeout(() => {
+        document.removeEventListener('visibilitychange', handleVisibility);
+        if (!switchedToApp && !document.hidden) {
+          window.open(cfg.producerUrl, '_blank', 'noopener,noreferrer');
+        }
+      }, 1400);
+      return;
+    }
+
+    if (platform === 'facebook') {
+      const target = streamUrl.trim()
+        ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(streamUrl.trim())}&quote=${encodeURIComponent(text)}`
+        : cfg.producerUrl;
+      window.open(target, '_blank', 'noopener,noreferrer');
+    } else {
+      window.open(cfg.producerUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const shareToInstalledMobileApps = async () => {
+    copyText();
+    if (!canNativeShare) {
+      launchInstalledMobileApp(selectedApp);
+      return;
+    }
+
+    const shareTitle = `${match.teamA} vs ${match.teamB} — Live Scoreboard Stream`;
+    try {
+      if (recordedBlob && (navigator as any).canShare) {
+        const file = new File([recordedBlob], `padula-live-${match.id || 'stream'}.webm`, {
+          type: recordedBlob.type || 'video/webm',
+        });
+        if ((navigator as any).canShare({ files: [file] })) {
+          await navigator.share({
+            title: shareTitle,
+            text,
+            url: shareTargetUrl,
+            files: [file],
+          });
+          setPlatformNotice('Shared camera clip + live scoreboard via your installed mobile app!');
+          return;
+        }
+      }
+
+      await navigator.share({
+        title: shareTitle,
+        text,
+        url: shareTargetUrl,
+      });
+      setPlatformNotice('Shared live stream link & scoreboard via your installed mobile app!');
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+      launchInstalledMobileApp(selectedApp);
     }
   };
 
@@ -412,7 +506,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
       void startCamera();
     }
 
-    // Use Web Share API with recorded scoreboard+camera clip on mobile if supported
+    // Share recorded camera+scoreboard clip directly to installed mobile apps when supported
     if (recordedBlob && typeof navigator !== 'undefined' && (navigator as any).canShare) {
       try {
         const file = new File([recordedBlob], `padula-live-${match.id || 'stream'}.webm`, { type: recordedBlob.type || 'video/webm' });
@@ -420,23 +514,18 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
           await navigator.share({
             title: `${match.teamA} vs ${match.teamB} — Live Scoreboard Stream`,
             text,
+            url: shareTargetUrl,
             files: [file],
           });
-          setPlatformNotice(`Shared camera stream + live scoreboard to ${cfg.name}!`);
+          setPlatformNotice(`Shared camera stream + live scoreboard clip to ${cfg.name}!`);
           return;
         }
-      } catch {}
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
     }
 
-    copyText(`Connected camera studio to ${cfg.name}! Live score caption & RTMP/URL copied.`);
-    if (platform === 'facebook') {
-      const target = streamUrl.trim()
-        ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(streamUrl.trim())}&quote=${encodeURIComponent(text)}`
-        : cfg.producerUrl;
-      window.open(target, '_blank', 'noopener,noreferrer');
-    } else {
-      window.open(cfg.producerUrl, '_blank', 'noopener,noreferrer');
-    }
+    launchInstalledMobileApp(platform);
   };
 
   return (
@@ -673,10 +762,23 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
           </div>
         )}
 
-        {/* Connect App Selector (Facebook, TikTok, YouTube) */}
+        {/* Connect App Selector (Facebook, TikTok, YouTube + Installed Mobile Apps) */}
         <div style={{ marginBottom: '12px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Connect Livestream App (Camera + Live Scoreboard)
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Connect Livestream App (Camera + Live Scoreboard)
+            </span>
+            <span style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              color: '#0284c7',
+              background: 'rgba(14, 165, 233, 0.12)',
+              padding: '2px 8px',
+              borderRadius: '999px',
+              letterSpacing: '0.03em',
+            }}>
+              {canNativeShare || isMobileDevice ? 'INSTALLED APP READY' : 'MOBILE APP DEEP-LINK + OS SHARE'}
+            </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             {(['facebook', 'tiktok', 'youtube'] as const).map(key => {
@@ -689,7 +791,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
                   className="btn btn-sm"
                   onClick={() => {
                     setSelectedApp(key);
-                    setPlatformNotice(`Connected to ${cfg.name} — ready to stream with live scoreboard.`);
+                    setPlatformNotice(`Selected ${cfg.name} — tap Open Installed ${cfg.shortName} App or Share via Mobile Apps.`);
                   }}
                   style={{
                     background: cfg.bg,
@@ -709,10 +811,9 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
 
         {/* Connected App RTMP / URL / Stream Key */}
         <div style={{
-          padding: '10px 12px',
-          borderRadius: '8px',
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-light)',
+          padding: '10px 0',
+          borderTop: '1px solid var(--border-light)',
+          borderBottom: '1px solid var(--border-light)',
           marginBottom: '12px',
           display: 'flex',
           flexDirection: 'column',
@@ -722,13 +823,22 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
               {activeAppConfig.name} Server URL: <code style={{ color: 'var(--accent)' }}>{activeAppConfig.rtmpUrl}</code>
             </span>
-            <button
-              type="button"
-              className="btn btn-xs btn-outline"
-              onClick={() => copyText(`Copied ${activeAppConfig.name} RTMP Server URL!`, activeAppConfig.rtmpUrl)}
-            >
-              Copy RTMP
-            </button>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-xs btn-outline"
+                onClick={() => copyText(`Copied ${activeAppConfig.name} RTMP Server URL!`, activeAppConfig.rtmpUrl)}
+              >
+                Copy RTMP
+              </button>
+              <button
+                type="button"
+                className="btn btn-xs btn-primary"
+                onClick={() => launchInstalledMobileApp(selectedApp)}
+              >
+                Open {activeAppConfig.shortName} App
+              </button>
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div>
@@ -764,17 +874,15 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
           <div style={{
             fontSize: '11.5px',
             fontWeight: 700,
-            color: '#10b981',
-            background: 'rgba(16, 185, 129, 0.12)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            borderRadius: '6px',
-            padding: '7px 10px',
+            color: '#0284c7',
+            borderLeft: '3px solid #0284c7',
+            padding: '4px 10px',
             marginBottom: '10px',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
           }}>
-            <CheckIcon size={13} color="#10b981" />
+            <CheckIcon size={13} color="#0284c7" />
             <span>{platformNotice}</span>
           </div>
         )}
@@ -783,10 +891,18 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
           <button
             type="button"
             className="btn btn-primary"
-            style={{ flex: '1 1 220px', fontWeight: 700 }}
+            style={{ flex: '1 1 210px', fontWeight: 700 }}
             onClick={() => void connectAndStreamToApp(selectedApp)}
           >
-            Go Live on {activeAppConfig.shortName} &amp; Sync Scoreboard
+            Open Installed {activeAppConfig.shortName} App &amp; Go Live
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline"
+            style={{ flex: '1 1 190px', fontWeight: 700, borderColor: '#0284c7', color: '#0284c7' }}
+            onClick={() => void shareToInstalledMobileApps()}
+          >
+            Share via Installed Mobile Apps...
           </button>
           <button
             type="button"
