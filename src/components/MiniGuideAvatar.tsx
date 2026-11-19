@@ -10,11 +10,13 @@ export interface GuidePointerStep {
   selector?: string;
 }
 
+export type GuideRole = 'guest' | 'director' | 'coordinator' | 'scorer';
+
 export interface GuideTopic {
   id: string;
   question: string;
   keywords: string[];
-  roles: ('all' | 'guest' | 'director' | 'coordinator' | 'scorer')[];
+  roles: GuideRole[];
   summary: string;
   targetView?: string;
   targetLabel?: string;
@@ -26,15 +28,186 @@ const GUIDE_TOPICS: GuideTopic[] = [
     id: 'tour-current',
     question: 'Where am I? Give me a tour of this page',
     keywords: ['lost', 'where am i', 'help', 'tour', 'guide', 'page', 'start', 'overview', 'what is this'],
-    roles: ['all'],
+    roles: ['guest', 'director', 'coordinator', 'scorer'],
     summary: 'I will point to the main controls on your current screen and explain what each one does.',
     steps: [],
   },
+  // ── Public Spectator Topics (Only shown in Public View / Guest Mode) ──────
+  {
+    id: 'public-live-results',
+    question: 'How do I check live scores, final results, and match schedules?',
+    keywords: ['live', 'score', 'results', 'schedule', 'upcoming', 'finished', 'matches', 'games', 'time', 'venue'],
+    roles: ['guest'],
+    summary: 'Use the Live, Results, and Schedule tabs at the top of the Public Hub to follow real-time games, completed scores, and upcoming court schedules.',
+    targetView: 'public',
+    targetLabel: 'View Live & Results',
+    steps: [
+      {
+        title: '1. Live, Results & Schedule Tabs',
+        instruction: 'Click "Live" for ongoing games, "Results" for completed match scores, or "Schedule" for upcoming fixtures and venues.',
+        view: 'public',
+        textMatches: ['Live', 'Results', 'Schedule'],
+      },
+      {
+        title: '2. Filter by Sport',
+        instruction: 'Click any sport pill (such as Basketball, Volleyball, Futsal, Badminton, or Esports) to filter matches for that sport.',
+        view: 'public',
+        textMatches: ['All Sports', 'Basketball', 'Volleyball'],
+      },
+    ],
+  },
+  {
+    id: 'public-standings-brackets',
+    question: 'How do I view department standings, tournament brackets, and the medal tally?',
+    keywords: ['standings', 'brackets', 'medal', 'tally', 'gold', 'silver', 'bronze', 'ranking', 'department', 'tree'],
+    roles: ['guest'],
+    summary: 'Switch to the Standings, Brackets, or Medal Tally tabs on the Public Hub to track department rankings and championship trees.',
+    targetView: 'public',
+    targetLabel: 'View Standings & Tally',
+    steps: [
+      {
+        title: '1. Standings, Brackets & Medal Tally Tabs',
+        instruction: 'Click "Standings" for team win-loss tables, "Brackets" for elimination trees, or "Medal Tally" for overall department Gold, Silver, and Bronze rankings.',
+        view: 'public',
+        textMatches: ['Standings', 'Brackets', 'Medal Tally'],
+      },
+      {
+        title: '2. Official Announcements',
+        instruction: 'Click "Announcements" to read official tournament updates and schedule notices.',
+        view: 'public',
+        textMatches: ['Announcements'],
+      },
+    ],
+  },
+  {
+    id: 'public-ai-predictions',
+    question: 'How do I view AI match predictions and win probabilities?',
+    keywords: ['ai', 'prediction', 'forecast', 'probability', 'win', 'elo', 'simulate', 'matchup'],
+    roles: ['guest'],
+    summary: 'Check the AI Forecast strip on any live match card or open the Predictions tab to simulate head-to-head department matchups.',
+    targetView: 'public',
+    targetLabel: 'View AI Forecasts',
+    steps: [
+      {
+        title: '1. Live Match AI Forecast Strip',
+        instruction: 'Click "Full AI Forecast" on any live match card to inspect win probability, projected final score, and Elo comparison.',
+        view: 'public',
+        textMatches: ['Full AI Forecast', 'Predictions'],
+      },
+    ],
+  },
+  {
+    id: 'share-livestream',
+    question: 'How do I connect my camera or share a live stream to Facebook, TikTok, or YouTube?',
+    keywords: ['stream', 'livestream', 'camera', 'facebook', 'tiktok', 'youtube', 'share', 'mobile', 'app', 'video'],
+    roles: ['guest'],
+    summary: 'On the Public Hub Live tab, click "Share Live Stream" on any match card to connect your camera, overlay the live scoreboard, and launch Facebook, TikTok, or YouTube.',
+    targetView: 'public',
+    targetLabel: 'Go to Live Matches',
+    steps: [
+      {
+        title: '1. Click "Share Live Stream" on a Match Card',
+        instruction: 'On any live match card, click the "Share Live Stream" button in the bottom corner of the card.',
+        view: 'public',
+        textMatches: ['Share Live Stream'],
+      },
+      {
+        title: '2. Connect Camera & Launch Installed App',
+        instruction: 'Inside the studio modal, click "Connect Camera" to overlay the live scoreboard onto your video, then tap Facebook, TikTok, or YouTube (or "Share via Installed Mobile Apps...").',
+        view: 'public',
+        textMatches: ['Connect Camera', 'Open Installed', 'Share via Installed Mobile Apps'],
+      },
+    ],
+  },
+  {
+    id: 'public-qr-print',
+    question: 'How do I share the tournament link, scan the QR poster, or print schedules?',
+    keywords: ['qr', 'print', 'poster', 'share', 'link', 'theme', 'dark', 'light'],
+    roles: ['guest'],
+    summary: 'Use the Share / QR and Print buttons in the top-right header of the Public Hub to open the scannable QR poster or print clean tournament sheets.',
+    targetView: 'public',
+    targetLabel: 'Open Share & Print',
+    steps: [
+      {
+        title: '1. Share / QR Poster & Print',
+        instruction: 'Click "Share / QR" in the top-right header to display or print the scannable tournament QR poster, or click "Print" to print the current view.',
+        view: 'public',
+        textMatches: ['Share / QR', 'Print'],
+      },
+    ],
+  },
+
+  // ── Official Scorer Topics (Only shown when logged in as Scorer) ──────────
+  {
+    id: 'scorer-assigned-matches',
+    question: 'How do I view my assigned matches and court schedule?',
+    keywords: ['assigned', 'my matches', 'schedule', 'court', 'upcoming', 'duty'],
+    roles: ['scorer'],
+    summary: 'Open My Assigned Matches or Schedule & Results in the sidebar to see the games and courts assigned to you.',
+    targetView: 'scorer-dashboard',
+    targetLabel: 'Open My Assigned Matches',
+    steps: [
+      {
+        title: '1. Open My Assigned Matches',
+        instruction: 'Click "My Assigned Matches" in the sidebar to view your upcoming and active court assignments.',
+        view: 'scorer-dashboard',
+        textMatches: ['My Assigned Matches', 'Scorer Desk'],
+      },
+    ],
+  },
+  {
+    id: 'score-live-match',
+    question: 'How do I enter live scores and finalize a match?',
+    keywords: ['score', 'live', 'scorer desk', 'points', 'quarter', 'set', 'finalize', 'clock', 'timer'],
+    roles: ['scorer', 'coordinator', 'director'],
+    summary: 'Use the Scorer Desk to start a scheduled match, increment team and player stats in real time, and finalize the official result.',
+    targetView: 'scorekeeper',
+    targetLabel: 'Open Scorer Desk',
+    steps: [
+      {
+        title: '1. Open Scorer Desk',
+        instruction: 'Click "Scorer Desk" in the sidebar to open the court-side scoring console.',
+        view: 'scorekeeper',
+        textMatches: ['Scorer Desk'],
+      },
+      {
+        title: '2. Select Active Match & Update Scores',
+        instruction: 'Pick a live or scheduled match, use the quick +1 / +2 / +3 score buttons and period controls, then click Finalize when the game ends.',
+        view: 'scorekeeper',
+        textMatches: ['Live', 'Scheduled', 'Finalize'],
+      },
+    ],
+  },
+  {
+    id: 'generate-brackets',
+    question: 'How do I view or manage tournament brackets & standings?',
+    keywords: ['bracket', 'draw', 'seed', 'matchup', 'tree', 'elimination', 'round robin', 'standings', 'bye'],
+    roles: ['scorer', 'coordinator', 'director'],
+    summary: 'Open Brackets & Standings to view elimination trees, round-robin tables, seed teams, or generate matchups.',
+    targetView: 'bracket',
+    targetLabel: 'Open Brackets',
+    steps: [
+      {
+        title: '1. Open Brackets & Standings',
+        instruction: 'Click "Brackets & Standings" (or "Brackets") in the sidebar.',
+        view: 'bracket',
+        textMatches: ['Brackets & Standings', 'Brackets'],
+      },
+      {
+        title: '2. Filter by Sport & Inspect Bracket',
+        instruction: 'Choose a sport pill at the top to view its bracket tree and current round progression.',
+        view: 'bracket',
+        textMatches: ['Basketball', 'Volleyball', 'Single Elimination', 'Round Robin'],
+      },
+    ],
+  },
+
+  // ── Coordinator & Director Topics (Hidden in Public View and from Scorers) ──
   {
     id: 'setup-tournament',
     question: 'How do I create or set up a tournament & venues?',
     keywords: ['create', 'setup', 'tournament', 'event', 'venue', 'court', 'sport', 'date', 'new event'],
-    roles: ['director', 'coordinator', 'all'],
+    roles: ['director', 'coordinator'],
     summary: 'Go to Event Setup to configure tournament dates, accredited sports, and playing venues, or use Settings for format rules.',
     targetView: 'event-setup',
     targetLabel: 'Open Event Setup',
@@ -63,7 +236,7 @@ const GUIDE_TOPICS: GuideTopic[] = [
     id: 'register-teams-players',
     question: 'How do I register teams and student-athletes?',
     keywords: ['register', 'team', 'player', 'athlete', 'roster', 'jersey', 'medical', 'excel', 'import'],
-    roles: ['director', 'coordinator', 'all'],
+    roles: ['director', 'coordinator'],
     summary: 'Open Registration under People to add department teams, register players, or bulk-import rosters via Excel.',
     targetView: 'registration',
     targetLabel: 'Go to Registration',
@@ -84,10 +257,10 @@ const GUIDE_TOPICS: GuideTopic[] = [
   },
   {
     id: 'register-scorers-coordinators',
-    question: 'How do I add a Scorekeeper or Coordinator & send their Gmail invitation?',
-    keywords: ['scorekeeper', 'scorer', 'coordinator', 'gmail', 'email', 'invitation', 'letter', 'password', 'staff', 'official'],
-    roles: ['director', 'coordinator', 'all'],
-    summary: 'In Registration, open the Scorekeepers or Coordinators tab. Registering them automatically opens Gmail with their official appointment letter and login password.',
+    question: 'How do I register staff and send their appointment letter?',
+    keywords: ['scorekeeper', 'scorer', 'coordinator', 'gmail', 'email', 'invitation', 'letter', 'token', 'staff', 'official'],
+    roles: ['director', 'coordinator'],
+    summary: 'In Registration, open the Scorekeepers or Coordinators tab to register staff with a 24-hour one-time password setup link, or click "Open in Gmail" to send manually.',
     targetView: 'registration',
     targetLabel: 'Open Staff Registration',
     steps: [
@@ -104,94 +277,25 @@ const GUIDE_TOPICS: GuideTopic[] = [
         textMatches: ['Scorekeepers', 'Coordinators'],
       },
       {
-        title: '3. Register & Send via Gmail',
-        instruction: 'Enter their name, assigned sport, and email, then submit. Their appointment letter modal and Gmail compose window will open with their temporary password ready to send.',
+        title: '3. Register & Send Appointment Letter',
+        instruction: 'Submit their name, sport, and email. The appointment letter includes a one-time 24-hour password setup link, and you can click "Open in Gmail" to send it directly.',
         view: 'registration',
-        textMatches: ['Register Scorekeeper', 'Register Coordinator', 'View Letter'],
-      },
-    ],
-  },
-  {
-    id: 'generate-brackets',
-    question: 'How do I generate or manage tournament brackets & standings?',
-    keywords: ['bracket', 'draw', 'seed', 'matchup', 'tree', 'elimination', 'round robin', 'standings', 'bye'],
-    roles: ['director', 'coordinator', 'scorer', 'all'],
-    summary: 'Open Brackets & Standings to view elimination trees, round-robin tables, seed teams, or generate matchups.',
-    targetView: 'bracket',
-    targetLabel: 'Open Brackets',
-    steps: [
-      {
-        title: '1. Open Brackets & Standings',
-        instruction: 'Click "Brackets & Standings" (or "Brackets") in the sidebar.',
-        view: 'bracket',
-        textMatches: ['Brackets & Standings', 'Brackets'],
-      },
-      {
-        title: '2. Filter by Sport & Manage Bracket',
-        instruction: 'Choose a sport pill at the top to view its bracket tree, swap team seeds, set BYEs, or advance winners.',
-        view: 'bracket',
-        textMatches: ['Basketball', 'Volleyball', 'Single Elimination', 'Round Robin'],
-      },
-    ],
-  },
-  {
-    id: 'score-live-match',
-    question: 'How do I enter live scores and finalize a match?',
-    keywords: ['score', 'live', 'scorer desk', 'points', 'quarter', 'set', 'finalize', 'clock', 'timer', 'referee'],
-    roles: ['director', 'coordinator', 'scorer', 'all'],
-    summary: 'Use the Scorer Desk to start a scheduled match, increment team and player stats in real time, and finalize the official result.',
-    targetView: 'scorekeeper',
-    targetLabel: 'Open Scorer Desk',
-    steps: [
-      {
-        title: '1. Open Scorer Desk',
-        instruction: 'Click "Scorer Desk" in the sidebar to open the court-side scoring console.',
-        view: 'scorekeeper',
-        textMatches: ['Scorer Desk'],
-      },
-      {
-        title: '2. Select Active Match & Update Scores',
-        instruction: 'Pick a live or scheduled match, use the quick +1 / +2 / +3 score buttons and period controls, then click Finalize when the game ends.',
-        view: 'scorekeeper',
-        textMatches: ['Live', 'Scheduled', 'Finalize'],
-      },
-    ],
-  },
-  {
-    id: 'share-livestream',
-    question: 'How do I connect my camera or share a live stream to Facebook, TikTok, or YouTube?',
-    keywords: ['stream', 'livestream', 'camera', 'facebook', 'tiktok', 'youtube', 'share', 'mobile', 'app', 'video'],
-    roles: ['all', 'guest'],
-    summary: 'On the Public Hub Live tab, click "Share Live Stream" on any match card to connect your camera, overlay the live scoreboard, and launch Facebook, TikTok, or YouTube.',
-    targetView: 'public',
-    targetLabel: 'Go to Live Matches',
-    steps: [
-      {
-        title: '1. Click "Share Live Stream" on a Match Card',
-        instruction: 'On any live match card, click the "Share Live Stream" button in the bottom corner of the card.',
-        view: 'public',
-        textMatches: ['Share Live Stream'],
-      },
-      {
-        title: '2. Connect Camera & Launch Installed App',
-        instruction: 'Inside the studio modal, click "Connect Camera" to overlay the live scoreboard onto your video, then tap Facebook, TikTok, or YouTube (or "Share via Installed Mobile Apps...").',
-        view: 'public',
-        textMatches: ['Connect Camera', 'Open Installed', 'Share via Installed Mobile Apps'],
+        textMatches: ['Register Scorekeeper', 'Register Coordinator', 'Open in Gmail', 'View Letter'],
       },
     ],
   },
   {
     id: 'customize-settings',
-    question: 'How can a Coordinator or Director customize tournament settings & formats?',
+    question: 'How do I customize tournament settings, formats & tiebreakers?',
     keywords: ['settings', 'format', 'tiebreaker', 'series', 'best of 3', 'best of 5', 'points', 'lock', 'unlock', 'permission', 'customize'],
-    roles: ['director', 'coordinator', 'all'],
-    summary: 'Open Settings in the sidebar. Both Directors and Coordinators have full access to all 8 sections to customize formats, tiebreakers, rosters, stats, and displays.',
+    roles: ['director', 'coordinator'],
+    summary: 'Open Settings in the sidebar to access all 8 configuration sections for formats, tiebreakers, rosters, stats formulas, and displays.',
     targetView: 'settings',
     targetLabel: 'Open Settings Console',
     steps: [
       {
         title: '1. Open Settings Console',
-        instruction: 'Click "Settings" under the Admin section in the left sidebar.',
+        instruction: 'Click "Settings" in the left sidebar.',
         view: 'settings',
         textMatches: ['Settings'],
       },
@@ -209,94 +313,49 @@ const GUIDE_TOPICS: GuideTopic[] = [
       },
     ],
   },
-  {
-    id: 'public-spectator-navigation',
-    question: 'How do I check live scores, medal tally, brackets, or print the QR poster?',
-    keywords: ['public', 'medal', 'tally', 'results', 'schedule', 'qr', 'print', 'poster', 'ai', 'prediction', 'spectator'],
-    roles: ['guest', 'all'],
-    summary: 'Use the top navigation tabs on the Public Hub to switch between Live, Results, Standings, Brackets, Schedule, Medal Tally, Announcements, and AI Predictions.',
-    targetView: 'public',
-    targetLabel: 'Open Public Hub',
-    steps: [
-      {
-        title: '1. Switch Public Hub Tabs',
-        instruction: 'Use these tabs to view Live matches, Final Results, Department Standings, Brackets, Schedule, Medal Tally, or AI Predictions.',
-        view: 'public',
-        textMatches: ['Medal Tally', 'Standings', 'Brackets', 'Schedule'],
-      },
-      {
-        title: '2. Share / QR Poster & Print',
-        instruction: 'Click "Share / QR" in the top-right header to display or print the official scannable tournament QR poster.',
-        view: 'public',
-        textMatches: ['Share / QR', 'Print'],
-      },
-      {
-        title: '3. Staff Login',
-        instruction: 'Are you a Sports Director, Coordinator, or Official Scorer? Click "Staff Login" in the top-right corner to sign in.',
-        view: 'public',
-        textMatches: ['Staff Login', 'Back to Dashboard'],
-      },
-    ],
-  },
-  {
-    id: 'staff-login-help',
-    question: 'How do I sign in as a Director, Coordinator, or Scorekeeper?',
-    keywords: ['login', 'sign in', 'password', 'account', 'access', 'request', 'credentials', 'appointed'],
-    roles: ['guest', 'all'],
-    summary: 'Click Staff Login on the Public Hub, then sign in with your @asiancollege.edu.ph email and temporary password from your appointment letter.',
-    targetView: 'login',
-    targetLabel: 'Go to Staff Login',
-    steps: [
-      {
-        title: '1. Open Staff Login Portal',
-        instruction: 'Click "Staff Login" in the top-right corner of the Public Hub.',
-        view: 'login',
-        textMatches: ['Staff Login', 'Sign In', 'Institutional Email'],
-      },
-      {
-        title: '2. Enter Your Email & Temporary Password',
-        instruction: 'Type your registered email. If an Official Appointment Letter was sent to you, your assigned credentials banner will appear automatically so you can accept and sign in.',
-        view: 'login',
-        textMatches: ['Sign In', 'Request Access'],
-      },
-    ],
-  },
 ];
 
 // Page-specific automatic tour steps when the user asks "Where am I? Give me a tour of this page"
-function getPageTourSteps(activeView: string, isAuthenticated: boolean): GuidePointerStep[] {
+function getPageTourSteps(activeView: string, effectiveRole: GuideRole): GuidePointerStep[] {
+  if (activeView === 'public' || effectiveRole === 'guest') {
+    return [
+      {
+        title: '1. Live Scores & Tournament Tabs',
+        instruction: 'Use the navigation tabs to switch between Live matches, Results, Standings, Brackets, Schedule, Medal Tally, Announcements, and AI Predictions.',
+        textMatches: ['Live', 'Results', 'Standings', 'Medal Tally'],
+      },
+      {
+        title: '2. Filter by Sport & Search Teams',
+        instruction: 'Select any sport pill to filter matches and standings for that sport.',
+        textMatches: ['All Sports', 'Basketball', 'Volleyball'],
+      },
+      {
+        title: '3. Share Live Stream & Camera Studio',
+        instruction: 'Click "Share Live Stream" on any match card to open the camera scoreboard overlay studio and share to Facebook, TikTok, or YouTube.',
+        textMatches: ['Share Live Stream'],
+      },
+      {
+        title: '4. QR Code Poster & Print',
+        instruction: 'Use "Share / QR" in the top-right header to open the scannable QR poster or "Print" to print tournament sheets.',
+        textMatches: ['Share / QR', 'Print'],
+      },
+    ];
+  }
+
   switch (activeView) {
-    case 'public':
-      return [
-        {
-          title: '1. Live Scores & Tournament Tabs',
-          instruction: 'Use the navigation tabs to switch between Live matches, Results, Standings, Brackets, Schedule, Medal Tally, Announcements, and AI Predictions.',
-          textMatches: ['Live', 'Results', 'Standings', 'Medal Tally'],
-        },
-        {
-          title: '2. Share Live Stream & Camera Studio',
-          instruction: 'Click "Share Live Stream" on any match card to open the camera scoreboard overlay studio and stream to Facebook, TikTok, or YouTube.',
-          textMatches: ['Share Live Stream'],
-        },
-        {
-          title: '3. QR Code Poster, Theme & Staff Login',
-          instruction: 'Use the top-right buttons to open the scannable QR poster ("Share / QR"), print sheets, toggle Light/Dark mode, or open Staff Login.',
-          textMatches: ['Share / QR', 'Staff Login', 'Back to Dashboard'],
-        },
-      ];
     case 'login':
     case 'director-login':
     case 'mock-login':
       return [
         {
-          title: '1. Institutional Staff Sign-In',
-          instruction: 'Enter your registered email address and password to access the Sports Director, Coordinator, or Scorer dashboard.',
+          title: '1. Account Sign-In',
+          instruction: 'Enter your registered email address and password to sign in.',
           textMatches: ['Sign In', 'Return to Public'],
           selector: 'input[type="email"], input[type="text"]',
         },
         {
           title: '2. Return to Public Tournament Hub',
-          instruction: 'Spectators and guests can return to the public live scoreboard at any time without logging in.',
+          instruction: 'You can return to the public live scoreboard at any time.',
           textMatches: ['Public', 'Back'],
         },
       ];
@@ -374,10 +433,8 @@ function getPageTourSteps(activeView: string, isAuthenticated: boolean): GuidePo
     default:
       return [
         {
-          title: isAuthenticated ? '1. Left Navigation Sidebar' : '1. Main Header Controls',
-          instruction: isAuthenticated
-            ? 'Use the left sidebar to switch between Overview, Competition, People, Analytics, and Admin sections.'
-            : 'Use the top header bar to navigate between tournament views.',
+          title: '1. Left Navigation Sidebar',
+          instruction: 'Use the left sidebar to switch between your authorized navigation sections.',
           textMatches: ['Dashboard', 'Event Setup', 'Registration', 'Settings', 'Live'],
         },
       ];
@@ -559,10 +616,23 @@ export default function MiniGuideAvatar() {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const stepTimerRef = useRef<number | null>(null);
 
-  const userRole = currentUser?.role || 'guest';
+  // Strict role & view scoping: when in Public View (or not signed in as staff), only show guest/spectator information
+  const effectiveRole: GuideRole = useMemo(() => {
+    if (activeView === 'public' || !currentUser) return 'guest';
+    if (currentUser.role === 'director' || currentUser.role === 'coordinator' || currentUser.role === 'scorer') {
+      return currentUser.role;
+    }
+    return 'guest';
+  }, [activeView, currentUser]);
+
   const currentViewName = VIEW_LABELS[activeView] || 'Tournament Portal';
 
   const activeStep = activeSteps[currentStepIdx] || null;
+
+  // Clear selected topic if role/view changes so staff topics never persist into Public View
+  useEffect(() => {
+    setSelectedTopicId(null);
+  }, [effectiveRole, activeView]);
 
   // Locate and track the DOM element for the active pointer step
   const updateSpotlightPosition = useCallback(() => {
@@ -614,33 +684,38 @@ export default function MiniGuideAvatar() {
     };
   }, [activeStep, activeView, setActiveView, updateSpotlightPosition]);
 
-  // Filter topics by search query or user role
+  // Strictly filter topics to only those permitted for `effectiveRole`
+  const roleAllowedTopics = useMemo(
+    () => GUIDE_TOPICS.filter(t => t.roles.includes(effectiveRole)),
+    [effectiveRole]
+  );
+
+  // Filter allowed topics by search query (never leak topics from other roles)
   const matchingTopics = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
-      return GUIDE_TOPICS.filter(
-        t => t.roles.includes('all') || t.roles.includes(userRole as any)
-      );
+      return roleAllowedTopics;
     }
     const words = q.split(/\s+/).filter(Boolean);
-    const scored = GUIDE_TOPICS.map(topic => {
-      const haystack = `${topic.question} ${topic.summary} ${topic.keywords.join(' ')}`.toLowerCase();
-      let score = 0;
-      for (const w of words) {
-        if (haystack.includes(w)) score += 2;
-        if (topic.keywords.some(k => k.includes(w))) score += 3;
-      }
-      return { topic, score };
-    })
+    const scored = roleAllowedTopics
+      .map(topic => {
+        const haystack = `${topic.question} ${topic.summary} ${topic.keywords.join(' ')}`.toLowerCase();
+        let score = 0;
+        for (const w of words) {
+          if (haystack.includes(w)) score += 2;
+          if (topic.keywords.some(k => k.includes(w))) score += 3;
+        }
+        return { topic, score };
+      })
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
 
-    return scored.length > 0 ? scored.map(s => s.topic) : GUIDE_TOPICS;
-  }, [query, userRole]);
+    return scored.length > 0 ? scored.map(s => s.topic) : roleAllowedTopics;
+  }, [query, roleAllowedTopics]);
 
   const selectedTopic = useMemo(
-    () => GUIDE_TOPICS.find(t => t.id === selectedTopicId) || null,
-    [selectedTopicId]
+    () => roleAllowedTopics.find(t => t.id === selectedTopicId) || null,
+    [roleAllowedTopics, selectedTopicId]
   );
 
   const startPointerTour = (steps: GuidePointerStep[]) => {
@@ -652,7 +727,7 @@ export default function MiniGuideAvatar() {
 
   const handleSelectTopic = (topic: GuideTopic) => {
     if (topic.id === 'tour-current') {
-      const pageSteps = getPageTourSteps(activeView, Boolean(currentUser));
+      const pageSteps = getPageTourSteps(activeView, effectiveRole);
       startPointerTour(pageSteps);
       return;
     }
@@ -878,7 +953,7 @@ export default function MiniGuideAvatar() {
             <button
               type="button"
               className="btn btn-xs btn-primary"
-              onClick={() => startPointerTour(getPageTourSteps(activeView, Boolean(currentUser)))}
+              onClick={() => startPointerTour(getPageTourSteps(activeView, effectiveRole))}
             >
               Point &amp; Tour This Page
             </button>
