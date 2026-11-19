@@ -2,7 +2,8 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, ty
 import { supabase } from '../lib/supabase';
 import { isPlaceholder, getRoundName, getSeedOrder } from '../lib/bracket';
 import { getSportName } from '../lib/sports';
-import { sendEmailViaOfficialApi, type EmailDispatchResult } from '../lib/emailApi';
+import { sendEmailViaOfficialApi, getStoredEmailSendLogs, type EmailDispatchResult } from '../lib/emailApi';
+import { isMockModeActive, generateOneTimeSetupToken, sha256Sync } from '../lib/config';
 import type { AppSettings } from '../types/settings';
 import {
   getSettings,
@@ -31,7 +32,7 @@ import type {
   StandingsRow, MedalTallyRow,
   StaffMember, StaffRole, StaffStatus,
   StaffInvitation, InvitationStatus,
-  AccessRequest,
+  AccessRequest, EmailSendLog,
 } from '../types';
 
 function generateOfficialPassword(role: 'coordinator' | 'scorer'): string {
@@ -40,12 +41,53 @@ function generateOfficialPassword(role: 'coordinator' | 'scorer'): string {
   return `Padula2026!${prefix}-${rand}`;
 }
 
+function buildAppointmentLetterBody(params: {
+  recipientName: string;
+  recipientEmail: string;
+  role: 'director' | 'coordinator' | 'scorer';
+  roleTitle: string;
+  assignedSportOrDept: string;
+  sentBy: string;
+  sentByEmail: string;
+  setupUrl: string;
+  expiresAt: string;
+}): string {
+  const expiryDisplay = new Date(params.expiresAt).toLocaleString();
+  return [
+    `Dear ${params.recipientName},`,
+    ``,
+    `Greetings from the Asian College Padula Athletics Governance Board!`,
+    ``,
+    params.role === 'director'
+      ? `You have been officially commissioned by the Board of Trustees and Office of the President to serve as Sports Director for the Asian College Padula 2026.`
+      : `You have been officially registered and appointed by Sports Director ${params.sentBy} (${params.sentByEmail}) to serve as ${params.roleTitle} (${params.assignedSportOrDept}) for the Asian College Padula 2026.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `OFFICIAL PORTAL APPOINTMENT DETAILS`,
+    `• Registered Email: ${params.recipientEmail}`,
+    `• Official Role: ${params.roleTitle}`,
+    `• Assigned Scope: ${params.assignedSportOrDept}`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    ``,
+    `SET YOUR PASSWORD (ONE-TIME SETUP LINK — EXPIRES IN 24 HOURS):`,
+    `For your security, no temporary password is included in this email.`,
+    `Please click the link below to set your own password and activate your account:`,
+    `${params.setupUrl}`,
+    `(Link expires: ${expiryDisplay})`,
+    ``,
+    `Sincerely,`,
+    `${params.sentBy}`,
+    `Sports Director (${params.sentByEmail})`,
+    `Asian College Dumaguete — Padula Athletics`,
+  ].join('\n');
+}
+
 function createStaffInvitationRecord(params: {
   recipientName: string;
   recipientEmail: string;
   role: 'director' | 'coordinator' | 'scorer';
   assignedSportOrDept: string;
-  generatedPassword: string;
+  generatedPassword?: string;
   sentBy: string;
   sentByEmail: string;
 }): StaffInvitation {
@@ -54,41 +96,31 @@ function createStaffInvitationRecord(params: {
     : params.role === 'coordinator'
       ? 'Sports Coordinator'
       : 'Official Scorekeeper';
-  const subject = `[Asian College Padula 2026] Official Appointment & Portal Credentials — ${roleTitle}`;
-  const letterBody = [
-    `Dear ${params.recipientName},`,
-    ``,
-    `Greetings from the Asian College Padula Athletics Governance Board!`,
-    ``,
-    params.role === 'director'
-      ? `You have been officially commissioned by the Board of Trustees and Office of the President to serve as Sports Director for the Asian College Padula 2026.`
-      : `You have been officially registered and appointed by Sports Director ${params.sentBy} (${params.sentByEmail}) to serve as ${roleTitle} (${params.assignedSportOrDept}) for the Asian College Padula 2026.`,
-    ``,
-    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-    `OFFICIAL PORTAL LOGIN CREDENTIALS`,
-    `• Registered Email: ${params.recipientEmail}`,
-    `• Assigned Password: ${params.generatedPassword}`,
-    `• Official Role: ${roleTitle}`,
-    `• Assigned Scope: ${params.assignedSportOrDept}`,
-    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-    ``,
-    `ACTION REQUIRED — ACCEPT OR DECLINE INVITATION:`,
-    `Please confirm your appointment by selecting [Accept Invitation] below (or on the Staff Login Portal using your email and password above) to activate your account, or select [Decline Invitation] if you are unable to serve.`,
-    ``,
-    `Sincerely,`,
-    `${params.sentBy}`,
-    `Sports Director (${params.sentByEmail})`,
-    `Asian College Dumaguete — Padula Athletics`,
-  ].join('\n');
+  const cleanEmail = params.recipientEmail.trim().toLowerCase();
+  const { tokenHash, expiresAt, setupUrl } = generateOneTimeSetupToken(cleanEmail);
+  const subject = `[Asian College Padula 2026] Official Appointment & Password Setup — ${roleTitle}`;
+  const letterBody = buildAppointmentLetterBody({
+    recipientName: params.recipientName,
+    recipientEmail: cleanEmail,
+    role: params.role,
+    roleTitle,
+    assignedSportOrDept: params.assignedSportOrDept,
+    sentBy: params.sentBy,
+    sentByEmail: params.sentByEmail,
+    setupUrl,
+    expiresAt,
+  });
 
   return {
     id: `inv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     recipientName: params.recipientName,
-    recipientEmail: params.recipientEmail.toLowerCase(),
+    recipientEmail: cleanEmail,
     role: params.role,
     roleTitle,
     assignedSportOrDept: params.assignedSportOrDept,
-    generatedPassword: params.generatedPassword,
+    setupTokenHash: tokenHash,
+    setupTokenExpiresAt: expiresAt,
+    setupTokenUsed: false,
     status: 'pending',
     sentBy: params.sentBy,
     sentByEmail: params.sentByEmail,
@@ -105,10 +137,13 @@ interface AppContextType {
   setCurrentUser: (user: User | null) => void;
   staff: StaffMember[];
   staffInvitations: StaffInvitation[];
+  emailSendLogs: EmailSendLog[];
   latestInvitation: StaffInvitation | null;
   clearLatestInvitation: () => void;
   respondToInvitation: (invitationId: string, decision: 'accepted' | 'declined') => StaffInvitation | null;
   dispatchInvitationViaApi: (invitationId: string, customRecipientEmail?: string) => Promise<{ success: boolean; result?: EmailDispatchResult; error?: string }>;
+  completePasswordSetupWithToken: (email: string, rawToken: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  changeOwnPasswordFirstLogin: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   verifyAndSignInStaff: (email: string, password?: string) => Promise<{ success: boolean; error?: string; user?: User; pendingInvitation?: StaffInvitation }>;
   addCoordinator: (name: string, email: string, competitionId: string) => Promise<{ success: boolean; error?: string; invitation?: StaffInvitation }>;
   addScorer: (name: string, email: string, matchIds?: string[], sport?: string) => Promise<{ success: boolean; error?: string; invitation?: StaffInvitation }>;
@@ -248,8 +283,6 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | null>(null);
-
-import { isMockModeActive } from '../lib/config';
 
 import {
   INITIAL_DEPARTMENTS,
@@ -493,6 +526,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   });
   const [latestInvitation, setLatestInvitation] = useState<StaffInvitation | null>(null);
   const clearLatestInvitation = useCallback(() => setLatestInvitation(null), []);
+  const [emailSendLogs, setEmailSendLogs] = useState<EmailSendLog[]>(() => getStoredEmailSendLogs());
+
+  useEffect(() => {
+    const syncLogs = () => setEmailSendLogs(getStoredEmailSendLogs());
+    window.addEventListener('padula-email-log-updated', syncLogs);
+    return () => window.removeEventListener('padula-email-log-updated', syncLogs);
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem('padula_staff_invitations', JSON.stringify(staffInvitations)); } catch { }
@@ -746,10 +786,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           const fromDb: StaffInvitation[] = invRes.data.map((inv: any) => ({
             id: inv.id, recipientName: inv.recipient_name, recipientEmail: inv.recipient_email,
             role: inv.role, roleTitle: inv.role_title, assignedSportOrDept: inv.assigned_sport_or_dept,
-            generatedPassword: inv.generated_password, status: inv.status,
+            setupTokenHash: inv.setup_token_hash,
+            setupTokenExpiresAt: inv.setup_token_expires_at,
+            setupTokenUsed: inv.setup_token_used,
+            status: inv.status,
             sentBy: inv.sent_by, sentByEmail: inv.sent_by_email,
             sentAt: inv.sent_at, respondedAt: inv.responded_at,
             subject: inv.subject, letterBody: inv.letter_body,
+            apiDeliveryStatus: inv.delivery_status || undefined,
+            apiFailureReason: inv.delivery_error || undefined,
           }));
           setStaffInvitations(prev => {
             const merged = [...fromDb];
@@ -762,6 +807,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             return merged;
           });
         }
+        try {
+          const logsRes = await supabase.from('email_send_logs').select('*').order('timestamp', { ascending: false }).limit(150);
+          if (logsRes.data && logsRes.data.length > 0) {
+            const dbLogs: EmailSendLog[] = logsRes.data.map((r: any) => ({
+              id: r.id,
+              invitationId: r.invitation_id || undefined,
+              recipientEmail: r.recipient_email,
+              recipientName: r.recipient_name || undefined,
+              roleTitle: r.role_title || undefined,
+              timestamp: r.timestamp,
+              result: r.result === 'sent' ? 'sent' : 'failed',
+              failureReason: r.failure_reason || undefined,
+              provider: r.provider || undefined,
+            }));
+            setEmailSendLogs(prev => {
+              const combined = [...dbLogs];
+              prev.forEach(l => {
+                if (!combined.some(c => c.id === l.id)) combined.push(l);
+              });
+              return combined.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            });
+          }
+        } catch {}
         if (settingsRes && settingsRes.data && settingsRes.data.data) {
           const syncedSettings = updateStoredSettings(settingsRes.data.data, 'Supabase Sync');
           setSettingsState(syncedSettings);
@@ -925,7 +993,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentUser, addAuditLog]);
 
-  // Automatically dispatch Gmail API invitation when a Coordinator or Scorekeeper is added
+  // Automatically attempt background email dispatch when a Coordinator or Scorekeeper is added
   const autoDispatchStaffInvitation = useCallback((inv: StaffInvitation) => {
     void sendEmailViaOfficialApi({
       to: inv.recipientEmail,
@@ -936,14 +1004,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       body: inv.letterBody,
       roleTitle: inv.roleTitle,
       assignedScope: inv.assignedSportOrDept,
-      tempPassword: inv.generatedPassword,
       invitationId: inv.id,
     }).then(result => {
       const updatedInv: StaffInvitation = {
         ...inv,
-        dispatchedViaApi: true,
+        dispatchedViaApi: result.ok,
         dispatchedToEmail: result.recipient,
-        apiDeliveryStatus: result.success ? 'sent' : 'failed',
+        apiDeliveryStatus: result.ok ? 'sent' : 'failed',
+        apiFailureReason: result.ok ? undefined : result.reason,
         apiTransactionId: result.transactionId,
         apiDispatchedAt: result.timestamp,
         apiProvider: result.provider,
@@ -954,15 +1022,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return updated;
       });
       setLatestInvitation(prev => (prev?.id === inv.id ? updatedInv : prev));
+      supabase.from('staff_invitations').update({
+        delivery_status: updatedInv.apiDeliveryStatus,
+        delivery_error: updatedInv.apiFailureReason || null,
+      }).eq('id', inv.id).then();
       addAuditLog(
         'email_dispatch',
-        `Appointment invitation sent to ${result.recipient} for ${inv.roleTitle}`,
+        result.ok
+          ? `Appointment invitation delivered to ${result.recipient} for ${inv.roleTitle}`
+          : `Appointment invitation not delivered to ${result.recipient}: ${result.reason}`,
         inv.id,
         'StaffInvitation'
       );
     }).catch(err => {
+      const reason = err?.message || 'Network error while attempting email delivery';
       setStaffInvitations(prev => {
-        const updated = prev.map(i => (i.id === inv.id ? { ...i, apiDeliveryStatus: 'failed' as const } : i));
+        const updated = prev.map(i =>
+          i.id === inv.id ? { ...i, dispatchedViaApi: false, apiDeliveryStatus: 'failed' as const, apiFailureReason: reason } : i
+        );
         try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch { }
         return updated;
       });
@@ -978,7 +1055,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const safePassword = newUser.password && newUser.password !== 'padulaAdmin2026'
         ? newUser.password
         : generateOfficialPassword(newUser.role);
-      const generatedPassword = cleanEmail === 'jsamane@asiancollege.edu.ph' ? 'padulaAdmin2026' : safePassword;
+      const fallbackPassword = cleanEmail === 'jsamane@asiancollege.edu.ph' ? 'padulaAdmin2026' : safePassword;
       const deptObj = departments.find(d => d.id === newUser.department);
       const assignedScope = newUser.assignedSport
         ? getSportName(newUser.assignedSport)
@@ -990,11 +1067,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           recipientEmail: cleanEmail,
           role: newUser.role,
           assignedSportOrDept: assignedScope,
-          generatedPassword,
           sentBy: currentUser?.name || 'Mr. John Eric Samane',
           sentByEmail: currentUser?.email || 'jsamane@asiancollege.edu.ph',
         }),
-        dispatchedViaApi: true,
+        dispatchedViaApi: false,
         dispatchedToEmail: cleanEmail,
         apiDeliveryStatus: 'pending',
       };
@@ -1015,19 +1091,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         role: inv.role,
         role_title: inv.roleTitle,
         assigned_sport_or_dept: inv.assignedSportOrDept,
-        generated_password: inv.generatedPassword,
+        setup_token_hash: inv.setupTokenHash || null,
+        setup_token_expires_at: inv.setupTokenExpiresAt || null,
+        setup_token_used: false,
         status: inv.status,
         sent_by: inv.sentBy,
         sent_by_email: inv.sentByEmail,
         sent_at: inv.sentAt,
         subject: inv.subject,
         letter_body: inv.letterBody,
+        delivery_status: 'pending',
       }], { onConflict: 'id' }).then();
 
       const enrichedUser: User = {
         ...newUser,
         email: cleanEmail,
-        password: generatedPassword,
+        password: fallbackPassword,
+        mustChangePassword: true,
         invitationStatus: 'pending',
         invitationId: inv.id,
         status: 'pending',
@@ -1047,7 +1127,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         role: newUser.role,
         assignedCompetitionId: enrichedUser.assignedCompetitionId || enrichedUser.assignedSport || enrichedUser.department,
         status: 'pending',
-        password: generatedPassword,
+        password: fallbackPassword,
+        mustChangePassword: true,
         invitationStatus: 'pending',
         invitationId: inv.id,
         addedBy: currentUser?.email || 'jsamane@asiancollege.edu.ph',
@@ -1064,7 +1145,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setOfficials(prev => {
           const updated = prev.map(o =>
             (o.role === 'scorekeeper' && (o.contact?.toLowerCase() === cleanEmail || o.name.toLowerCase() === enrichedUser.name.toLowerCase()))
-              ? { ...o, contact: cleanEmail, password: generatedPassword, invitationStatus: 'pending' as InvitationStatus, invitationId: inv.id }
+              ? { ...o, contact: cleanEmail, invitationStatus: 'pending' as InvitationStatus, invitationId: inv.id }
               : o
           );
           try { localStorage.setItem('padula_officials', JSON.stringify(updated)); } catch { }
@@ -1180,6 +1261,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const senderName = currentUser?.name || targetInv.sentBy || 'Mr. John Eric Samane';
     const senderEmail = currentUser?.email || targetInv.sentByEmail || 'jsamane@asiancollege.edu.ph';
 
+    // Generate a fresh 24-hour one-time setup token on resend and store only its hash
+    const { tokenHash, expiresAt, setupUrl } = generateOneTimeSetupToken(cleanRecipientEmail);
+    const freshLetterBody = buildAppointmentLetterBody({
+      recipientName: targetInv.recipientName,
+      recipientEmail: cleanRecipientEmail,
+      role: targetInv.role,
+      roleTitle: targetInv.roleTitle,
+      assignedSportOrDept: targetInv.assignedSportOrDept,
+      sentBy: senderName,
+      sentByEmail: senderEmail,
+      setupUrl,
+      expiresAt,
+    });
+
     try {
       const result = await sendEmailViaOfficialApi({
         to: cleanRecipientEmail,
@@ -1187,18 +1282,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         fromName: senderName,
         fromEmail: senderEmail,
         subject: targetInv.subject,
-        body: targetInv.letterBody,
+        body: freshLetterBody,
         roleTitle: targetInv.roleTitle,
         assignedScope: targetInv.assignedSportOrDept,
-        tempPassword: targetInv.generatedPassword,
+        setupUrl,
         invitationId: targetInv.id,
       });
 
       const updatedInv: StaffInvitation = {
         ...targetInv,
-        dispatchedViaApi: true,
+        recipientEmail: cleanRecipientEmail,
+        letterBody: freshLetterBody,
+        setupTokenHash: tokenHash,
+        setupTokenExpiresAt: expiresAt,
+        setupTokenUsed: false,
+        dispatchedViaApi: result.ok,
         dispatchedToEmail: cleanRecipientEmail,
-        apiDeliveryStatus: 'sent',
+        apiDeliveryStatus: result.ok ? 'sent' : 'failed',
+        apiFailureReason: result.ok ? undefined : result.reason,
         apiTransactionId: result.transactionId,
         apiDispatchedAt: result.timestamp,
         apiProvider: result.provider,
@@ -1214,12 +1315,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setLatestInvitation(updatedInv);
       }
 
+      supabase.from('staff_invitations').update({
+        recipient_email: cleanRecipientEmail,
+        letter_body: freshLetterBody,
+        setup_token_hash: tokenHash,
+        setup_token_expires_at: expiresAt,
+        setup_token_used: false,
+        delivery_status: updatedInv.apiDeliveryStatus,
+        delivery_error: updatedInv.apiFailureReason || null,
+      }).eq('id', invitationId).then();
+
       addAuditLog(
         'email_dispatch',
-        `Official appointment letter sent to ${cleanRecipientEmail}`,
+        result.ok
+          ? `Official appointment letter delivered to ${cleanRecipientEmail}`
+          : `Official appointment letter failed for ${cleanRecipientEmail}: ${result.reason}`,
         invitationId,
         'StaffInvitation'
       );
+
+      if (!result.ok) {
+        return {
+          success: false,
+          result,
+          error: result.message,
+        };
+      }
 
       return { success: true, result };
     } catch (err: any) {
@@ -1227,6 +1348,145 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, error: errMsg };
     }
   }, [staffInvitations, latestInvitation, currentUser, addAuditLog]);
+
+  const completePasswordSetupWithToken = useCallback(async (
+    email: string,
+    rawToken: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanToken = rawToken.trim();
+    const cleanPwd = newPassword.trim();
+
+    if (!cleanEmail || !cleanToken) {
+      return { success: false, error: 'Missing email address or setup token.' };
+    }
+    if (cleanPwd.length < 8) {
+      return { success: false, error: 'Password must be at least 8 characters long.' };
+    }
+
+    const inv = staffInvitations.find(i => i.recipientEmail.toLowerCase() === cleanEmail);
+    if (!inv) {
+      return { success: false, error: 'No pending appointment invitation found for this email address.' };
+    }
+    if (inv.setupTokenUsed) {
+      return { success: false, error: 'This one-time setup token has already been used. Please sign in or ask an admin to resend a new setup link.' };
+    }
+    if (inv.setupTokenExpiresAt && new Date(inv.setupTokenExpiresAt).getTime() < Date.now()) {
+      return { success: false, error: 'This setup token has expired (24-hour limit). Please ask the Sports Director or Coordinator to resend your invitation.' };
+    }
+
+    const inputHash = sha256Sync(cleanToken);
+    if (!inv.setupTokenHash || inv.setupTokenHash !== inputHash) {
+      return { success: false, error: 'Invalid setup token. Please use the exact link from your latest appointment letter.' };
+    }
+
+    const nowIso = new Date().toISOString();
+    const updatedInv: StaffInvitation = {
+      ...inv,
+      status: 'accepted',
+      respondedAt: nowIso,
+      setupTokenUsed: true,
+      setupTokenHash: undefined,
+    };
+
+    setStaffInvitations(prev => {
+      const updated = prev.map(i => (i.id === inv.id ? updatedInv : i));
+      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    supabase.from('staff_invitations').update({
+      status: 'accepted',
+      responded_at: nowIso,
+      setup_token_used: true,
+      setup_token_hash: null,
+    }).eq('id', inv.id).then();
+
+    setStaff(prev => {
+      const updated = prev.map(s =>
+        s.email.toLowerCase() === cleanEmail
+          ? { ...s, password: cleanPwd, mustChangePassword: false, status: 'active' as StaffStatus, invitationStatus: 'accepted' as InvitationStatus, lastLoginAt: nowIso }
+          : s
+      );
+      try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    setRegisteredUsers(prev => {
+      const updated = prev.map(u =>
+        u.email.toLowerCase() === cleanEmail
+          ? { ...u, password: cleanPwd, mustChangePassword: false, status: 'active' as StaffStatus, invitationStatus: 'accepted' as InvitationStatus, isActive: true }
+          : u
+      );
+      try { localStorage.setItem('padula_registered_users', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    supabase.from('staff').update({
+      password: cleanPwd,
+      must_change_password: false,
+      status: 'active',
+      invitation_status: 'accepted',
+      last_login_at: nowIso,
+    }).eq('email', cleanEmail).then();
+
+    supabase.from('users').update({
+      password: cleanPwd,
+      is_default_password: false,
+    }).eq('email', cleanEmail).then();
+
+    addAuditLog(
+      'account_add',
+      `${inv.roleTitle} ${inv.recipientName} (${cleanEmail}) completed one-time token password setup and activated account`,
+      inv.id,
+      'StaffInvitation'
+    );
+
+    return { success: true };
+  }, [staffInvitations, addAuditLog]);
+
+  const changeOwnPasswordFirstLogin = useCallback(async (
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) {
+      return { success: false, error: 'Not signed in.' };
+    }
+    const cleanPwd = newPassword.trim();
+    if (cleanPwd.length < 8) {
+      return { success: false, error: 'New password must be at least 8 characters long.' };
+    }
+    const cleanEmail = currentUser.email.trim().toLowerCase();
+    const updatedUser: User = {
+      ...currentUser,
+      password: cleanPwd,
+      mustChangePassword: false,
+    };
+    setCurrentUserState(updatedUser);
+    try { localStorage.setItem('padula_current_user', JSON.stringify(updatedUser)); } catch {}
+
+    setStaff(prev => {
+      const updated = prev.map(s =>
+        s.email.toLowerCase() === cleanEmail ? { ...s, password: cleanPwd, mustChangePassword: false } : s
+      );
+      try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    setRegisteredUsers(prev => {
+      const updated = prev.map(u =>
+        u.email.toLowerCase() === cleanEmail ? { ...u, password: cleanPwd, mustChangePassword: false } : u
+      );
+      try { localStorage.setItem('padula_registered_users', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    supabase.from('staff').update({ password: cleanPwd, must_change_password: false }).eq('email', cleanEmail).then();
+    supabase.from('users').update({ password: cleanPwd, is_default_password: false }).eq('email', cleanEmail).then();
+
+    addAuditLog('login', `${currentUser.name} (${cleanEmail}) completed mandatory first-login password change`, currentUser.id, 'User');
+    return { success: true };
+  }, [currentUser, addAuditLog]);
 
   const toggleUserStatus = useCallback((userId: string, active: boolean) => {
     if (!currentUser || currentUser.role !== 'director') {
@@ -1535,6 +1795,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       assignedMatchIds: member.assignedMatchIds,
       status: updatedStatus,
       invitationStatus: 'accepted',
+      mustChangePassword: Boolean(member.mustChangePassword && !isDirectorAccount && !member.isMock),
       isActive: true,
       gmailVerified: true,
       avatarInitials: member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
@@ -1569,18 +1830,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, error: 'A staff member with this email already exists.' };
     }
 
-    const generatedPassword = generateOfficialPassword('coordinator');
+    const fallbackPassword = generateOfficialPassword('coordinator');
     const invitation: StaffInvitation = {
       ...createStaffInvitationRecord({
         recipientName: name.trim(),
         recipientEmail: cleanEmail,
         role: 'coordinator',
         assignedSportOrDept: getSportName(competitionId),
-        generatedPassword,
         sentBy: currentUser.name || 'Mr. John Eric Samane',
         sentByEmail: currentUser.email || 'jsamane@asiancollege.edu.ph',
       }),
-      dispatchedViaApi: true,
+      dispatchedViaApi: false,
       dispatchedToEmail: cleanEmail,
       apiDeliveryStatus: 'pending',
     };
@@ -1600,7 +1860,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       role: invitation.role,
       role_title: invitation.roleTitle,
       assigned_sport_or_dept: invitation.assignedSportOrDept,
-      generated_password: invitation.generatedPassword,
+      setup_token_hash: invitation.setupTokenHash || null,
+      setup_token_expires_at: invitation.setupTokenExpiresAt || null,
+      setup_token_used: false,
+      delivery_status: 'pending',
       status: invitation.status,
       sent_by: invitation.sentBy,
       sent_by_email: invitation.sentByEmail,
@@ -1616,7 +1879,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       role: 'coordinator',
       assignedCompetitionId: competitionId,
       status: 'pending',
-      password: generatedPassword,
+      password: fallbackPassword,
+      mustChangePassword: true,
       invitationStatus: 'pending',
       invitationId: invitation.id,
       addedBy: currentUser.email,
@@ -1654,18 +1918,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, error: 'A staff member with this email already exists.' };
     }
 
-    const generatedPassword = generateOfficialPassword('scorer');
+    const fallbackPassword = generateOfficialPassword('scorer');
     const invitation: StaffInvitation = {
       ...createStaffInvitationRecord({
         recipientName: name.trim(),
         recipientEmail: cleanEmail,
         role: 'scorer',
         assignedSportOrDept: sport || 'Basketball',
-        generatedPassword,
         sentBy: currentUser.name || 'Mr. John Eric Samane',
         sentByEmail: currentUser.email || 'jsamane@asiancollege.edu.ph',
       }),
-      dispatchedViaApi: true,
+      dispatchedViaApi: false,
       dispatchedToEmail: cleanEmail,
       apiDeliveryStatus: 'pending',
     };
@@ -1685,7 +1948,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       role: invitation.role,
       role_title: invitation.roleTitle,
       assigned_sport_or_dept: invitation.assignedSportOrDept,
-      generated_password: invitation.generatedPassword,
+      setup_token_hash: invitation.setupTokenHash || null,
+      setup_token_expires_at: invitation.setupTokenExpiresAt || null,
+      setup_token_used: false,
+      delivery_status: 'pending',
       status: invitation.status,
       sent_by: invitation.sentBy,
       sent_by_email: invitation.sentByEmail,
@@ -1703,7 +1969,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       assignedCompetitionId: assignedComp,
       assignedMatchIds: matchIds || [],
       status: 'pending',
-      password: generatedPassword,
+      password: fallbackPassword,
+      mustChangePassword: true,
       invitationStatus: 'pending',
       invitationId: invitation.id,
       addedBy: currentUser.email,
@@ -1723,7 +1990,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       affiliation: 'Athletic Board',
       licenseId: `PAD-SK-${Date.now().toString().slice(-4)}`,
       contact: cleanEmail,
-      password: generatedPassword,
       invitationStatus: 'pending',
       invitationId: invitation.id,
       isActive: true,
@@ -4163,7 +4429,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppContext.Provider value={{
       currentUser, setCurrentUser,
-      staff, staffInvitations, latestInvitation, clearLatestInvitation, respondToInvitation, dispatchInvitationViaApi,
+      staff, staffInvitations, emailSendLogs, latestInvitation, clearLatestInvitation, respondToInvitation, dispatchInvitationViaApi,
+      completePasswordSetupWithToken, changeOwnPasswordFirstLogin,
       verifyAndSignInStaff,
       addCoordinator, addScorer, deactivateStaff, removeStaff,
       accessRequests, submitAccessRequest, approveAccessRequest, declineAccessRequest, removeAccessRequest, clearAllAccessRequests,

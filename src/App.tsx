@@ -23,6 +23,7 @@ import AccessRequestsPage from './pages/AccessRequestsPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import SchedulePage from './pages/SchedulePage';
+import SetPasswordPage from './pages/SetPasswordPage';
 import Sidebar from './components/Sidebar';
 import MockModeBanner from './components/MockModeBanner';
 import MiniGuideAvatar from './components/MiniGuideAvatar';
@@ -35,12 +36,18 @@ function AppContent() {
   useEffect(() => {
     const pathname = window.location.pathname.toLowerCase();
     const hash = window.location.hash.toLowerCase();
-    if (pathname === '/mock-login' && isMockModeActive()) {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = (params.get('view') || '').toLowerCase();
+    if (pathname === '/set-password' || viewParam === 'set-password' || params.has('token')) {
+      setActiveView('set-password');
+    } else if (pathname === '/mock-login' && isMockModeActive()) {
       setActiveView('mock-login');
     } else if (pathname === '/director-login') {
       setActiveView('director-login');
     } else if (pathname === '/settings' || hash === '#/settings' || hash === '#settings') {
       setActiveView('settings');
+    } else if (viewParam === 'login') {
+      setActiveView('login');
     } else {
       setActiveView('public');
     }
@@ -96,6 +103,29 @@ function AppContent() {
       activityEvents.forEach(evt => window.removeEventListener(evt, resetTimer));
     };
   }, [currentUser, setCurrentUser, setActiveView, addAuditLog]);
+
+  // Dedicated One-Time Token Password Setup Page
+  if (activeView === 'set-password') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <MockModeBanner />
+        <SetPasswordPage onComplete={() => setActiveView('login')} />
+      </div>
+    );
+  }
+
+  // Fallback: Require mandatory password change on first login
+  if (currentUser && currentUser.mustChangePassword && activeView !== 'public') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <MockModeBanner />
+        <SetPasswordPage
+          firstLoginMode={true}
+          onComplete={() => setActiveView(currentUser.role === 'scorer' ? 'scorekeeper' : 'admin')}
+        />
+      </div>
+    );
+  }
 
   // Dedicated Mock Login Portal (available only in mock mode)
   if (activeView === 'mock-login') {

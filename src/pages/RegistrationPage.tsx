@@ -15,7 +15,7 @@ import {
   TrophyIcon,
 } from '../components/Icons';
 import { SPORTS_CATALOG, getAllSports, getSportName, getSportIcon } from '../lib/sports';
-import { buildGmailComposeUrl, openGmailComposeWindow, hasConnectedGmailToken } from '../lib/emailApi';
+import { openGmailCompose } from '../lib/emailApi';
 import type { StaffInvitation, Team, Player } from '../types';
 
 const POSITIONS_BY_SPORT: Record<string, string[]> = {
@@ -58,6 +58,7 @@ export default function RegistrationPage() {
     registeredUsers,
     registerUser,
     staffInvitations,
+    emailSendLogs,
     latestInvitation,
     clearLatestInvitation,
     respondToInvitation,
@@ -101,6 +102,7 @@ export default function RegistrationPage() {
     timestamp?: string;
   } | null>(null);
   const [isDispatchingApi, setIsDispatchingApi] = useState(false);
+  const [showEmailLogs, setShowEmailLogs] = useState(false);
   const [viewingRosterTeam, setViewingRosterTeam] = useState<Team | null>(null);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const teamExcelInputRef = useRef<HTMLInputElement | null>(null);
@@ -479,12 +481,9 @@ export default function RegistrationPage() {
 
       if (inv) {
         setSelectedInvitationModal(inv);
-        if (!hasConnectedGmailToken()) {
-          openGmailComposeWindow(cleanEmail, inv.subject, inv.letterBody);
-        }
       }
 
-      setSuccessBanner(`Scorekeeper "${cleanName}" registered and invitation opened in Gmail for ${cleanEmail}.`);
+      setSuccessBanner(`Scorekeeper "${cleanName}" registered. Attempting background delivery to ${cleanEmail} — or use "Open in Gmail" in the appointment modal.`);
     } else {
       setSuccessBanner(`${role.charAt(0).toUpperCase() + role.slice(1)} "${cleanName}" registered and automatically assigned to ${cleanSport} match slots.`);
     }
@@ -514,12 +513,9 @@ export default function RegistrationPage() {
 
     if (inv) {
       setSelectedInvitationModal(inv);
-      if (!hasConnectedGmailToken()) {
-        openGmailComposeWindow(finalEmail, inv.subject, inv.letterBody);
-      }
     }
 
-    setSuccessBanner(`Sports Coordinator "${coordForm.name}" registered and invitation opened in Gmail for ${finalEmail}.`);
+    setSuccessBanner(`Sports Coordinator "${coordForm.name}" registered. Attempting background delivery to ${finalEmail} — or use "Open in Gmail" in the appointment modal.`);
     setCoordForm({ name: '', email: '', department: 'd1' });
     setTimeout(() => setSuccessBanner(null), 5000);
   };
@@ -607,6 +603,146 @@ export default function RegistrationPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Undelivered Appointments & Email Send Attempt Logs ── */}
+      {(staffInvitations.some(i => i.apiDeliveryStatus !== 'sent') || emailSendLogs.length > 0) && (
+        <div className="glass-card" style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <div style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MailIcon size={15} color="var(--accent)" />
+                <span>
+                  Undelivered Appointments ({staffInvitations.filter(i => i.apiDeliveryStatus !== 'sent').length})
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                Appointments where automatic email delivery did not complete. Click Resend or use Open in Gmail to send manually.
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-xs btn-outline"
+              onClick={() => setShowEmailLogs(p => !p)}
+            >
+              {showEmailLogs ? 'Hide Send Attempt Logs' : `View Send Attempt Logs (${emailSendLogs.length})`}
+            </button>
+          </div>
+
+          {staffInvitations.filter(i => i.apiDeliveryStatus !== 'sent').length > 0 && (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '8px 10px' }}>Recipient</th>
+                    <th style={{ padding: '8px 10px' }}>Role &amp; Scope</th>
+                    <th style={{ padding: '8px 10px' }}>Delivery Status &amp; Reason</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffInvitations
+                    .filter(i => i.apiDeliveryStatus !== 'sent')
+                    .map(inv => (
+                      <tr key={inv.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                        <td style={{ padding: '10px' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{inv.recipientName}</div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{inv.recipientEmail}</div>
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          <div style={{ fontWeight: 600 }}>{inv.roleTitle}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{inv.assignedSportOrDept}</div>
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                            {inv.apiDeliveryStatus === 'failed' ? 'Not Delivered' : 'Pending Delivery'}
+                          </span>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {inv.apiFailureReason || 'Email was not delivered automatically — click Resend or Open in Gmail.'}
+                          </div>
+                        </td>
+                        <td style={{ padding: '10px', textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-primary"
+                              onClick={async () => {
+                                const res = await dispatchInvitationViaApi(inv.id);
+                                if (res.success) {
+                                  setSuccessBanner(`Invitation delivered to ${inv.recipientEmail}.`);
+                                } else {
+                                  setSuccessBanner(`Email was not delivered to ${inv.recipientEmail}. Please click "Open in Gmail" to send manually.`);
+                                }
+                                setTimeout(() => setSuccessBanner(null), 5000);
+                              }}
+                            >
+                              Resend
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-outline"
+                              onClick={() => openGmailCompose(inv.recipientEmail, inv.subject, inv.letterBody)}
+                            >
+                              Open in Gmail
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-ghost"
+                              onClick={() => setSelectedInvitationModal(inv)}
+                            >
+                              View Letter
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {showEmailLogs && (
+            <div style={{ paddingTop: '10px', borderTop: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                Recorded Email Send Attempts ({emailSendLogs.length})
+              </div>
+              {emailSendLogs.length === 0 ? (
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No send attempts recorded yet.</div>
+              ) : (
+                <div style={{ overflowX: 'auto', maxHeight: '220px', overflowY: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                        <th style={{ padding: '6px 8px' }}>Timestamp</th>
+                        <th style={{ padding: '6px 8px' }}>Recipient</th>
+                        <th style={{ padding: '6px 8px' }}>Result</th>
+                        <th style={{ padding: '6px 8px' }}>Failure Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {emailSendLogs.map(log => (
+                        <tr key={log.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                          <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>
+                            {new Date(log.timestamp).toLocaleString()}
+                          </td>
+                          <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>
+                            {log.recipientEmail}
+                          </td>
+                          <td style={{ padding: '6px 8px', fontWeight: 700, color: log.result === 'sent' ? '#059669' : 'var(--accent)' }}>
+                            {log.result === 'sent' ? 'Sent' : 'Failed'}
+                          </td>
+                          <td style={{ padding: '6px 8px', color: 'var(--text-secondary)' }}>
+                            {log.failureReason || '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Success / Alert Banners ── */}
       {successBanner && (
@@ -1867,9 +2003,19 @@ export default function RegistrationPage() {
                                     >
                                       <MailIcon size={11} /> View Letter
                                     </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-xs btn-outline"
+                                      onClick={() => openGmailCompose(inv.recipientEmail, inv.subject, inv.letterBody)}
+                                      style={{ fontSize: '10.5px', padding: '2px 7px' }}
+                                    >
+                                      Open in Gmail
+                                    </button>
                                   </div>
-                                  <div style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
-                                    Pwd: <strong>{inv.generatedPassword}</strong>
+                                  <div style={{ fontSize: '11px', color: inv.apiDeliveryStatus === 'sent' ? '#059669' : 'var(--text-secondary)' }}>
+                                    {inv.apiDeliveryStatus === 'sent'
+                                      ? 'Sent (24h one-time setup link)'
+                                      : 'Not delivered yet — click Open in Gmail'}
                                   </div>
                                   {invStatus === 'pending' && (
                                     <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
@@ -2085,9 +2231,19 @@ export default function RegistrationPage() {
                                 >
                                   <MailIcon size={11} /> View Letter
                                 </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-xs btn-outline"
+                                  onClick={() => openGmailCompose(inv.recipientEmail, inv.subject, inv.letterBody)}
+                                  style={{ fontSize: '10.5px', padding: '2px 7px' }}
+                                >
+                                  Open in Gmail
+                                </button>
                               </div>
-                              <div style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
-                                Pwd: <strong>{inv.generatedPassword}</strong>
+                              <div style={{ fontSize: '11px', color: inv.apiDeliveryStatus === 'sent' ? '#059669' : 'var(--text-secondary)' }}>
+                                {inv.apiDeliveryStatus === 'sent'
+                                  ? 'Sent (24h one-time setup link)'
+                                  : 'Not delivered yet — click Open in Gmail'}
                               </div>
                               {invStatus === 'pending' && (
                                 <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
@@ -2173,7 +2329,6 @@ export default function RegistrationPage() {
         const liveInv = staffInvitations.find(i => i.id === selectedInvitationModal.id) || selectedInvitationModal;
         const effectiveTargetEmail = (apiTargetEmailOverride || liveInv.dispatchedToEmail || liveInv.recipientEmail).trim().toLowerCase();
         const mailtoHref = `mailto:${encodeURIComponent(effectiveTargetEmail)}?subject=${encodeURIComponent(liveInv.subject)}&body=${encodeURIComponent(liveInv.letterBody)}`;
-        const gmailWebHref = buildGmailComposeUrl(effectiveTargetEmail, liveInv.subject, liveInv.letterBody);
         const senderDisplayName = currentUser?.name || liveInv.sentBy || 'Mr. John Eric Samane';
         const senderDisplayEmail = currentUser?.email || liveInv.sentByEmail || 'jsamane@asiancollege.edu.ph';
 
@@ -2226,9 +2381,14 @@ export default function RegistrationPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
-                  {liveInv.dispatchedViaApi && (
+                  {liveInv.apiDeliveryStatus === 'sent' && (
                     <span className="status-badge finished" style={{ fontSize: '10.5px', whiteSpace: 'nowrap' }}>
-                      <CheckIcon size={11} color="currentColor" /> Sent via Gmail
+                      <CheckIcon size={11} color="currentColor" /> Sent
+                    </span>
+                  )}
+                  {liveInv.apiDeliveryStatus === 'failed' && (
+                    <span className="status-badge live" style={{ fontSize: '10.5px', whiteSpace: 'nowrap' }}>
+                      <XIcon size={11} color="currentColor" /> Not Delivered
                     </span>
                   )}
                   <span
@@ -2338,20 +2498,20 @@ export default function RegistrationPage() {
                   gap: '8px',
                   color: apiDispatchFeedback
                     ? (apiDispatchFeedback.success ? '#059669' : '#0284c7')
-                    : (liveInv.apiDeliveryStatus === 'sent' ? '#059669' : 'var(--accent)'),
+                    : (liveInv.apiDeliveryStatus === 'sent' ? '#059669' : '#0284c7'),
                 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     {apiDispatchFeedback
                       ? (apiDispatchFeedback.success ? <CheckIcon size={14} color="#059669" /> : <XIcon size={14} color="#0284c7" />)
-                      : (liveInv.apiDeliveryStatus === 'sent' ? <CheckIcon size={14} color="#059669" /> : <MailIcon size={14} color="var(--accent)" />)}
+                      : (liveInv.apiDeliveryStatus === 'sent' ? <CheckIcon size={14} color="#059669" /> : liveInv.apiDeliveryStatus === 'failed' ? <XIcon size={14} color="#0284c7" /> : <MailIcon size={14} color="var(--accent)" />)}
                     <span>
                       {apiDispatchFeedback
                         ? apiDispatchFeedback.message
                         : liveInv.apiDeliveryStatus === 'sent'
                           ? `Sent to ${liveInv.dispatchedToEmail || liveInv.recipientEmail}`
                           : liveInv.apiDeliveryStatus === 'failed'
-                            ? 'Delivery pending — click Resend below.'
-                            : `Sending to ${effectiveTargetEmail}…`}
+                            ? `Email was not delivered to ${liveInv.dispatchedToEmail || liveInv.recipientEmail}${liveInv.apiFailureReason ? ` (${liveInv.apiFailureReason})` : ''}. Please use "Open in Gmail" below.`
+                            : `Attempting delivery to ${effectiveTargetEmail}… (or click "Open in Gmail" below)`}
                     </span>
                   </span>
                   {(apiDispatchFeedback?.timestamp || liveInv.apiDispatchedAt) && (
@@ -2361,27 +2521,20 @@ export default function RegistrationPage() {
                   )}
                 </div>
 
-                {/* Email Dispatch Action CTA */}
+                {/* Email Dispatch Action CTA (Manual Open in Gmail + Resend) */}
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <button
                     type="button"
                     disabled={isDispatchingApi}
                     onClick={async () => {
-                      const directConfigured = hasConnectedGmailToken();
-                      if (!directConfigured) {
-                        openGmailComposeWindow(effectiveTargetEmail, liveInv.subject, liveInv.letterBody);
-                      }
                       setIsDispatchingApi(true);
                       const res = await dispatchInvitationViaApi(liveInv.id, effectiveTargetEmail);
                       setIsDispatchingApi(false);
-                      if (directConfigured && !res.result?.deliveredDirectly) {
-                        openGmailComposeWindow(effectiveTargetEmail, liveInv.subject, liveInv.letterBody);
-                      }
                       setApiDispatchFeedback({
                         success: res.success,
                         message: res.success
-                          ? (res.result?.message || `Sent to ${effectiveTargetEmail}`)
-                          : (res.error || 'Could not send invitation.'),
+                          ? `Sent to ${effectiveTargetEmail}`
+                          : `Email was not delivered to ${effectiveTargetEmail}${res.result && !res.result.ok ? ` (${res.result.reason})` : ''}. Please use "Open in Gmail" to send manually.`,
                         txId: res.result?.transactionId,
                         timestamp: res.result?.timestamp,
                       });
@@ -2390,22 +2543,21 @@ export default function RegistrationPage() {
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700, cursor: isDispatchingApi ? 'wait' : 'pointer' }}
                   >
                     <MailIcon size={14} color="currentColor" />
-                    <span>{isDispatchingApi ? 'Sending…' : 'Send / Resend via Gmail'}</span>
+                    <span>{isDispatchingApi ? 'Sending…' : 'Send / Resend Email'}</span>
                   </button>
 
-                  <a
-                    href={gmailWebHref}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => openGmailCompose(effectiveTargetEmail, liveInv.subject, liveInv.letterBody)}
                     className="btn btn-sm btn-outline"
-                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
                   >
                     <span>Open in Gmail</span>
-                  </a>
+                  </button>
                 </div>
               </div>
 
-              {/* Assigned Credentials Section (Unboxed + Divider) */}
+              {/* One-Time 24-Hour Password Setup Token Status (No Raw Password in Email) */}
               <div style={{
                 paddingBottom: '16px',
                 borderBottom: '1px solid var(--border-light)',
@@ -2417,27 +2569,29 @@ export default function RegistrationPage() {
               }}>
                 <div>
                   <div style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: '0.05em' }}>
-                    Assigned Portal Credentials
+                    One-Time Password Setup Token (24-Hour Expiry)
                   </div>
                   <div style={{ fontSize: '13px', marginTop: '4px', color: 'var(--text-primary)' }}>
-                    Email: <strong style={{ fontFamily: 'monospace' }}>{liveInv.recipientEmail}</strong>
+                    Registered Email: <strong style={{ fontFamily: 'monospace' }}>{liveInv.recipientEmail}</strong>
                   </div>
-                  <div style={{ fontSize: '13px', marginTop: '2px', color: 'var(--text-primary)' }}>
-                    Password: <strong style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{liveInv.generatedPassword}</strong>
+                  <div style={{ fontSize: '12px', marginTop: '2px', color: 'var(--text-secondary)' }}>
+                    {liveInv.setupTokenUsed
+                      ? 'Password setup completed by recipient.'
+                      : `A "Set your password" link is included in the letter below (Expires: ${liveInv.setupTokenExpiresAt ? new Date(liveInv.setupTokenExpiresAt).toLocaleString() : '24 hours'}). Only the SHA-256 token hash is stored in the database.`}
                   </div>
                 </div>
                 <button
                   type="button"
                   className="btn btn-sm btn-outline"
                   onClick={() => {
-                    navigator.clipboard?.writeText(`Email: ${liveInv.recipientEmail}\nPassword: ${liveInv.generatedPassword}`);
+                    navigator.clipboard?.writeText(liveInv.letterBody);
                     setCopiedCreds(true);
                     setTimeout(() => setCopiedCreds(false), 2000);
                   }}
                   style={{ fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
                   <CopyIcon size={13} />
-                  <span>{copiedCreds ? 'Copied to Clipboard!' : 'Copy Credentials'}</span>
+                  <span>{copiedCreds ? 'Copied Letter!' : 'Copy Appointment Letter'}</span>
                 </button>
               </div>
 

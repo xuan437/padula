@@ -11,6 +11,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- CLEAN RESET: Drop existing tables to prevent schema/column drift
 -- ─────────────────────────────────────────────────────────────────────────────
+DROP TABLE IF EXISTS email_send_logs CASCADE;
 DROP TABLE IF EXISTS system_settings CASCADE;
 DROP TABLE IF EXISTS staff_invitations CASCADE;
 DROP TABLE IF EXISTS access_requests CASCADE;
@@ -239,9 +240,11 @@ CREATE TABLE IF NOT EXISTS staff (
   assigned_competition_id TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   password TEXT,
+  must_change_password BOOLEAN DEFAULT true,
   invitation_status TEXT,
   invitation_id TEXT,
   added_by TEXT,
+  last_login_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -260,7 +263,7 @@ CREATE TABLE IF NOT EXISTS access_requests (
   generated_password TEXT
 );
 
--- 14. STAFF INVITATIONS
+-- 14. STAFF INVITATIONS (Stores SHA-256 hash of 24-hour one-time setup token; no raw password)
 CREATE TABLE IF NOT EXISTS staff_invitations (
   id TEXT PRIMARY KEY,
   recipient_name TEXT NOT NULL,
@@ -269,6 +272,11 @@ CREATE TABLE IF NOT EXISTS staff_invitations (
   role_title TEXT,
   assigned_sport_or_dept TEXT,
   generated_password TEXT,
+  setup_token_hash TEXT,
+  setup_token_expires_at TIMESTAMPTZ,
+  setup_token_used BOOLEAN DEFAULT false,
+  delivery_status TEXT DEFAULT 'pending' CHECK (delivery_status IN ('pending', 'sent', 'failed')),
+  delivery_error TEXT,
   status TEXT NOT NULL DEFAULT 'pending',
   sent_by TEXT,
   sent_by_email TEXT,
@@ -276,6 +284,19 @@ CREATE TABLE IF NOT EXISTS staff_invitations (
   responded_at TIMESTAMPTZ,
   subject TEXT,
   letter_body TEXT
+);
+
+-- 14b. EMAIL SEND ATTEMPT LOGS
+CREATE TABLE IF NOT EXISTS email_send_logs (
+  id TEXT PRIMARY KEY,
+  invitation_id TEXT,
+  recipient_email TEXT NOT NULL,
+  recipient_name TEXT,
+  role_title TEXT,
+  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  result TEXT NOT NULL CHECK (result IN ('sent', 'failed')),
+  failure_reason TEXT,
+  provider TEXT
 );
 
 -- 15. SYSTEM SETTINGS
@@ -303,6 +324,7 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
 ALTER TABLE access_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_send_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
 -- Public / Anon read & authenticated operational policies
@@ -397,6 +419,12 @@ BEGIN
   CREATE POLICY "Public Read Staff Invitations" ON staff_invitations FOR SELECT USING (true);
   DROP POLICY IF EXISTS "Operational Write Staff Invitations" ON staff_invitations;
   CREATE POLICY "Operational Write Staff Invitations" ON staff_invitations FOR ALL USING (true);
+
+  -- Email Send Logs
+  DROP POLICY IF EXISTS "Public Read Email Send Logs" ON email_send_logs;
+  CREATE POLICY "Public Read Email Send Logs" ON email_send_logs FOR SELECT USING (true);
+  DROP POLICY IF EXISTS "Operational Write Email Send Logs" ON email_send_logs;
+  CREATE POLICY "Operational Write Email Send Logs" ON email_send_logs FOR ALL USING (true);
 
   -- System Settings
   DROP POLICY IF EXISTS "Public Read System Settings" ON system_settings;

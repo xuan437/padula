@@ -9,6 +9,18 @@ export type StaffRole = 'director' | 'coordinator' | 'scorer';
 export type StaffStatus = 'active' | 'pending' | 'disabled';
 export type InvitationStatus = 'pending' | 'accepted' | 'declined';
 
+export interface EmailSendLog {
+  id: string;
+  invitationId?: string;
+  recipientEmail: string;
+  recipientName?: string;
+  roleTitle?: string;
+  timestamp: string;
+  result: 'sent' | 'failed';
+  failureReason?: string;
+  provider?: string;
+}
+
 export interface StaffInvitation {
   id: string;
   recipientName: string;
@@ -16,7 +28,10 @@ export interface StaffInvitation {
   role: 'director' | 'coordinator' | 'scorer';
   roleTitle: string;
   assignedSportOrDept: string;
-  generatedPassword: string;
+  generatedPassword?: string;
+  setupTokenHash?: string;
+  setupTokenExpiresAt?: string;
+  setupTokenUsed?: boolean;
   status: InvitationStatus;
   sentBy: string;
   sentByEmail: string;
@@ -24,10 +39,11 @@ export interface StaffInvitation {
   respondedAt?: string;
   subject: string;
   letterBody: string;
-  // Gmail API Dispatch status & receipt
+  // Email Dispatch status & receipt
   dispatchedViaApi?: boolean;
   dispatchedToEmail?: string;
   apiDeliveryStatus?: 'pending' | 'sent' | 'failed';
+  apiFailureReason?: string;
   apiTransactionId?: string;
   apiDispatchedAt?: string;
   apiProvider?: string;
@@ -42,6 +58,7 @@ export interface StaffMember {
   assignedMatchIds?: string[];    // match IDs assigned to scorer
   status: StaffStatus;
   password?: string;
+  mustChangePassword?: boolean;
   invitationStatus?: InvitationStatus;
   invitationId?: string;
   addedBy?: string;
@@ -57,6 +74,7 @@ export interface User {
   username: string;
   email: string;           // institutional Google (@asiancollege.edu.ph)
   password?: string;
+  mustChangePassword?: boolean;
   invitationStatus?: InvitationStatus;
   invitationId?: string;
   department?: string;     // assigned dept

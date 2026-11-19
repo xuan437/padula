@@ -1439,7 +1439,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                       From: <strong>{matchingInvite.sentBy}</strong> ({matchingInvite.sentByEmail}) · Assigned: <strong>{matchingInvite.assignedSportOrDept}</strong> · Status: <strong>{matchingInvite.status.toUpperCase()}</strong>
                     </div>
 
-                    {/* Assigned Login Credentials */}
+                    {/* One-Time Password Setup Info */}
                     <div style={{
                       background: '#e0f2fe',
                       border: '1px solid #bae6fd',
@@ -1453,11 +1453,11 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     }}>
                       <div style={{ fontSize: '11px', color: '#0f2d5c' }}>
                         <div>Login Email: <strong style={{ fontFamily: 'monospace' }}>{matchingInvite.recipientEmail}</strong></div>
-                        <div>Temporary Password: <strong style={{ fontFamily: 'monospace' }}>{matchingInvite.generatedPassword}</strong></div>
+                        <div>Password Setup: <strong>Use the 24-hour one-time setup link in your appointment letter</strong></div>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setPassword(matchingInvite.generatedPassword)}
+                        onClick={() => setActiveView('set-password')}
                         style={{
                           background: '#0f2d5c',
                           color: '#ffffff',
@@ -1469,7 +1469,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                           cursor: 'pointer',
                         }}
                       >
-                        Use Assigned Password
+                        Set Your Password
                       </button>
                     </div>
 
@@ -1494,10 +1494,14 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                     <button
                       type="button"
                       onClick={() => {
+                        if (!matchingInvite.setupTokenUsed) {
+                          setActiveView('set-password');
+                          return;
+                        }
                         if (matchingInvite.status === 'pending') {
                           respondToInvitation(matchingInvite.id, 'accepted');
                         }
-                        executeGoogleSignIn(matchingInvite.recipientEmail, matchingInvite.generatedPassword);
+                        executeGoogleSignIn(matchingInvite.recipientEmail, password);
                       }}
                       style={{
                         background: '#0284c7',
@@ -1510,7 +1514,7 @@ export default function LoginPage({ onBackToPublic, showDemoProp }: LoginPagePro
                         cursor: 'pointer',
                       }}
                     >
-                      ✓ Accept Appointment &amp; Sign In
+                      {matchingInvite.setupTokenUsed ? '✓ Accept Appointment & Sign In' : 'Set Your Password to Activate Account →'}
                     </button>
                   </div>
                 )}
