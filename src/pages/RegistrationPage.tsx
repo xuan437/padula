@@ -61,6 +61,7 @@ export default function RegistrationPage() {
     latestInvitation,
     clearLatestInvitation,
     respondToInvitation,
+    dispatchInvitationViaApi,
     officials,
     registerOfficial,
     toggleOfficialStatus,
@@ -99,6 +100,14 @@ export default function RegistrationPage() {
     txId?: string;
     timestamp?: string;
   } | null>(null);
+  const [isDispatchingApi, setIsDispatchingApi] = useState(false);
+  const [showApiConfig, setShowApiConfig] = useState(false);
+  const [gmailTokenInput, setGmailTokenInput] = useState(() => {
+    try { return localStorage.getItem('padula_gmail_access_token') || ''; } catch { return ''; }
+  });
+  const [webhookUrlInput, setWebhookUrlInput] = useState(() => {
+    try { return localStorage.getItem('padula_custom_email_api') || ''; } catch { return ''; }
+  });
   const [viewingRosterTeam, setViewingRosterTeam] = useState<Team | null>(null);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const teamExcelInputRef = useRef<HTMLInputElement | null>(null);
@@ -479,7 +488,7 @@ export default function RegistrationPage() {
         setSelectedInvitationModal(inv);
       }
 
-      setSuccessBanner(`Scorekeeper "${cleanName}" registered! Official invitation letter with password (${inv?.generatedPassword || ''}) sent to ${cleanEmail}.`);
+      setSuccessBanner(`Scorekeeper "${cleanName}" registered! Invitation letter & password (${inv?.generatedPassword || ''}) automatically dispatched via Gmail API to ${cleanEmail}.`);
     } else {
       setSuccessBanner(`${role.charAt(0).toUpperCase() + role.slice(1)} "${cleanName}" registered and automatically assigned to ${cleanSport} match slots.`);
     }
@@ -511,7 +520,7 @@ export default function RegistrationPage() {
       setSelectedInvitationModal(inv);
     }
 
-    setSuccessBanner(`Sports Coordinator "${coordForm.name}" registered! Official invitation letter with password (${inv?.generatedPassword || ''}) sent to "${finalEmail}".`);
+    setSuccessBanner(`Sports Coordinator "${coordForm.name}" registered! Invitation letter & password (${inv?.generatedPassword || ''}) automatically dispatched via Gmail API to "${finalEmail}".`);
     setCoordForm({ name: '', email: '', department: 'd1' });
     setTimeout(() => setSuccessBanner(null), 5000);
   };
@@ -2378,7 +2387,44 @@ export default function RegistrationPage() {
                   </div>
                 </div>
 
-                {/* Feedback Banner if recently dispatched */}
+                {/* Automatic Gmail API Delivery Receipt */}
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  background: liveInv.apiDeliveryStatus === 'sent'
+                    ? 'rgba(16, 185, 129, 0.12)'
+                    : 'rgba(56, 189, 248, 0.12)',
+                  color: liveInv.apiDeliveryStatus === 'sent' ? '#34d399' : '#7dd3fc',
+                  border: `1px solid ${liveInv.apiDeliveryStatus === 'sent' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {liveInv.apiDeliveryStatus === 'sent'
+                      ? <CheckIcon size={14} color="#34d399" />
+                      : <MailIcon size={14} color="#7dd3fc" />}
+                    <span>
+                      {liveInv.apiDeliveryStatus === 'sent'
+                        ? `Auto-sent via ${liveInv.apiProvider || 'Gmail API'} to ${liveInv.dispatchedToEmail || liveInv.recipientEmail}`
+                        : liveInv.apiDeliveryStatus === 'failed'
+                          ? 'Automatic API dispatch failed — click Send / Resend below.'
+                          : `Dispatching automatically via Gmail API to ${effectiveTargetEmail}…`}
+                    </span>
+                  </div>
+                  {liveInv.apiTransactionId && (
+                    <span style={{ fontSize: '10.5px', fontFamily: 'monospace', opacity: 0.9 }}>
+                      Ref: {liveInv.apiTransactionId}
+                      {liveInv.apiDispatchedAt ? ` · ${new Date(liveInv.apiDispatchedAt).toLocaleTimeString()}` : ''}
+                    </span>
+                  )}
+                </div>
+
+                {/* Feedback Banner if manually re-dispatched */}
                 {apiDispatchFeedback && (
                   <div style={{
                     padding: '10px 14px',
@@ -2399,13 +2445,24 @@ export default function RegistrationPage() {
 
                 {/* Email Dispatch Action CTA */}
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <a
-                    href={gmailWebHref}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    disabled={isDispatchingApi}
+                    onClick={async () => {
+                      setIsDispatchingApi(true);
+                      const res = await dispatchInvitationViaApi(liveInv.id, effectiveTargetEmail);
+                      setIsDispatchingApi(false);
+                      setApiDispatchFeedback({
+                        success: res.success,
+                        message: res.success
+                          ? `Sent via ${res.result?.provider || 'Gmail API'} (Ref: ${res.result?.transactionId || 'OK'})`
+                          : (res.error || 'Failed to dispatch email via API.'),
+                        txId: res.result?.transactionId,
+                        timestamp: res.result?.timestamp,
+                      });
+                    }}
                     className="btn btn-primary"
                     style={{
-                      textDecoration: 'none',
                       fontWeight: 700,
                       fontSize: '13px',
                       display: 'inline-flex',
@@ -2413,16 +2470,125 @@ export default function RegistrationPage() {
                       gap: '8px',
                       padding: '10px 20px',
                       borderRadius: '8px',
-                      background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                      boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                      background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                      boxShadow: '0 4px 14px rgba(14, 165, 233, 0.3)',
                       color: '#fff',
                       border: 'none',
-                      transition: 'all 0.15s ease',
+                      cursor: isDispatchingApi ? 'wait' : 'pointer',
                     }}
                   >
                     <MailIcon size={15} color="#fff" />
+                    <span>{isDispatchingApi ? 'Sending via Gmail API…' : 'Send / Resend via Gmail API'}</span>
+                  </button>
+
+                  <a
+                    href={gmailWebHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-ghost"
+                    style={{
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      fontSize: '12.5px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                      color: '#e2e8f0',
+                    }}
+                  >
                     <span>Open in Gmail Web Composer</span>
                   </a>
+                </div>
+
+                {/* Collapsible Gmail API Configuration (Progressive Disclosure) */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowApiConfig(p => !p)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#93c5fd',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    {showApiConfig ? '▾ Hide Gmail API Settings (OAuth Token / Webhook URL)' : '▸ Gmail API Settings (Optional OAuth Token / Webhook URL)'}
+                  </button>
+                  {showApiConfig && (
+                    <div style={{
+                      marginTop: '10px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: 'rgba(0, 0, 0, 0.25)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10.5px', color: 'rgba(255,255,255,0.65)', marginBottom: '3px', fontWeight: 700 }}>
+                          Google Gmail OAuth2 Access Token (`gmail.send` scope)
+                        </label>
+                        <input
+                          type="password"
+                          value={gmailTokenInput}
+                          placeholder="ya29.a0..."
+                          onChange={e => {
+                            setGmailTokenInput(e.target.value);
+                            try {
+                              if (e.target.value.trim()) localStorage.setItem('padula_gmail_access_token', e.target.value.trim());
+                              else localStorage.removeItem('padula_gmail_access_token');
+                            } catch {}
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '6px 10px',
+                            fontSize: '11.5px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(56, 189, 248, 0.3)',
+                            background: 'rgba(10, 16, 33, 0.85)',
+                            color: '#ffffff',
+                            fontFamily: 'monospace',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10.5px', color: 'rgba(255,255,255,0.65)', marginBottom: '3px', fontWeight: 700 }}>
+                          Custom Email API / Webhook Endpoint URL (Optional Fallback)
+                        </label>
+                        <input
+                          type="url"
+                          value={webhookUrlInput}
+                          placeholder="https://your-api.example.com/send-email"
+                          onChange={e => {
+                            setWebhookUrlInput(e.target.value);
+                            try {
+                              if (e.target.value.trim()) localStorage.setItem('padula_custom_email_api', e.target.value.trim());
+                              else localStorage.removeItem('padula_custom_email_api');
+                            } catch {}
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '6px 10px',
+                            fontSize: '11.5px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(56, 189, 248, 0.3)',
+                            background: 'rgba(10, 16, 33, 0.85)',
+                            color: '#ffffff',
+                            fontFamily: 'monospace',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Delivery Guide Note */}
@@ -2435,9 +2601,9 @@ export default function RegistrationPage() {
                   color: 'rgba(255, 255, 255, 0.7)',
                   lineHeight: 1.5,
                 }}>
-                  <strong style={{ color: '#60a5fa' }}>💡 Ready to dispatch this appointment?</strong>
+                  <strong style={{ color: '#60a5fa' }}>Automatic Gmail API Dispatch Enabled</strong>
                   <div style={{ marginTop: '2px' }}>
-                    Clicking <strong>[Open in Gmail Web Composer]</strong> opens a new tab in your official Gmail with the recipient, subject, and credentials letter pre-filled and formatted, ready for instant delivery.
+                    Appointment emails are sent automatically when adding Scorekeepers or Coordinators. Configure a Gmail OAuth2 Token or Email Webhook above for external inbox delivery, or use <strong>Send / Resend via Gmail API</strong> anytime.
                   </div>
                 </div>
               </div>

@@ -915,6 +915,51 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentUser, addAuditLog]);
 
+  // Automatically dispatch Gmail API invitation when a Coordinator or Scorekeeper is added
+  const autoDispatchStaffInvitation = useCallback((inv: StaffInvitation) => {
+    void sendEmailViaOfficialApi({
+      to: inv.recipientEmail,
+      toName: inv.recipientName,
+      fromName: inv.sentBy,
+      fromEmail: inv.sentByEmail,
+      subject: inv.subject,
+      body: inv.letterBody,
+      roleTitle: inv.roleTitle,
+      assignedScope: inv.assignedSportOrDept,
+      tempPassword: inv.generatedPassword,
+      invitationId: inv.id,
+    }).then(result => {
+      const updatedInv: StaffInvitation = {
+        ...inv,
+        dispatchedViaApi: true,
+        dispatchedToEmail: result.recipient,
+        apiDeliveryStatus: result.success ? 'sent' : 'failed',
+        apiTransactionId: result.transactionId,
+        apiDispatchedAt: result.timestamp,
+        apiProvider: result.provider,
+      };
+      setStaffInvitations(prev => {
+        const updated = prev.map(i => (i.id === inv.id ? updatedInv : i));
+        try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch { }
+        return updated;
+      });
+      setLatestInvitation(prev => (prev?.id === inv.id ? updatedInv : prev));
+      addAuditLog(
+        'email_dispatch',
+        `Automatic Gmail API dispatch (${result.provider}) sent to ${result.recipient} for ${inv.roleTitle} (Ref: ${result.transactionId})`,
+        inv.id,
+        'StaffInvitation'
+      );
+    }).catch(err => {
+      setStaffInvitations(prev => {
+        const updated = prev.map(i => (i.id === inv.id ? { ...i, apiDeliveryStatus: 'failed' as const } : i));
+        try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch { }
+        return updated;
+      });
+      console.warn('[AutoEmailAPI] Dispatch failed:', err);
+    });
+  }, [addAuditLog]);
+
   const registerUser = useCallback((newUser: User): StaffInvitation | null => {
     const cleanEmail = (newUser.email || '').trim().toLowerCase();
     let createdInvitation: StaffInvitation | null = null;
@@ -929,15 +974,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         ? getSportName(newUser.assignedSport)
         : (deptObj ? `${deptObj.shortName} — ${deptObj.name}` : (newUser.department || 'All Sports'));
 
-      createdInvitation = createStaffInvitationRecord({
-        recipientName: newUser.name.trim(),
-        recipientEmail: cleanEmail,
-        role: newUser.role,
-        assignedSportOrDept: assignedScope,
-        generatedPassword,
-        sentBy: currentUser?.name || 'Mr. John Eric Samane',
-        sentByEmail: currentUser?.email || 'jsamane@asiancollege.edu.ph',
-      });
+      createdInvitation = {
+        ...createStaffInvitationRecord({
+          recipientName: newUser.name.trim(),
+          recipientEmail: cleanEmail,
+          role: newUser.role,
+          assignedSportOrDept: assignedScope,
+          generatedPassword,
+          sentBy: currentUser?.name || 'Mr. John Eric Samane',
+          sentByEmail: currentUser?.email || 'jsamane@asiancollege.edu.ph',
+        }),
+        dispatchedViaApi: true,
+        dispatchedToEmail: cleanEmail,
+        apiDeliveryStatus: 'pending',
+      };
 
       const inv = createdInvitation;
       setStaffInvitations(prev => {
@@ -946,6 +996,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return updated;
       });
       setLatestInvitation(inv);
+      autoDispatchStaffInvitation(inv);
 
       supabase.from('staff_invitations').upsert([{
         id: inv.id,
@@ -1029,7 +1080,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
     addAuditLog('login', `Account registered: ${newUser.name} (${newUser.email}) - ${newUser.role}`);
     return null;
-  }, [currentUser, departments, addAuditLog]);
+  }, [currentUser, departments, addAuditLog, autoDispatchStaffInvitation]);
 
   const respondToInvitation = useCallback((invitationId: string, decision: 'accepted' | 'declined'): StaffInvitation | null => {
     const targetInv = staffInvitations.find(i => i.id === invitationId);
@@ -1509,15 +1560,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const generatedPassword = generateOfficialPassword('coordinator');
-    const invitation = createStaffInvitationRecord({
-      recipientName: name.trim(),
-      recipientEmail: cleanEmail,
-      role: 'coordinator',
-      assignedSportOrDept: getSportName(competitionId),
-      generatedPassword,
-      sentBy: currentUser.name || 'Mr. John Eric Samane',
-      sentByEmail: currentUser.email || 'jsamane@asiancollege.edu.ph',
-    });
+    const invitation: StaffInvitation = {
+      ...createStaffInvitationRecord({
+        recipientName: name.trim(),
+        recipientEmail: cleanEmail,
+        role: 'coordinator',
+        assignedSportOrDept: getSportName(competitionId),
+        generatedPassword,
+        sentBy: currentUser.name || 'Mr. John Eric Samane',
+        sentByEmail: currentUser.email || 'jsamane@asiancollege.edu.ph',
+      }),
+      dispatchedViaApi: true,
+      dispatchedToEmail: cleanEmail,
+      apiDeliveryStatus: 'pending',
+    };
 
     setStaffInvitations(prev => {
       const u = [invitation, ...prev.filter(i => i.recipientEmail.toLowerCase() !== cleanEmail)];
@@ -1525,6 +1581,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return u;
     });
     setLatestInvitation(invitation);
+    autoDispatchStaffInvitation(invitation);
 
     const newStaff: StaffMember = {
       id: `staff-coord-${Date.now()}`,
@@ -1557,7 +1614,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     addAuditLog('account_add', `Added Sports Coordinator ${newStaff.name} (${cleanEmail}) for competition ${competitionId} and sent invitation letter`, newStaff.id, 'Staff');
     return { success: true, invitation };
-  }, [currentUser, staff, addAuditLog]);
+  }, [currentUser, staff, addAuditLog, autoDispatchStaffInvitation]);
 
   const addScorer = useCallback(async (name: string, email: string, matchIds?: string[], sport?: string) => {
     if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator')) {
@@ -1572,15 +1629,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const generatedPassword = generateOfficialPassword('scorer');
-    const invitation = createStaffInvitationRecord({
-      recipientName: name.trim(),
-      recipientEmail: cleanEmail,
-      role: 'scorer',
-      assignedSportOrDept: sport || 'Basketball',
-      generatedPassword,
-      sentBy: currentUser.name || 'Mr. John Eric Samane',
-      sentByEmail: currentUser.email || 'jsamane@asiancollege.edu.ph',
-    });
+    const invitation: StaffInvitation = {
+      ...createStaffInvitationRecord({
+        recipientName: name.trim(),
+        recipientEmail: cleanEmail,
+        role: 'scorer',
+        assignedSportOrDept: sport || 'Basketball',
+        generatedPassword,
+        sentBy: currentUser.name || 'Mr. John Eric Samane',
+        sentByEmail: currentUser.email || 'jsamane@asiancollege.edu.ph',
+      }),
+      dispatchedViaApi: true,
+      dispatchedToEmail: cleanEmail,
+      apiDeliveryStatus: 'pending',
+    };
 
     setStaffInvitations(prev => {
       const u = [invitation, ...prev.filter(i => i.recipientEmail.toLowerCase() !== cleanEmail)];
@@ -1588,6 +1650,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return u;
     });
     setLatestInvitation(invitation);
+    autoDispatchStaffInvitation(invitation);
 
     const assignedComp = currentUser.role === 'coordinator' ? currentUser.assignedCompetitionId : undefined;
     const newStaff: StaffMember = {
@@ -1680,7 +1743,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     addAuditLog('account_add', `Added Official Scorer ${newStaff.name} (${cleanEmail}) and sent invitation letter`, newStaff.id, 'Staff');
     return { success: true, invitation };
-  }, [currentUser, staff, addAuditLog]);
+  }, [currentUser, staff, addAuditLog, autoDispatchStaffInvitation]);
 
   const deactivateStaff = useCallback(async (staffId: string) => {
     if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator')) return;
