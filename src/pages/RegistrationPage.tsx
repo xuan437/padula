@@ -2182,8 +2182,8 @@ export default function RegistrationPage() {
           <div style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.78)',
-            backdropFilter: 'blur(6px)',
+            background: 'rgba(10, 17, 40, 0.72)',
+            backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -2192,89 +2192,57 @@ export default function RegistrationPage() {
           }}>
             <div className="glass-card" style={{
               width: '100%',
-              maxWidth: '720px',
+              maxWidth: '680px',
               maxHeight: '92vh',
               overflowY: 'auto',
-              padding: '28px',
-              background: 'linear-gradient(180deg, #0e172e 0%, #090e1f 100%)',
-              border: '1px solid rgba(59, 130, 246, 0.28)',
-              borderRadius: '20px',
+              padding: '24px 28px',
+              background: 'var(--bg-surface)',
+              borderRadius: '14px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '18px',
-              boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+              gap: '16px',
+              color: 'var(--text-primary)',
             }}>
               {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '14px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '16px' }}>
-                <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '14px', flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0, flex: '1 1 260px' }}>
                   <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    padding: '3px 10px',
-                    borderRadius: '20px',
-                    background: 'rgba(56, 189, 248, 0.12)',
-                    border: '1px solid rgba(56, 189, 248, 0.3)',
-                    color: '#7dd3fc',
+                    color: 'var(--accent)',
                     fontSize: '11px',
                     fontWeight: 800,
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
-                    marginBottom: '6px',
+                    marginBottom: '4px',
+                    whiteSpace: 'nowrap',
                   }}>
-                    <MailIcon size={12} color="#7dd3fc" />
+                    <MailIcon size={12} color="var(--accent)" />
                     <span>Official Appointment Letter</span>
                   </div>
-                  <h3 style={{ fontSize: '20px', fontWeight: 800, margin: 0, color: '#ffffff', letterSpacing: '-0.01em' }}>
-                    {liveInv.roleTitle} Invitation — <span style={{ color: '#38bdf8' }}>{liveInv.recipientName}</span>
+                  <h3 style={{ fontSize: '19px', fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
+                    {liveInv.roleTitle} Invitation — <span style={{ color: 'var(--accent)' }}>{liveInv.recipientName}</span>
                   </h3>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
                   {liveInv.dispatchedViaApi && (
-                    <span style={{
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      background: 'rgba(16, 185, 129, 0.12)',
-                      color: '#10b981',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}>
-                      <CheckIcon size={12} color="#10b981" /> SENT VIA GMAIL
+                    <span className="status-badge finished" style={{ fontSize: '10.5px', whiteSpace: 'nowrap' }}>
+                      <CheckIcon size={11} color="currentColor" /> Sent via Gmail
                     </span>
                   )}
-                  <span style={{
-                    padding: '4px 11px',
-                    borderRadius: '20px',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    background: liveInv.status === 'accepted' ? 'rgba(16,185,129,0.14)' : liveInv.status === 'declined' ? 'rgba(56, 189, 248,0.14)' : 'rgba(245,158,11,0.14)',
-                    color: liveInv.status === 'accepted' ? '#10b981' : liveInv.status === 'declined' ? '#38bdf8' : '#fbbf24',
-                    border: `1px solid ${liveInv.status === 'accepted' ? 'rgba(16,185,129,0.3)' : liveInv.status === 'declined' ? 'rgba(56, 189, 248,0.3)' : 'rgba(245,158,11,0.3)'}`,
-                  }}>
-                    {liveInv.status === 'accepted' ? 'ACCEPTED' : liveInv.status === 'declined' ? 'DECLINED' : 'AWAITING RESPONSE'}
+                  <span
+                    className={`status-badge ${liveInv.status === 'accepted' ? 'finished' : liveInv.status === 'declined' ? 'live' : 'scheduled'}`}
+                    style={{ fontSize: '10.5px', whiteSpace: 'nowrap' }}
+                  >
+                    {liveInv.status === 'accepted' ? 'Accepted' : liveInv.status === 'declined' ? 'Declined' : 'Awaiting Response'}
                   </span>
                   <button
                     type="button"
+                    className="btn btn-sm btn-ghost"
                     onClick={() => setSelectedInvitationModal(null)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      borderRadius: '8px',
-                      color: 'rgba(255, 255, 255, 0.7)',
-                      padding: '6px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.15s ease',
-                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px' }}
                     title="Close"
                   >
                     <XIcon size={16} />
@@ -2282,115 +2250,86 @@ export default function RegistrationPage() {
                 </div>
               </div>
 
-              {/* Email Envelope Metadata Card */}
+              {/* Email Envelope Metadata (Borderless Grid + Divider) */}
               <div style={{
-                background: 'rgba(255, 255, 255, 0.025)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '12px',
-                padding: '14px 18px',
+                paddingBottom: '14px',
+                borderBottom: '1px solid var(--border-light)',
                 fontSize: '12.5px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
+                gap: '6px',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ color: 'rgba(255, 255, 255, 0.45)', fontWeight: 700, width: '60px', textTransform: 'uppercase', fontSize: '10.5px' }}>From:</span>
-                  <span style={{ color: '#ffffff', fontWeight: 600 }}>{senderDisplayName}</span>
-                  <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontFamily: 'monospace', fontSize: '11.5px' }}>&lt;{senderDisplayEmail}&gt;</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', alignItems: 'baseline', gap: '8px' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: '10.5px' }}>From</span>
+                  <div style={{ minWidth: 0 }}>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{senderDisplayName}</span>{' '}
+                    <span style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '11.5px' }}>&lt;{senderDisplayEmail}&gt;</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ color: 'rgba(255, 255, 255, 0.45)', fontWeight: 700, width: '60px', textTransform: 'uppercase', fontSize: '10.5px' }}>To:</span>
-                  <span style={{ color: '#ffffff', fontWeight: 600 }}>{liveInv.recipientName}</span>
-                  <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontWeight: 700, fontSize: '12px' }}>&lt;{effectiveTargetEmail}&gt;</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', alignItems: 'baseline', gap: '8px' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: '10.5px' }}>To</span>
+                  <div style={{ minWidth: 0 }}>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{liveInv.recipientName}</span>{' '}
+                    <span style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 700, fontSize: '11.5px' }}>&lt;{effectiveTargetEmail}&gt;</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ color: 'rgba(255, 255, 255, 0.45)', fontWeight: 700, width: '60px', textTransform: 'uppercase', fontSize: '10.5px' }}>Subject:</span>
-                  <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{liveInv.subject}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr', alignItems: 'baseline', gap: '8px' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: '10.5px' }}>Subject</span>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{liveInv.subject}</span>
                 </div>
               </div>
 
-              {/* Gmail Dispatch Section */}
+              {/* Gmail Dispatch Controls (Clean, Unboxed) */}
               <div style={{
-                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(30, 58, 138, 0.03) 100%)',
-                border: '1px solid rgba(59, 130, 246, 0.28)',
-                borderRadius: '14px',
-                padding: '18px 20px',
+                paddingBottom: '16px',
+                borderBottom: '1px solid var(--border-light)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '14px',
+                gap: '12px',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '8px',
-                    background: 'rgba(59, 130, 246, 0.18)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#3b82f6',
-                  }}>
-                    <MailIcon size={16} color="#3b82f6" />
+                <div>
+                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    Dispatch Appointment via Official Gmail
                   </div>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.02em' }}>
-                      Dispatch Appointment via Official Gmail
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: 'rgba(255, 255, 255, 0.6)' }}>
-                      Compose and send appointment credentials to recipient's official school account.
-                    </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Automatically dispatched on registration. Edit destination or resend anytime.
                   </div>
                 </div>
 
                 {/* Sender & Destination Grid */}
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                   gap: '12px',
-                  background: 'rgba(0, 0, 0, 0.25)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: '10px',
-                  padding: '12px 14px',
+                  alignItems: 'end',
                 }}>
                   <div>
-                    <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '10.5px', display: 'block', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '10.5px', display: 'block', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       Authenticated Sender
                     </span>
-                    <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#ffffff', marginTop: '2px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '3px' }}>
                       {senderDisplayName}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.55)', fontFamily: 'monospace' }}>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
                       {senderDisplayEmail}
                     </div>
                   </div>
                   <div>
-                    <label style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '10.5px', display: 'block', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>
+                    <label style={{ color: 'var(--text-muted)', fontSize: '10.5px', display: 'block', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
                       Destination Official Gmail
                     </label>
                     <input
                       type="email"
                       value={effectiveTargetEmail}
                       onChange={(e) => setApiTargetEmailOverride(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '7px 12px',
-                        fontSize: '12.5px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(59, 130, 246, 0.35)',
-                        background: 'rgba(10, 16, 33, 0.8)',
-                        color: '#ffffff',
-                        fontFamily: 'monospace',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
+                      className="form-input"
+                      style={{ width: '100%', padding: '7px 10px', fontSize: '12.5px', fontFamily: 'monospace', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
 
-                {/* Automatic Gmail API Delivery Receipt */}
+                {/* Single Consolidated Delivery Status Line */}
                 <div style={{
-                  padding: '10px 14px',
-                  borderRadius: '8px',
                   fontSize: '12px',
                   fontWeight: 600,
                   display: 'flex',
@@ -2398,53 +2337,36 @@ export default function RegistrationPage() {
                   justifyContent: 'space-between',
                   flexWrap: 'wrap',
                   gap: '8px',
-                  background: liveInv.apiDeliveryStatus === 'sent'
-                    ? 'rgba(16, 185, 129, 0.12)'
-                    : 'rgba(56, 189, 248, 0.12)',
-                  color: liveInv.apiDeliveryStatus === 'sent' ? '#34d399' : '#7dd3fc',
-                  border: `1px solid ${liveInv.apiDeliveryStatus === 'sent' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+                  color: apiDispatchFeedback
+                    ? (apiDispatchFeedback.success ? '#059669' : '#0284c7')
+                    : (liveInv.apiDeliveryStatus === 'sent' ? '#059669' : 'var(--accent)'),
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {liveInv.apiDeliveryStatus === 'sent'
-                      ? <CheckIcon size={14} color="#34d399" />
-                      : <MailIcon size={14} color="#7dd3fc" />}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    {apiDispatchFeedback
+                      ? (apiDispatchFeedback.success ? <CheckIcon size={14} color="#059669" /> : <XIcon size={14} color="#0284c7" />)
+                      : (liveInv.apiDeliveryStatus === 'sent' ? <CheckIcon size={14} color="#059669" /> : <MailIcon size={14} color="var(--accent)" />)}
                     <span>
-                      {liveInv.apiDeliveryStatus === 'sent'
-                        ? `Auto-sent via ${liveInv.apiProvider || 'Gmail API'} to ${liveInv.dispatchedToEmail || liveInv.recipientEmail}`
-                        : liveInv.apiDeliveryStatus === 'failed'
-                          ? 'Automatic API dispatch failed — click Send / Resend below.'
-                          : `Dispatching automatically via Gmail API to ${effectiveTargetEmail}…`}
+                      {apiDispatchFeedback
+                        ? apiDispatchFeedback.message
+                        : liveInv.apiDeliveryStatus === 'sent'
+                          ? `Sent via ${liveInv.apiProvider || 'Gmail API'} to ${liveInv.dispatchedToEmail || liveInv.recipientEmail}`
+                          : liveInv.apiDeliveryStatus === 'failed'
+                            ? 'Automatic API dispatch failed — click Send / Resend below.'
+                            : `Dispatching automatically via Gmail API to ${effectiveTargetEmail}…`}
                     </span>
-                  </div>
-                  {liveInv.apiTransactionId && (
-                    <span style={{ fontSize: '10.5px', fontFamily: 'monospace', opacity: 0.9 }}>
-                      Ref: {liveInv.apiTransactionId}
-                      {liveInv.apiDispatchedAt ? ` · ${new Date(liveInv.apiDispatchedAt).toLocaleTimeString()}` : ''}
+                  </span>
+                  {(apiDispatchFeedback?.txId || liveInv.apiTransactionId) && (
+                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                      Ref: {apiDispatchFeedback?.txId || liveInv.apiTransactionId}
+                      {(apiDispatchFeedback?.timestamp || liveInv.apiDispatchedAt)
+                        ? ` · ${new Date(apiDispatchFeedback?.timestamp || liveInv.apiDispatchedAt || '').toLocaleTimeString()}`
+                        : ''}
                     </span>
                   )}
                 </div>
 
-                {/* Feedback Banner if manually re-dispatched */}
-                {apiDispatchFeedback && (
-                  <div style={{
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: apiDispatchFeedback.success ? 'rgba(16, 185, 129, 0.12)' : 'rgba(56, 189, 248, 0.12)',
-                    color: apiDispatchFeedback.success ? '#10b981' : '#38bdf8',
-                    border: `1px solid ${apiDispatchFeedback.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
-                  }}>
-                    {apiDispatchFeedback.success ? <CheckIcon size={14} color="#10b981" /> : <XIcon size={14} color="#38bdf8" />}
-                    <span>{apiDispatchFeedback.message}</span>
-                  </div>
-                )}
-
                 {/* Email Dispatch Action CTA */}
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <button
                     type="button"
                     disabled={isDispatchingApi}
@@ -2455,29 +2377,16 @@ export default function RegistrationPage() {
                       setApiDispatchFeedback({
                         success: res.success,
                         message: res.success
-                          ? `Sent via ${res.result?.provider || 'Gmail API'} (Ref: ${res.result?.transactionId || 'OK'})`
+                          ? `Sent via ${res.result?.provider || 'Gmail API'}`
                           : (res.error || 'Failed to dispatch email via API.'),
                         txId: res.result?.transactionId,
                         timestamp: res.result?.timestamp,
                       });
                     }}
-                    className="btn btn-primary"
-                    style={{
-                      fontWeight: 700,
-                      fontSize: '13px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 20px',
-                      borderRadius: '8px',
-                      background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-                      boxShadow: '0 4px 14px rgba(14, 165, 233, 0.3)',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: isDispatchingApi ? 'wait' : 'pointer',
-                    }}
+                    className="btn btn-sm btn-primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700, cursor: isDispatchingApi ? 'wait' : 'pointer' }}
                   >
-                    <MailIcon size={15} color="#fff" />
+                    <MailIcon size={14} color="currentColor" />
                     <span>{isDispatchingApi ? 'Sending via Gmail API…' : 'Send / Resend via Gmail API'}</span>
                   </button>
 
@@ -2485,19 +2394,8 @@ export default function RegistrationPage() {
                     href={gmailWebHref}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-ghost"
-                    style={{
-                      textDecoration: 'none',
-                      fontWeight: 600,
-                      fontSize: '12.5px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '9px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
-                      color: '#e2e8f0',
-                    }}
+                    className="btn btn-sm btn-outline"
+                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
                   >
                     <span>Open in Gmail Web Composer</span>
                   </a>
@@ -2507,38 +2405,23 @@ export default function RegistrationPage() {
                 <div>
                   <button
                     type="button"
+                    className="btn btn-xs btn-ghost"
                     onClick={() => setShowApiConfig(p => !p)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#93c5fd',
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
+                    style={{ padding: '2px 0', fontSize: '11.5px', fontWeight: 700, color: 'var(--accent)' }}
                   >
                     {showApiConfig ? '▾ Hide Gmail API Settings (OAuth Token / Webhook URL)' : '▸ Gmail API Settings (Optional OAuth Token / Webhook URL)'}
                   </button>
                   {showApiConfig && (
-                    <div style={{
-                      marginTop: '10px',
-                      padding: '12px 14px',
-                      borderRadius: '8px',
-                      background: 'rgba(0, 0, 0, 0.25)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                    }}>
+                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '10.5px', color: 'rgba(255,255,255,0.65)', marginBottom: '3px', fontWeight: 700 }}>
-                          Google Gmail OAuth2 Access Token (`gmail.send` scope)
+                        <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 700 }}>
+                          Google Gmail OAuth2 Access Token (gmail.send scope)
                         </label>
                         <input
                           type="password"
                           value={gmailTokenInput}
                           placeholder="ya29.a0..."
+                          className="form-input"
                           onChange={e => {
                             setGmailTokenInput(e.target.value);
                             try {
@@ -2546,27 +2429,18 @@ export default function RegistrationPage() {
                               else localStorage.removeItem('padula_gmail_access_token');
                             } catch {}
                           }}
-                          style={{
-                            width: '100%',
-                            padding: '6px 10px',
-                            fontSize: '11.5px',
-                            borderRadius: '6px',
-                            border: '1px solid rgba(56, 189, 248, 0.3)',
-                            background: 'rgba(10, 16, 33, 0.85)',
-                            color: '#ffffff',
-                            fontFamily: 'monospace',
-                            boxSizing: 'border-box',
-                          }}
+                          style={{ width: '100%', fontSize: '12px', fontFamily: 'monospace', boxSizing: 'border-box' }}
                         />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '10.5px', color: 'rgba(255,255,255,0.65)', marginBottom: '3px', fontWeight: 700 }}>
+                        <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 700 }}>
                           Custom Email API / Webhook Endpoint URL (Optional Fallback)
                         </label>
                         <input
                           type="url"
                           value={webhookUrlInput}
                           placeholder="https://your-api.example.com/send-email"
+                          className="form-input"
                           onChange={e => {
                             setWebhookUrlInput(e.target.value);
                             try {
@@ -2574,106 +2448,64 @@ export default function RegistrationPage() {
                               else localStorage.removeItem('padula_custom_email_api');
                             } catch {}
                           }}
-                          style={{
-                            width: '100%',
-                            padding: '6px 10px',
-                            fontSize: '11.5px',
-                            borderRadius: '6px',
-                            border: '1px solid rgba(56, 189, 248, 0.3)',
-                            background: 'rgba(10, 16, 33, 0.85)',
-                            color: '#ffffff',
-                            fontFamily: 'monospace',
-                            boxSizing: 'border-box',
-                          }}
+                          style={{ width: '100%', fontSize: '12px', fontFamily: 'monospace', boxSizing: 'border-box' }}
                         />
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Delivery Guide Note */}
-                <div style={{
-                  background: 'rgba(59, 130, 246, 0.06)',
-                  border: '1px solid rgba(59, 130, 246, 0.18)',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  fontSize: '11.5px',
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  lineHeight: 1.5,
-                }}>
-                  <strong style={{ color: '#60a5fa' }}>Automatic Gmail API Dispatch Enabled</strong>
-                  <div style={{ marginTop: '2px' }}>
-                    Appointment emails are sent automatically when adding Scorekeepers or Coordinators. Configure a Gmail OAuth2 Token or Email Webhook above for external inbox delivery, or use <strong>Send / Resend via Gmail API</strong> anytime.
-                  </div>
-                </div>
               </div>
 
-              {/* Highlighted Credentials Box */}
+              {/* Assigned Credentials Section (Unboxed + Divider) */}
               <div style={{
-                background: 'rgba(16, 185, 129, 0.05)',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-                borderRadius: '12px',
-                padding: '16px 18px',
+                paddingBottom: '16px',
+                borderBottom: '1px solid var(--border-light)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
-                gap: '14px',
+                gap: '12px',
               }}>
                 <div>
-                  <div style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: '#10b981', letterSpacing: '0.06em' }}>
-                    Assigned Portal Credentials (Included in Letter)
+                  <div style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: '0.05em' }}>
+                    Assigned Portal Credentials
                   </div>
-                  <div style={{ fontSize: '13px', marginTop: '4px', color: '#ffffff' }}>
-                    Email: <strong style={{ fontFamily: 'monospace', color: '#93c5fd' }}>{liveInv.recipientEmail}</strong>
+                  <div style={{ fontSize: '13px', marginTop: '4px', color: 'var(--text-primary)' }}>
+                    Email: <strong style={{ fontFamily: 'monospace' }}>{liveInv.recipientEmail}</strong>
                   </div>
-                  <div style={{ fontSize: '13px', marginTop: '2px', color: '#ffffff' }}>
-                    Password: <strong style={{ fontFamily: 'monospace', color: '#34d399', fontSize: '14px', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{liveInv.generatedPassword}</strong>
+                  <div style={{ fontSize: '13px', marginTop: '2px', color: 'var(--text-primary)' }}>
+                    Password: <strong style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{liveInv.generatedPassword}</strong>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="btn btn-sm btn-ghost"
+                  className="btn btn-sm btn-outline"
                   onClick={() => {
                     navigator.clipboard?.writeText(`Email: ${liveInv.recipientEmail}\nPassword: ${liveInv.generatedPassword}`);
                     setCopiedCreds(true);
                     setTimeout(() => setCopiedCreds(false), 2000);
                   }}
-                  style={{
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    background: copiedCreds ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)',
-                    color: copiedCreds ? '#34d399' : '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    padding: '7px 12px',
-                    borderRadius: '6px',
-                  }}
+                  style={{ fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
                   <CopyIcon size={13} />
                   <span>{copiedCreds ? 'Copied to Clipboard!' : 'Copy Credentials'}</span>
                 </button>
               </div>
 
-              {/* Letter Body Preview */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.45)', letterSpacing: '0.06em' }}>
+              {/* Letter Content Preview (Borderless Typography + Bottom Divider) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingBottom: '16px', borderBottom: '1px solid var(--border-light)' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
                   Letter Content Preview
                 </span>
                 <pre style={{
                   margin: 0,
-                  padding: '18px',
-                  borderRadius: '12px',
-                  background: 'rgba(0, 0, 0, 0.3)',
-                  border: '1px solid rgba(255, 255, 255, 0.07)',
-                  color: '#e2e8f0',
+                  padding: '8px 0',
+                  color: 'var(--text-secondary)',
                   fontSize: '12.5px',
-                  lineHeight: 1.65,
+                  lineHeight: 1.6,
                   whiteSpace: 'pre-wrap',
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                  maxHeight: '240px',
+                  maxHeight: '220px',
                   overflowY: 'auto',
                 }}>
                   {liveInv.letterBody}
@@ -2682,10 +2514,8 @@ export default function RegistrationPage() {
 
               {/* Accept / Decline Response Section */}
               <div style={{
-                background: 'rgba(255, 255, 255, 0.025)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '12px',
-                padding: '14px 18px',
+                paddingBottom: '16px',
+                borderBottom: '1px solid var(--border-light)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -2693,67 +2523,47 @@ export default function RegistrationPage() {
                 gap: '12px',
               }}>
                 <div>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#ffffff' }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
                     Appointment Response
                   </div>
-                  <div style={{ fontSize: '11.5px', color: 'rgba(255, 255, 255, 0.55)', marginTop: '2px' }}>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
                     Accept or decline on behalf of the staff member.
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    className="btn btn-sm"
+                    className="btn btn-sm btn-primary"
                     onClick={() => {
                       const updated = respondToInvitation(liveInv.id, 'accepted');
                       if (updated) setSelectedInvitationModal(updated);
                       showBanner(`${liveInv.roleTitle} "${liveInv.recipientName}" accepted the invitation!`);
                     }}
-                    style={{
-                      background: liveInv.status === 'accepted' ? '#059669' : '#10b981',
-                      color: '#fff',
-                      border: 'none',
-                      fontWeight: 700,
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
                   >
-                    <CheckIcon size={13} color="#fff" /> Accept Appointment
+                    <CheckIcon size={13} color="currentColor" /> Accept Appointment
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm"
+                    className="btn btn-sm btn-outline"
                     onClick={() => {
                       const updated = respondToInvitation(liveInv.id, 'declined');
                       if (updated) setSelectedInvitationModal(updated);
                       showBanner(`${liveInv.roleTitle} "${liveInv.recipientName}" declined the invitation.`);
                     }}
-                    style={{
-                      background: 'rgba(56, 189, 248, 0.12)',
-                      color: '#38bdf8',
-                      border: '1px solid rgba(56, 189, 248, 0.35)',
-                      fontWeight: 700,
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
                   >
-                    <XIcon size={13} color="#38bdf8" /> Decline Appointment
+                    <XIcon size={13} color="currentColor" /> Decline Appointment
                   </button>
                 </div>
               </div>
 
               {/* Footer Actions */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', paddingTop: '6px', borderTop: '1px solid rgba(255, 255, 255, 0.07)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <a
                   href={mailtoHref}
                   className="btn btn-sm btn-ghost"
-                  style={{ textDecoration: 'none', fontWeight: 600, fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255, 255, 255, 0.65)' }}
+                  style={{ textDecoration: 'none', fontWeight: 600, fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
                   <MailIcon size={13} /> Send via Default Email App
                 </a>
@@ -2761,7 +2571,7 @@ export default function RegistrationPage() {
                   type="button"
                   className="btn btn-primary"
                   onClick={() => setSelectedInvitationModal(null)}
-                  style={{ padding: '8px 24px', fontWeight: 700, borderRadius: '8px' }}
+                  style={{ padding: '8px 24px', fontWeight: 700 }}
                 >
                   Done
                 </button>
