@@ -446,7 +446,7 @@ export const DEFAULT_STATS_METRICS: StatsMetricsSettings = {
 
 export const DEFAULT_SCORING: ScoringSettings = {
   defaultInputMode: 'live',
-  correctionPermission: 'director_only',
+  correctionPermission: 'director_and_coordinator',
   requireCorrectionReason: true,
   autoLockResultsAfterMinutes: 60,
   enableOfflineMode: true,
@@ -500,8 +500,8 @@ export const DEFAULT_SECURITY: SecuritySettings = {
       canEditFinalScores: true,
       canApproveRosters: true,
       canManageSchedules: true,
-      canManageUsers: false,
-      canAccessSettings: true, // Restricted to own competition sections
+      canManageUsers: true,
+      canAccessSettings: true,
     },
     scorer: {
       role: 'scorer',

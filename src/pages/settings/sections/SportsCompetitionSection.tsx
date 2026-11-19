@@ -58,22 +58,22 @@ export default function SportsCompetitionSection({
   isCoordinator,
   coordinatorCompetitionId,
 }: Props) {
-  // If coordinator, filter to their assigned sport or default to basketball
-  const allowedSports = useMemo(() => {
-    if (!isCoordinator || !coordinatorCompetitionId) return ALL_SPORTS;
-    const matched = ALL_SPORTS.filter(
+  // Coordinators have full access to configure all sports (defaulting initial selection to their assigned sport if any)
+  const allowedSports = ALL_SPORTS;
+  const initialSport = useMemo<SportId>(() => {
+    if (!coordinatorCompetitionId) return ALL_SPORTS[0].id;
+    const matched = ALL_SPORTS.find(
       s => s.id === coordinatorCompetitionId || (coordinatorCompetitionId === 's1' && s.id === 'basketball')
     );
-    return matched.length > 0 ? matched : [ALL_SPORTS[0]];
-  }, [isCoordinator, coordinatorCompetitionId]);
+    return matched ? matched.id : ALL_SPORTS[0].id;
+  }, [coordinatorCompetitionId]);
 
   const { matches } = useApp();
-  const [selectedSportId, setSelectedSportId] = useState<SportId>(allowedSports[0].id);
+  const [selectedSportId, setSelectedSportId] = useState<SportId>(initialSport);
   const [showAdvancedLists, setShowAdvancedLists] = useState(false);
 
   const currentSportRule = settings.sports[selectedSportId];
-  const isLocked = (field: CoordinatorLockableField) =>
-    isCoordinator && (settings.coordinatorLockedFields || []).includes(field);
+  const isLocked = (_field: CoordinatorLockableField) => false;
 
   const activeOverride: CompetitionOverride =
     settings.competitionOverrides?.[selectedSportId] || {};
@@ -250,7 +250,7 @@ export default function SportsCompetitionSection({
         }}>
           <CheckIcon size={16} color="#3b82f6" />
           <span>
-            <strong>Coordinator Scope:</strong> You have permission to configure rules and scoring for your assigned competition (<strong>{ALL_SPORTS.find(s => s.id === selectedSportId)?.name || 'Basketball'}</strong>).
+            <strong>Full Coordinator Customization Enabled:</strong> You can update rules, tournament formats, tiebreakers, series, and event parameters across all sports (currently viewing <strong>{ALL_SPORTS.find(s => s.id === selectedSportId)?.name || 'Basketball'}</strong>).
           </span>
         </div>
       )}
@@ -460,6 +460,36 @@ export default function SportsCompetitionSection({
               <option value="yes">Enabled (Must win by 2 points lead)</option>
             </select>
           </div>
+
+          {/* Score Unit */}
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
+              SCORE UNIT LABEL
+            </label>
+            <input
+              type="text"
+              value={currentSportRule.unit}
+              onChange={e => handleUpdateSport('unit', e.target.value)}
+              className="form-input"
+              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px' }}
+            />
+          </div>
+
+          {/* Max Points Per Period */}
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
+              MAX SCORE CEILING PER PERIOD
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              value={currentSportRule.maxPointsPossiblePerPeriod}
+              onChange={e => handleUpdateSport('maxPointsPossiblePerPeriod', parseInt(e.target.value, 10) || 50)}
+              className="form-input"
+              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px' }}
+            />
+          </div>
         </div>
 
         {/* Tournament Format, Series by Round & Tiebreakers */}
@@ -617,7 +647,7 @@ export default function SportsCompetitionSection({
               TIEBREAKER PRIORITY ORDER {statusBadge('tiebreakerOrder', 'tiebreakerOrder')}
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {currentSportRule.tiebreakerOrder.map((tb, idx) => (
+              {((isCoordinator && activeOverride.tiebreakerOrder) || currentSportRule.tiebreakerOrder).map((tb, idx, arr) => (
                 <div
                   key={tb}
                   style={{
@@ -629,24 +659,88 @@ export default function SportsCompetitionSection({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    gap: '8px',
                   }}
                 >
                   <span style={{ fontWeight: 600 }}>
                     #{idx + 1}. {TIEBREAKER_OPTIONS.find(o => o.id === tb)?.label || tb}
                   </span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                    Priority Level {idx + 1}
-                  </span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      className="btn btn-xs btn-outline"
+                      title="Move Up"
+                      onClick={() => {
+                        const next = [...arr];
+                        [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                        handleUpdateSport('tiebreakerOrder', next);
+                        if (isCoordinator) updateCoordinatorOverride({ tiebreakerOrder: next });
+                      }}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === arr.length - 1}
+                      className="btn btn-xs btn-outline"
+                      title="Move Down"
+                      onClick={() => {
+                        const next = [...arr];
+                        [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+                        handleUpdateSport('tiebreakerOrder', next);
+                        if (isCoordinator) updateCoordinatorOverride({ tiebreakerOrder: next });
+                      }}
+                    >
+                      ↓
+                    </button>
+                    {arr.length > 1 && (
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-ghost"
+                        title="Remove Tiebreaker"
+                        onClick={() => {
+                          const next = arr.filter(x => x !== tb);
+                          handleUpdateSport('tiebreakerOrder', next);
+                          if (isCoordinator) updateCoordinatorOverride({ tiebreakerOrder: next });
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
+              {TIEBREAKER_OPTIONS.filter(
+                opt => !((isCoordinator && activeOverride.tiebreakerOrder) || currentSportRule.tiebreakerOrder).includes(opt.id)
+              ).length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                  {TIEBREAKER_OPTIONS.filter(
+                    opt => !((isCoordinator && activeOverride.tiebreakerOrder) || currentSportRule.tiebreakerOrder).includes(opt.id)
+                  ).map(opt => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className="btn btn-xs btn-outline"
+                      onClick={() => {
+                        const currentList = (isCoordinator && activeOverride.tiebreakerOrder) || currentSportRule.tiebreakerOrder;
+                        const next = [...currentList, opt.id];
+                        handleUpdateSport('tiebreakerOrder', next);
+                        if (isCoordinator) updateCoordinatorOverride({ tiebreakerOrder: next });
+                      }}
+                    >
+                      + {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Global Event & Season Setup (Director Only) ── */}
-      {!isCoordinator && (
-        <div className="glass-card" style={{ padding: '20px' }}>
+      {/* ── Global Event & Season Setup (Director & Coordinator) ── */}
+      <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
             <CalendarIcon size={18} color="var(--accent)" />
             <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
@@ -654,7 +748,7 @@ export default function SportsCompetitionSection({
             </h3>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
                 EVENT / TOURNAMENT NAME
@@ -676,6 +770,32 @@ export default function SportsCompetitionSection({
                 type="text"
                 value={settings.eventSetup.academicYear}
                 onChange={e => handleUpdateEvent('academicYear', e.target.value)}
+                className="form-input"
+                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
+                SEASON TITLE
+              </label>
+              <input
+                type="text"
+                value={settings.eventSetup.seasonName}
+                onChange={e => handleUpdateEvent('seasonName', e.target.value)}
+                className="form-input"
+                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
+                HOST CAMPUS
+              </label>
+              <input
+                type="text"
+                value={settings.eventSetup.hostCampus}
+                onChange={e => handleUpdateEvent('hostCampus', e.target.value)}
                 className="form-input"
                 style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px' }}
               />
@@ -708,11 +828,22 @@ export default function SportsCompetitionSection({
             </div>
           </div>
 
-          {/* Director: Coordinator Permission Locks */}
+          {/* Field Lock Controls */}
           <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
-              COORDINATOR PERMISSION LOCKS (LOCK OPTIONS COORDINATORS CANNOT CHANGE)
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                FIELD EDITABILITY &amp; PERMISSION LOCKS
+              </label>
+              {(settings.coordinatorLockedFields || []).length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline"
+                  onClick={() => onChange({ ...settings, coordinatorLockedFields: [] })}
+                >
+                  Unlock All Fields
+                </button>
+              )}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 8 }}>
               {(
                 [
@@ -785,8 +916,8 @@ export default function SportsCompetitionSection({
               </span>
               <span>
                 {showAdvancedLists
-                  ? 'Hide Master Dropdown Lists (Venues, Departments, Divisions)'
-                  : 'Show Master Dropdown Lists (Venues, Departments, Divisions)'}
+                  ? 'Hide Master Dropdown Lists (Venues, Departments, Divisions, Categories)'
+                  : 'Show Master Dropdown Lists (Venues, Departments, Divisions, Categories)'}
               </span>
             </button>
 
@@ -797,6 +928,7 @@ export default function SportsCompetitionSection({
                     { key: 'venues', label: 'Venues' },
                     { key: 'departments', label: 'Departments' },
                     { key: 'divisions', label: 'Divisions' },
+                    { key: 'categories', label: 'Categories' },
                   ] as const
                 ).map(listDef => (
                   <div key={listDef.key} style={{ padding: 12, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
@@ -822,8 +954,7 @@ export default function SportsCompetitionSection({
               </div>
             )}
           </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

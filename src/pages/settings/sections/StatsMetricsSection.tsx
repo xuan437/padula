@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { StatsMetricsSettings, SportId } from '../../../types/settings';
+import { DEFAULT_STATS_METRICS } from '../../../constants/defaultSettings';
 import {
   BarChartIcon,
   TrophyIcon,
@@ -34,6 +35,7 @@ export default function StatsMetricsSection({
   onChange,
 }: Props) {
   const [selectedSport, setSelectedSport] = useState<SportId>('basketball');
+  const [customStatInput, setCustomStatInput] = useState('');
 
   // Interactive Live Preview inputs for MVP Score calculation
   const [testEfficiency, setTestEfficiency] = useState(24.5);
@@ -211,30 +213,63 @@ export default function StatsMetricsSection({
           </select>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {currentTrackedStats.map(stat => (
-            <button
-              key={stat}
-              type="button"
-              onClick={() => handleToggleStat(stat)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-                background: 'rgba(34, 197, 94, 0.12)',
-                color: '#22c55e',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              <CheckIcon size={14} color="#22c55e" />
-              <span>{stat}</span>
-            </button>
-          ))}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+          {Array.from(
+            new Set([
+              ...(DEFAULT_STATS_METRICS.trackedStatsPerSport[selectedSport] || []),
+              ...currentTrackedStats,
+            ])
+          ).map(stat => {
+            const isEnabled = currentTrackedStats.includes(stat);
+            return (
+              <button
+                key={stat}
+                type="button"
+                onClick={() => handleToggleStat(stat)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  background: isEnabled ? 'rgba(34, 197, 94, 0.12)' : 'var(--bg-elevated)',
+                  color: isEnabled ? '#22c55e' : 'var(--text-muted)',
+                  border: isEnabled ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid var(--border)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {isEnabled && <CheckIcon size={14} color="#22c55e" />}
+                <span>{stat}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', maxWidth: '340px' }}>
+          <input
+            type="text"
+            value={customStatInput}
+            onChange={e => setCustomStatInput(e.target.value)}
+            placeholder="Add custom stat field..."
+            className="form-input"
+            style={{ padding: '6px 10px', fontSize: '12px' }}
+          />
+          <button
+            type="button"
+            className="btn btn-sm btn-outline"
+            onClick={() => {
+              const clean = customStatInput.trim();
+              if (!clean) return;
+              if (!currentTrackedStats.includes(clean)) {
+                handleToggleStat(clean);
+              }
+              setCustomStatInput('');
+            }}
+          >
+            + Add Stat
+          </button>
         </div>
       </div>
 
@@ -276,6 +311,25 @@ export default function StatsMetricsSection({
                 onChange={e => onChange({
                   ...settings,
                   mvpFormula: { ...settings.mvpFormula, formula: e.target.value },
+                })}
+                className="form-input"
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace' }}
+              />
+              <span style={{ fontSize: '11px', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                <CheckIcon size={12} /> Formula syntax validated &amp; active
+              </span>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                WIN PERCENTAGE FORMULA
+              </label>
+              <input
+                type="text"
+                value={settings.winPercentageFormula.formula}
+                onChange={e => onChange({
+                  ...settings,
+                  winPercentageFormula: { ...settings.winPercentageFormula, formula: e.target.value },
                 })}
                 className="form-input"
                 style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace' }}

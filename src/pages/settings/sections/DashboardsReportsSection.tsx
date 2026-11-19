@@ -102,7 +102,16 @@ export default function DashboardsReportsSection({
               <option value="basketball">Basketball</option>
               <option value="volleyball">Volleyball</option>
               <option value="football">Football</option>
+              <option value="futsal">Futsal</option>
+              <option value="sepaktakraw">Sepak Takraw</option>
+              <option value="tabletennis">Table Tennis</option>
+              <option value="badminton">Badminton</option>
+              <option value="frisbee">Frisbee (Ultimate)</option>
+              <option value="chess">Chess</option>
+              <option value="scrabble">Scrabble</option>
               <option value="mobilelegends">Mobile Legends</option>
+              <option value="dota2">DOTA 2</option>
+              <option value="valorant">Valorant</option>
             </select>
           </div>
 

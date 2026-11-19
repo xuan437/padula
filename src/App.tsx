@@ -58,10 +58,6 @@ function AppContent() {
         if (adminViews.includes(activeView)) {
           setActiveView('scorekeeper');
         }
-      } else if (currentUser.role === 'coordinator') {
-        if (activeView === 'scorekeeper' || activeView === 'scorer-dashboard' || activeView === 'audit') {
-          setActiveView('admin');
-        }
       }
     } else {
       // If unauthenticated guest attempts to access settings, redirect to public

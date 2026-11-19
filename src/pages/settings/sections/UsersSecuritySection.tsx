@@ -129,9 +129,12 @@ export default function UsersSecuritySection({
                   borderRadius: '10px',
                   background: 'var(--bg-elevated)',
                   border: slot.userId ? '1px solid var(--accent)' : '1px dashed var(--border)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)' }}>
                     Slot #{slot.slotNumber}
                   </span>
@@ -146,11 +149,52 @@ export default function UsersSecuritySection({
                     {slot.userId ? 'Assigned' : 'Available'}
                   </span>
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '2px' }}>
-                  {assignedStaff ? assignedStaff.name : 'Unassigned Coordinator'}
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
+                    Assigned Coordinator
+                  </label>
+                  <select
+                    value={slot.userId || ''}
+                    onChange={e => {
+                      const nextUserId = e.target.value || undefined;
+                      const nextSlots = settings.coordinators.map(c =>
+                        c.slotNumber === slot.slotNumber ? { ...c, userId: nextUserId } : c
+                      );
+                      onChange({ ...settings, coordinators: nextSlots });
+                    }}
+                    className="form-input"
+                    style={{ width: '100%', padding: '6px 8px', fontSize: '12px', fontWeight: 600 }}
+                  >
+                    <option value="">— Unassigned Slot —</option>
+                    {staff.filter(s => s.role === 'coordinator').map(s => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.email})</option>
+                    ))}
+                  </select>
                 </div>
-                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                  {assignedStaff ? assignedStaff.email : 'Awaiting assignment'}
+                {assignedStaff && (
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {assignedStaff.email}
+                  </div>
+                )}
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
+                    Assigned Competition / Scope
+                  </label>
+                  <input
+                    type="text"
+                    value={slot.assignedCompetitionName || ''}
+                    onChange={e => {
+                      const nextSlots = settings.coordinators.map(c =>
+                        c.slotNumber === slot.slotNumber
+                          ? { ...c, assignedCompetitionName: e.target.value }
+                          : c
+                      );
+                      onChange({ ...settings, coordinators: nextSlots });
+                    }}
+                    placeholder="e.g. All Sports / Basketball"
+                    className="form-input"
+                    style={{ width: '100%', padding: '6px 8px', fontSize: '12px' }}
+                  />
                 </div>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <TrophyIcon size={13} color="#38bdf8" />

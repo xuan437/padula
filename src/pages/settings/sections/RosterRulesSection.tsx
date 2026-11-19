@@ -32,6 +32,7 @@ export default function RosterRulesSection({
   onChange,
 }: Props) {
   const [selectedSport, setSelectedSport] = useState<SportId>('basketball');
+  const [newPositionInput, setNewPositionInput] = useState('');
 
   const currentRule = settings.rosterPerSport[selectedSport];
 
@@ -121,26 +122,69 @@ export default function RosterRulesSection({
 
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
-              ALLOWED PLAYER STATUSES
+              MAX COACHES / TRAINERS PER TEAM
             </label>
-            <div style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
-              {settings.allowedPlayerStatuses.map(status => (
-                <span
-                  key={status}
-                  style={{
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    textTransform: 'capitalize',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    background: status === 'active' ? 'rgba(34,197,94,0.1)' : status === 'injured' ? 'rgba(245,158,11,0.1)' : 'rgba(56, 189, 248,0.1)',
-                    color: status === 'active' ? '#22c55e' : status === 'injured' ? '#f59e0b' : '#38bdf8',
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  {status}
-                </span>
-              ))}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                title="Max Coaches per Team"
+                value={settings.maxCoachesPerTeam}
+                onChange={e => onChange({ ...settings, maxCoachesPerTeam: parseInt(e.target.value, 10) || 2 })}
+                className="form-input"
+                style={{ width: '100%', padding: '9px 10px', borderRadius: '8px', fontSize: '13px' }}
+              />
+              <input
+                type="number"
+                min={1}
+                max={10}
+                title="Max Trainers per Team"
+                value={settings.maxTrainersPerTeam}
+                onChange={e => onChange({ ...settings, maxTrainersPerTeam: parseInt(e.target.value, 10) || 2 })}
+                className="form-input"
+                style={{ width: '100%', padding: '9px 10px', borderRadius: '8px', fontSize: '13px' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
+              ALLOWED PLAYER STATUSES (CLICK TO TOGGLE)
+            </label>
+            <div style={{ display: 'flex', gap: '8px', paddingTop: '4px', flexWrap: 'wrap' }}>
+              {(['active', 'injured', 'suspended'] as const).map(status => {
+                const enabled = settings.allowedPlayerStatuses.includes(status);
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => {
+                      const next = enabled
+                        ? (settings.allowedPlayerStatuses.length > 1 ? settings.allowedPlayerStatuses.filter(s => s !== status) : settings.allowedPlayerStatuses)
+                        : [...settings.allowedPlayerStatuses, status];
+                      onChange({ ...settings, allowedPlayerStatuses: next });
+                    }}
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      textTransform: 'capitalize',
+                      padding: '5px 10px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      background: enabled
+                        ? (status === 'active' ? 'rgba(34,197,94,0.14)' : status === 'injured' ? 'rgba(245,158,11,0.14)' : 'rgba(56, 189, 248,0.14)')
+                        : 'var(--bg-elevated)',
+                      color: enabled
+                        ? (status === 'active' ? '#22c55e' : status === 'injured' ? '#f59e0b' : '#38bdf8')
+                        : 'var(--text-muted)',
+                      border: enabled ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    }}
+                  >
+                    {enabled ? `✓ ${status}` : status}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -240,7 +284,7 @@ export default function RosterRulesSection({
           <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
             OFFICIAL REGISTERED POSITIONS FOR {SPORT_NAMES[selectedSport].toUpperCase()} ({currentRule.allowedPositions.length})
           </label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
             {currentRule.allowedPositions.map((pos, idx) => (
               <span
                 key={idx}
@@ -252,11 +296,51 @@ export default function RosterRulesSection({
                   background: 'var(--bg-elevated)',
                   border: '1px solid var(--border)',
                   color: 'var(--text-primary)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                {pos}
+                <span>{pos}</span>
+                {currentRule.allowedPositions.length > 1 && (
+                  <button
+                    type="button"
+                    title="Remove Position"
+                    onClick={() =>
+                      handleUpdateRoster(
+                        'allowedPositions',
+                        currentRule.allowedPositions.filter((_, i) => i !== idx)
+                      )
+                    }
+                    style={{ fontSize: '12px', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 1 }}
+                  >
+                    ×
+                  </button>
+                )}
               </span>
             ))}
+          </div>
+          <div style={{ display: 'flex', gap: '8px', maxWidth: '340px' }}>
+            <input
+              type="text"
+              value={newPositionInput}
+              onChange={e => setNewPositionInput(e.target.value)}
+              placeholder="Add custom position..."
+              className="form-input"
+              style={{ padding: '6px 10px', fontSize: '12px' }}
+            />
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={() => {
+                const clean = newPositionInput.trim();
+                if (!clean || currentRule.allowedPositions.includes(clean)) return;
+                handleUpdateRoster('allowedPositions', [...currentRule.allowedPositions, clean]);
+                setNewPositionInput('');
+              }}
+            >
+              + Add Position
+            </button>
           </div>
         </div>
       </div>

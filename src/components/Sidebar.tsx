@@ -135,8 +135,9 @@ const Sidebar: React.FC = () => {
           heading: 'Competition',
           items: [
             { id: 'event-setup', label: 'Event Setup', icon: CalendarIcon },
-            { id: 'bracket',     label: 'Brackets', icon: TrophyIcon },
+            { id: 'bracket',     label: 'Brackets & Standings', icon: TrophyIcon },
             { id: 'schedule',    label: 'Schedule & Results', icon: CalendarIcon },
+            { id: 'scorekeeper', label: 'Scorer Desk', icon: ClipboardIcon },
             { id: 'live',        label: 'Live Scoreboard', icon: LiveIcon, badge: liveCount || undefined },
           ],
         },
@@ -160,7 +161,10 @@ const Sidebar: React.FC = () => {
           heading: 'Administration',
           items: [
             { id: 'settings', label: 'Settings', icon: SettingsIcon },
+            { id: 'access-requests', label: 'Access Requests', icon: ShieldIcon, badge: pendingAccessCount || undefined },
             { id: 'announcements', label: 'Announcements', icon: FileTextIcon },
+            { id: 'audit', label: 'Audit Trail', icon: LockIcon },
+            { id: 'archive', label: 'Archive', icon: CalendarIcon },
           ],
         },
       ];

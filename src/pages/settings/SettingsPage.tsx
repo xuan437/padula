@@ -74,8 +74,8 @@ const ALL_TABS: TabDefinition[] = [
     label: '3. Statistics & Metrics',
     shortLabel: 'Stats & Metrics',
     icon: BarChartIcon,
-    coordinatorAllowed: false,
-    directorOnly: true,
+    coordinatorAllowed: true,
+    directorOnly: false,
   },
   {
     key: 'scoring',
@@ -90,32 +90,32 @@ const ALL_TABS: TabDefinition[] = [
     label: '5. Users, Roles & Security',
     shortLabel: 'Users & Security',
     icon: ShieldIcon,
-    coordinatorAllowed: false,
-    directorOnly: true,
+    coordinatorAllowed: true,
+    directorOnly: false,
   },
   {
     key: 'dashboards',
     label: '6. Dashboards & Reports',
     shortLabel: 'Dashboards & Reports',
     icon: BarChartIcon,
-    coordinatorAllowed: false,
-    directorOnly: true,
+    coordinatorAllowed: true,
+    directorOnly: false,
   },
   {
     key: 'publicDisplay',
     label: '7. Public Display & Notifications',
     shortLabel: 'Public & Notifications',
     icon: LiveIcon,
-    coordinatorAllowed: false,
-    directorOnly: true,
+    coordinatorAllowed: true,
+    directorOnly: false,
   },
   {
     key: 'system',
     label: '8. System & Data Management',
     shortLabel: 'System & Branding',
     icon: SettingsIcon,
-    coordinatorAllowed: false,
-    directorOnly: true,
+    coordinatorAllowed: true,
+    directorOnly: false,
   },
 ];
 
@@ -286,7 +286,7 @@ export default function SettingsPage() {
         description={
           isDirector
             ? 'Enterprise configuration console for sports, rosters, scoring rules, metrics, and security.'
-            : `Coordinator Console: Authorized for ${currentUser?.assignedCompetitionId || 'assigned competition'} rules & scoring.`
+            : 'Full Coordinator Console: Customize all sports, tournament formats, rosters, scoring, metrics, displays, and system functions.'
         }
         badge={
           <span style={{
@@ -299,7 +299,7 @@ export default function SettingsPage() {
             color: isDirector ? '#38bdf8' : '#3b82f6',
             border: isDirector ? '1px solid rgba(2, 132, 199, 0.3)' : '1px solid rgba(59, 130, 246, 0.3)',
           }}>
-            {isDirector ? 'Sports Director Access' : 'Sports Coordinator Access'}
+            {isDirector ? 'Sports Director Access' : 'Full Coordinator Access'}
           </span>
         }
       />
@@ -469,7 +469,7 @@ export default function SettingsPage() {
               Reset This Section to Defaults
             </button>
 
-            {isDirector && (
+            {(isDirector || isCoordinator) && (
               <button
                 type="button"
                 onClick={handleResetAll}
