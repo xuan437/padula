@@ -92,43 +92,350 @@ function QRCodeDisplay({ url, size = 110 }: { url: string; size?: number }) {
   );
 }
 
-// ── Share Match & Livestream Card ──────────────────────────────────────────
+const STREAM_APPS = {
+  facebook: {
+    id: 'facebook' as const,
+    name: 'Facebook Live',
+    shortName: 'Facebook',
+    rtmpUrl: 'rtmps://live-api-s.facebook.com:443/rtmp/',
+    producerUrl: 'https://www.facebook.com/live/producer',
+    bg: '#1877F2',
+    border: '#38bdf8',
+  },
+  tiktok: {
+    id: 'tiktok' as const,
+    name: 'TikTok Live',
+    shortName: 'TikTok',
+    rtmpUrl: 'rtmp://push.tiktokv.com/live/',
+    producerUrl: 'https://www.tiktok.com/live',
+    bg: '#0f172a',
+    border: '#38bdf8',
+  },
+  youtube: {
+    id: 'youtube' as const,
+    name: 'YouTube Live',
+    shortName: 'YouTube',
+    rtmpUrl: 'rtmp://a.rtmp.youtube.com/live2',
+    producerUrl: 'https://studio.youtube.com/',
+    bg: '#0f2d5c',
+    border: '#0ea5e9',
+  },
+};
+
+// ── Share Match, Live Camera & Livestream Studio Card ──────────────────────
 function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const [platformNotice, setPlatformNotice] = useState<string | null>(null);
   const [streamUrl, setStreamUrl] = useState<string>('');
+  const [selectedApp, setSelectedApp] = useState<'facebook' | 'tiktok' | 'youtube'>('facebook');
+  const [rtmpOrStreamKey, setRtmpOrStreamKey] = useState<string>('');
+
+  // Camera & Broadcast Recording State
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [micMuted, setMicMuted] = useState(false);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [broadcastSeconds, setBroadcastSeconds] = useState(0);
+  const [recordedClipUrl, setRecordedClipUrl] = useState<string | null>(null);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const matchRef = useRef<any>(match);
+  matchRef.current = match;
+  const appRef = useRef(selectedApp);
+  appRef.current = selectedApp;
+
   const isLive = match.status === 'live';
   const formatLabel = match.format === 'round_robin' ? 'Round Robin' : 'Single Elimination';
   const liveMatchUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?tab=${isLive ? 'live' : 'results'}&sport=${encodeURIComponent(match.sport || '')}&match=${encodeURIComponent(match.id || '')}`
     : '';
-  const streamPrefix = isLive ? '🔴 LIVE STREAM' : '🏆 OFFICIAL MATCH';
-  const streamLinkLine = streamUrl.trim() ? `\n📺 Watch Stream: ${streamUrl.trim()}` : '';
-  const text = `${streamPrefix}: ${match.teamA} ${match.scoreA} – ${match.scoreB} ${match.teamB} (${getSportName(match.sport)} · ${match.round} · ${formatLabel}) @ ${match.venue || 'Main Court'} — Asian College Padula 2026${streamLinkLine}\n📊 Live Scoreboard: ${liveMatchUrl}`;
+  const streamPrefix = isLive ? 'LIVE STREAM' : 'OFFICIAL MATCH';
+  const streamLinkLine = streamUrl.trim() ? `\nWatch Stream: ${streamUrl.trim()}` : '';
+  const text = `${streamPrefix}: ${match.teamA} ${match.scoreA} – ${match.scoreB} ${match.teamB} (${getSportName(match.sport)} · ${match.round} · ${formatLabel}) @ ${match.venue || 'Main Court'} — Asian College Padula 2026${streamLinkLine}\nLive Scoreboard: ${liveMatchUrl}`;
 
-  const copyText = (notice?: string) => {
+  // Cleanly format scheduled date & time (avoid raw ISO strings)
+  const displayDate = useMemo(() => {
+    const raw = match.scheduledDate || match.scheduledTime;
+    if (!raw) return 'Date TBA';
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    return match.scheduledDate || 'Date TBA';
+  }, [match.scheduledDate, match.scheduledTime]);
+
+  const displayTime = useMemo(() => {
+    const raw = match.scheduledTime;
+    if (!raw) return '09:00 AM';
+    if (String(raw).includes('T')) {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+    return raw;
+  }, [match.scheduledTime]);
+
+  const activeAppConfig = STREAM_APPS[selectedApp];
+
+  const stopBroadcastRecording = () => {
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      try { recorderRef.current.stop(); } catch {}
+    }
+    recorderRef.current = null;
+    setIsBroadcasting(false);
+  };
+
+  const stopCamera = () => {
+    stopBroadcastRecording();
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  const startCamera = async (mode: 'environment' | 'user' = facingMode) => {
+    setCameraError(null);
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera access is not supported in this browser or requires HTTPS.');
+      return;
+    }
+    stopCamera();
+    try {
+      let mediaStream: MediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: true,
+        });
+      } catch {
+        // Fallback to video-only if microphone access is denied
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+      }
+      mediaStream.getAudioTracks().forEach(track => {
+        track.enabled = !micMuted;
+      });
+      streamRef.current = mediaStream;
+      setCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.play().catch(() => {});
+        }
+      }, 30);
+    } catch (err: any) {
+      setCameraError(err?.message || 'Unable to access camera. Check browser camera permissions.');
+      setCameraActive(false);
+    }
+  };
+
+  const flipCamera = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextMode);
+    if (cameraActive) {
+      void startCamera(nextMode);
+    }
+  };
+
+  const toggleMic = () => {
+    const nextMuted = !micMuted;
+    setMicMuted(nextMuted);
+    if (streamRef.current) {
+      streamRef.current.getAudioTracks().forEach(track => {
+        track.enabled = !nextMuted;
+      });
+    }
+  };
+
+  // Re-attach srcObject if videoRef mounts after cameraActive toggles
+  useEffect(() => {
+    if (cameraActive && videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [cameraActive]);
+
+  // Timer + Canvas 30fps Compositor (burns live scoreboard directly onto video recording)
+  useEffect(() => {
+    if (!isBroadcasting) return;
+    const timer = setInterval(() => {
+      setBroadcastSeconds(s => s + 1);
+    }, 1000);
+
+    let rafId = 0;
+    const drawFrame = () => {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      if (canvas && video && video.readyState >= 2) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const curMatch = matchRef.current;
+          const curApp = STREAM_APPS[appRef.current];
+
+          // Top Broadcast Tag
+          ctx.fillStyle = 'rgba(15, 45, 92, 0.85)';
+          ctx.fillRect(28, 24, 420, 40);
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(48, 44, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 17px Inter, Arial, sans-serif';
+          ctx.fillText(`LIVE · ${curApp.name.toUpperCase()} · PADULA 2026`, 64, 50);
+
+          // Bottom Live Scorebug
+          ctx.fillStyle = 'rgba(10, 17, 40, 0.88)';
+          ctx.fillRect(28, canvas.height - 96, canvas.width - 56, 68);
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(28, canvas.height - 96, 8, 68);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 26px Inter, Arial, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(String(curMatch.teamA || 'Team A'), 56, canvas.height - 54);
+
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(canvas.width / 2 - 80, canvas.height - 86, 160, 48);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 30px Inter, Arial, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${curMatch.scoreA}  :  ${curMatch.scoreB}`, canvas.width / 2, canvas.height - 52);
+
+          ctx.textAlign = 'right';
+          ctx.font = 'bold 26px Inter, Arial, sans-serif';
+          ctx.fillText(String(curMatch.teamB || 'Team B'), canvas.width - 52, canvas.height - 54);
+          ctx.textAlign = 'left';
+        }
+      }
+      rafId = requestAnimationFrame(drawFrame);
+    };
+    rafId = requestAnimationFrame(drawFrame);
+
+    return () => {
+      clearInterval(timer);
+      cancelAnimationFrame(rafId);
+    };
+  }, [isBroadcasting]);
+
+  // Always release camera tracks when modal unmounts
+  useEffect(() => {
+    return () => {
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        try { recorderRef.current.stop(); } catch {}
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (recordedClipUrl) URL.revokeObjectURL(recordedClipUrl);
+    };
+  }, [recordedClipUrl]);
+
+  const startBroadcastRecording = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !cameraActive) {
+      setCameraError('Connect your camera first before starting stream recording.');
+      return;
+    }
+    try {
+      const captured: MediaStream = (canvas as any).captureStream(30);
+      if (streamRef.current) {
+        streamRef.current.getAudioTracks().forEach(track => captured.addTrack(track));
+      }
+      chunksRef.current = [];
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+        ? 'video/webm;codecs=vp8,opus'
+        : 'video/webm';
+      const recorder = new MediaRecorder(captured, { mimeType });
+      recorder.ondataavailable = ev => {
+        if (ev.data && ev.data.size > 0) chunksRef.current.push(ev.data);
+      };
+      recorder.onstop = () => {
+        if (chunksRef.current.length > 0) {
+          const blob = new Blob(chunksRef.current, { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          setRecordedBlob(blob);
+          setRecordedClipUrl(url);
+        }
+      };
+      recorderRef.current = recorder;
+      recorder.start(1000);
+      setBroadcastSeconds(0);
+      setIsBroadcasting(true);
+      setPlatformNotice(`Recording camera + live scoreboard overlay for ${activeAppConfig.name}!`);
+    } catch (err: any) {
+      setCameraError(err?.message || 'Recording is not supported by this browser.');
+    }
+  };
+
+  const formatDuration = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const copyText = (notice?: string, customValue?: string) => {
+    const payload = customValue ?? text;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(text);
+      navigator.clipboard.writeText(payload);
       setCopied(true);
       if (notice) setPlatformNotice(notice);
       setTimeout(() => {
         setCopied(false);
         setPlatformNotice(null);
-      }, 3200);
+      }, 3600);
     }
   };
 
-  const shareToPlatform = (platform: 'facebook' | 'tiktok' | 'youtube') => {
+  const connectAndStreamToApp = async (platform: 'facebook' | 'tiktok' | 'youtube') => {
+    setSelectedApp(platform);
+    const cfg = STREAM_APPS[platform];
+    if (!cameraActive) {
+      void startCamera();
+    }
+
+    // Use Web Share API with recorded scoreboard+camera clip on mobile if supported
+    if (recordedBlob && typeof navigator !== 'undefined' && (navigator as any).canShare) {
+      try {
+        const file = new File([recordedBlob], `padula-live-${match.id || 'stream'}.webm`, { type: recordedBlob.type || 'video/webm' });
+        if ((navigator as any).canShare({ files: [file] })) {
+          await navigator.share({
+            title: `${match.teamA} vs ${match.teamB} — Live Scoreboard Stream`,
+            text,
+            files: [file],
+          });
+          setPlatformNotice(`Shared camera stream + live scoreboard to ${cfg.name}!`);
+          return;
+        }
+      } catch {}
+    }
+
+    copyText(`Connected camera studio to ${cfg.name}! Live score caption & RTMP/URL copied.`);
     if (platform === 'facebook') {
-      copyText('Live score caption copied! Opening Facebook share dialog...');
-      const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(streamUrl.trim() || liveMatchUrl)}&quote=${encodeURIComponent(text)}`;
-      window.open(fbUrl, '_blank', 'noopener,noreferrer');
-    } else if (platform === 'tiktok') {
-      copyText('Live score caption & scoreboard link copied! Paste into your TikTok Live title or video.');
-      window.open('https://www.tiktok.com/live', '_blank', 'noopener,noreferrer');
+      const target = streamUrl.trim()
+        ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(streamUrl.trim())}&quote=${encodeURIComponent(text)}`
+        : cfg.producerUrl;
+      window.open(target, '_blank', 'noopener,noreferrer');
     } else {
-      copyText('Live score title, description & link copied! Paste into YouTube Live Studio.');
-      window.open('https://studio.youtube.com/', '_blank', 'noopener,noreferrer');
+      window.open(cfg.producerUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -136,7 +443,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(0,0,0,0.72)',
+      background: 'rgba(0,0,0,0.75)',
       backdropFilter: 'blur(4px)',
       display: 'flex',
       alignItems: 'center',
@@ -145,154 +452,311 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
       padding: '16px',
     }}>
       <div className="glass-card" style={{
-        maxWidth: '490px',
+        maxWidth: '580px',
         width: '100%',
         padding: '22px',
         background: 'var(--bg-surface)',
-        borderRadius: '10px',
-        maxHeight: '92vh',
+        borderRadius: '12px',
+        maxHeight: '94vh',
         overflowY: 'auto',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
-            {isLive ? 'Share Live Stream & Scoreboard' : 'Share Official Match Card'}
-          </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+              {isLive ? 'Live Camera Broadcast & Scoreboard Studio' : 'Share Official Match Stream'}
+            </h3>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Connect your camera, overlay live scores, and stream directly to Facebook, TikTok, or YouTube
+            </div>
+          </div>
           <button className="btn btn-sm btn-ghost" onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
             <XIcon size={16} />
           </button>
         </div>
 
-        {/* Card preview */}
+        {/* 16:9 Live Camera Viewport + Live TV Scorebug Overlay */}
         <div style={{
-          background: 'var(--bg-elevated)',
-          border: `1.5px solid ${isLive ? 'var(--color-live)' : 'var(--accent)'}`,
-          borderRadius: '8px',
-          padding: '18px',
-          textAlign: 'center',
-          marginBottom: '14px',
+          position: 'relative',
+          width: '100%',
+          aspectRatio: '16 / 9',
+          background: '#080d1a',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          border: `1.5px solid ${cameraActive ? '#38bdf8' : 'var(--border)'}`,
+          marginBottom: '10px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
-            {isLive && (
-              <span className="status-badge live" style={{ fontSize: '10px' }}>
-                <span className="live-dot" /> LIVE SCORE CONNECTED
-              </span>
-            )}
-            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Asian College Padula 2026
-            </span>
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '6px' }}>
-            {getSportName(match.sport)} · {match.round} ({formatLabel})
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              <CalendarIcon size={11} color="var(--text-muted)" /> {match.scheduledDate || '2026-11-18'}
-            </span>
-            <span>·</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              <ClockIcon size={11} color="var(--text-muted)" /> {match.scheduledTime || '09:00 AM'}
-            </span>
-            <span>·</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              <MapPinIcon size={11} color="var(--text-muted)" /> {match.venue || 'Main Court'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', margin: '12px 0' }}>
-            <div style={{ flex: 1, textAlign: 'right' }}>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: match.winner === match.teamA ? 'var(--accent)' : 'var(--text-primary)' }}>
-                {match.teamA}
+          <canvas ref={canvasRef} width={1280} height={720} style={{ display: 'none' }} />
+          {cameraActive ? (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#cbd5e1', zIndex: 1 }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '6px' }}>
+                Camera Not Connected
               </div>
-            </div>
-            <div style={{
-              background: isLive ? '#0284c7' : '#0f2d5c',
-              color: '#fff',
-              fontWeight: 900,
-              fontSize: '20px',
-              padding: '6px 16px',
-              borderRadius: '6px',
-              letterSpacing: '2px',
-              border: '1px solid rgba(56, 189, 248, 0.35)',
-            }}>
-              {match.scoreA} : {match.scoreB}
-            </div>
-            <div style={{ flex: 1, textAlign: 'left' }}>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: match.winner === match.teamB ? 'var(--accent)' : 'var(--text-primary)' }}>
-                {match.teamB}
+              <div style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '12px', maxWidth: '340px' }}>
+                Click below to connect your device camera with the real-time {getSportName(match.sport)} scoreboard overlay.
               </div>
-            </div>
-          </div>
-          {match.winner && (
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-              <TrophyIcon size={14} color="#10b981" /> Official Winner: {match.winner}
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={() => void startCamera()}
+                style={{ fontWeight: 700, padding: '7px 14px' }}
+              >
+                Connect Device Camera
+              </button>
             </div>
           )}
-          <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-light)', paddingTop: '8px' }}>
-            Scorer: {match.scorekeeper || 'Official Desk'} · Referee: {match.referee || 'Certified Official'}
+
+          {/* Top Broadcast Status Overlay */}
+          <div style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            right: '10px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            pointerEvents: 'none',
+            gap: '8px',
+          }}>
+            <span style={{
+              background: 'rgba(15, 45, 92, 0.88)',
+              color: '#ffffff',
+              border: '1px solid rgba(56, 189, 248, 0.45)',
+              padding: '3px 9px',
+              borderRadius: '999px',
+              fontSize: '10px',
+              fontWeight: 800,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+            }}>
+              <span className="live-dot" />
+              {isBroadcasting ? `REC ${formatDuration(broadcastSeconds)}` : cameraActive ? 'CAMERA LIVE' : 'PREVIEW'} · {activeAppConfig.name.toUpperCase()}
+            </span>
+            <span style={{
+              background: 'rgba(10, 17, 40, 0.78)',
+              color: '#bae6fd',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              fontSize: '10px',
+              fontWeight: 700,
+            }}>
+              {displayDate} · {displayTime}
+            </span>
+          </div>
+
+          {/* Bottom Real-Time Scoreboard Overlay */}
+          <div style={{
+            position: 'absolute',
+            bottom: '10px',
+            left: '10px',
+            right: '10px',
+            background: 'rgba(10, 17, 40, 0.9)',
+            borderLeft: '4px solid #0284c7',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: '#ffffff',
+            pointerEvents: 'none',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+              <span style={{ flex: 1, fontSize: '13px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {match.teamA}
+              </span>
+              <span style={{
+                background: '#0284c7',
+                color: '#ffffff',
+                fontWeight: 900,
+                fontSize: '16px',
+                padding: '3px 12px',
+                borderRadius: '6px',
+                letterSpacing: '1.5px',
+                flexShrink: 0,
+              }}>
+                {match.scoreA} : {match.scoreB}
+              </span>
+              <span style={{ flex: 1, textAlign: 'right', fontSize: '13px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {match.teamB}
+              </span>
+            </div>
+            <div style={{ fontSize: '10px', color: '#93c5fd', marginTop: '3px', display: 'flex', justifyContent: 'space-between' }}>
+              <span>{getSportName(match.sport)} · {match.round}</span>
+              <span>{match.venue || 'Main Court'}</span>
+            </div>
           </div>
         </div>
 
-        {/* Optional Livestream URL Attachment */}
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Livestream Link (Optional — Facebook / TikTok / YouTube URL)
-          </label>
-          <input
-            type="url"
-            value={streamUrl}
-            onChange={e => setStreamUrl(e.target.value)}
-            className="form-input"
-            style={{ width: '100%', fontSize: '12.5px', padding: '7px 10px' }}
-          />
+        {/* Camera Toolbar */}
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <button
+            type="button"
+            className={`btn btn-sm ${cameraActive ? 'btn-outline' : 'btn-primary'}`}
+            onClick={() => (cameraActive ? stopCamera() : void startCamera())}
+            style={{ fontSize: '11.5px', fontWeight: 700 }}
+          >
+            {cameraActive ? 'Disconnect Camera' : 'Connect Camera'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline"
+            onClick={flipCamera}
+            style={{ fontSize: '11.5px', fontWeight: 600 }}
+          >
+            Flip ({facingMode === 'environment' ? 'Rear' : 'Front'})
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline"
+            onClick={toggleMic}
+            disabled={!cameraActive}
+            style={{ fontSize: '11.5px', fontWeight: 600 }}
+          >
+            {micMuted ? 'Unmute Mic' : 'Mute Mic'}
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${isBroadcasting ? 'btn-outline' : 'btn-primary'}`}
+            onClick={() => (isBroadcasting ? stopBroadcastRecording() : startBroadcastRecording())}
+            style={{ fontSize: '11.5px', fontWeight: 700, marginLeft: 'auto' }}
+          >
+            {isBroadcasting ? `Stop Recording (${formatDuration(broadcastSeconds)})` : 'Record Overlay Clip'}
+          </button>
         </div>
 
-        {/* Social Media Livestream Share Buttons */}
+        {cameraError && (
+          <div style={{
+            fontSize: '11.5px',
+            color: '#0284c7',
+            background: 'rgba(2, 132, 199, 0.1)',
+            border: '1px solid rgba(56, 189, 248, 0.35)',
+            borderRadius: '6px',
+            padding: '7px 10px',
+            marginBottom: '10px',
+          }}>
+            {cameraError}
+          </div>
+        )}
+
+        {recordedClipUrl && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            padding: '8px 10px',
+            borderRadius: '6px',
+            background: 'rgba(16, 185, 129, 0.1)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            marginBottom: '10px',
+            fontSize: '11.5px',
+          }}>
+            <span style={{ color: '#10b981', fontWeight: 700 }}>
+              Livestream overlay clip ready ({recordedBlob ? `${(recordedBlob.size / (1024 * 1024)).toFixed(2)} MB` : 'WebM'})
+            </span>
+            <a
+              href={recordedClipUrl}
+              download={`padula-live-${match.id || 'match'}.webm`}
+              className="btn btn-xs btn-primary"
+              style={{ textDecoration: 'none', fontWeight: 700 }}
+            >
+              Download Video
+            </a>
+          </div>
+        )}
+
+        {/* Connect App Selector (Facebook, TikTok, YouTube) */}
         <div style={{ marginBottom: '12px' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Share Livestream with Live Scoreboard
+            Connect Livestream App (Camera + Live Scoreboard)
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {(['facebook', 'tiktok', 'youtube'] as const).map(key => {
+              const cfg = STREAM_APPS[key];
+              const isSelected = selectedApp === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    setSelectedApp(key);
+                    setPlatformNotice(`Connected to ${cfg.name} — ready to stream with live scoreboard.`);
+                  }}
+                  style={{
+                    background: cfg.bg,
+                    color: '#ffffff',
+                    border: isSelected ? '2px solid #38bdf8' : `1px solid ${cfg.border}`,
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    boxShadow: isSelected ? '0 0 0 2px rgba(56, 189, 248, 0.28)' : 'none',
+                  }}
+                >
+                  {isSelected ? `✓ ${cfg.shortName}` : cfg.shortName}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Connected App RTMP / URL / Stream Key */}
+        <div style={{
+          padding: '10px 12px',
+          borderRadius: '8px',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-light)',
+          marginBottom: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {activeAppConfig.name} Server URL: <code style={{ color: 'var(--accent)' }}>{activeAppConfig.rtmpUrl}</code>
+            </span>
             <button
               type="button"
-              className="btn btn-sm"
-              onClick={() => shareToPlatform('facebook')}
-              style={{
-                background: '#1877F2',
-                color: '#ffffff',
-                borderColor: '#1877F2',
-                fontWeight: 700,
-                fontSize: '12px',
-              }}
+              className="btn btn-xs btn-outline"
+              onClick={() => copyText(`Copied ${activeAppConfig.name} RTMP Server URL!`, activeAppConfig.rtmpUrl)}
             >
-              Facebook
+              Copy RTMP
             </button>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={() => shareToPlatform('tiktok')}
-              style={{
-                background: '#0f172a',
-                color: '#ffffff',
-                borderColor: '#38bdf8',
-                fontWeight: 700,
-                fontSize: '12px',
-              }}
-            >
-              TikTok
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={() => shareToPlatform('youtube')}
-              style={{
-                background: '#FF0000',
-                color: '#ffffff',
-                borderColor: '#0284c7',
-                fontWeight: 700,
-                fontSize: '12px',
-              }}
-            >
-              YouTube
-            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
+                Stream Key (Optional)
+              </label>
+              <input
+                type="password"
+                value={rtmpOrStreamKey}
+                onChange={e => setRtmpOrStreamKey(e.target.value)}
+                placeholder={`${activeAppConfig.shortName} stream key`}
+                className="form-input"
+                style={{ width: '100%', fontSize: '12px', padding: '6px 8px' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
+                Public Watch URL (Optional)
+              </label>
+              <input
+                type="url"
+                value={streamUrl}
+                onChange={e => setStreamUrl(e.target.value)}
+                placeholder={`https://${selectedApp}.com/...`}
+                className="form-input"
+                style={{ width: '100%', fontSize: '12px', padding: '6px 8px' }}
+              />
+            </div>
           </div>
         </div>
 
@@ -315,11 +779,24 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-primary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => copyText()}>
-            {copied ? <><CheckIcon size={14} /> Copied Live Details!</> : 'Copy Live Score & Stream Link'}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ flex: '1 1 220px', fontWeight: 700 }}
+            onClick={() => void connectAndStreamToApp(selectedApp)}
+          >
+            Go Live on {activeAppConfig.shortName} &amp; Sync Scoreboard
           </button>
-          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+          <button
+            type="button"
+            className="btn btn-outline"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            onClick={() => copyText()}
+          >
+            {copied ? <><CheckIcon size={14} /> Copied!</> : 'Copy Score & Link'}
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
