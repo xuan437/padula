@@ -956,7 +956,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setLatestInvitation(prev => (prev?.id === inv.id ? updatedInv : prev));
       addAuditLog(
         'email_dispatch',
-        `Automatic Gmail API dispatch (${result.provider}) sent to ${result.recipient} for ${inv.roleTitle} (Ref: ${result.transactionId})`,
+        `Appointment invitation sent to ${result.recipient} for ${inv.roleTitle}`,
         inv.id,
         'StaffInvitation'
       );
@@ -1216,14 +1216,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       addAuditLog(
         'email_dispatch',
-        `Official appointment letter dispatched via Gmail API to ${cleanRecipientEmail} (Sender: ${senderName} <${senderEmail}>, Provider: ${result.provider}, Ref: ${result.transactionId})`,
+        `Official appointment letter sent to ${cleanRecipientEmail}`,
         invitationId,
         'StaffInvitation'
       );
 
       return { success: true, result };
     } catch (err: any) {
-      const errMsg = err?.message || 'Failed to dispatch email via API.';
+      const errMsg = err?.message || 'Could not send invitation email.';
       return { success: false, error: errMsg };
     }
   }, [staffInvitations, latestInvitation, currentUser, addAuditLog]);

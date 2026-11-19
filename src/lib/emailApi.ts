@@ -19,6 +19,7 @@ export interface EmailPayload {
 
 export interface EmailDispatchResult {
   success: boolean;
+  deliveredDirectly?: boolean;
   transactionId: string;
   provider: string;
   recipient: string;
@@ -35,7 +36,80 @@ export function buildGmailComposeUrl(to: string, subject: string, body: string):
   const cleanTo = encodeURIComponent(to.trim());
   const cleanSubj = encodeURIComponent(subject.trim());
   const cleanBody = encodeURIComponent(body.trim());
-  return `https://mail.google.com/mail/?view=cm&fs=1&to=${cleanTo}&su=${cleanSubj}&body=${cleanBody}`;
+  return `https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=${cleanTo}&su=${cleanSubj}&body=${cleanBody}`;
+}
+
+/**
+ * Checks whether a direct Gmail OAuth token or custom email relay URL is configured.
+ */
+export function hasConnectedGmailToken(): boolean {
+  try {
+    const token =
+      (import.meta.env.VITE_GMAIL_ACCESS_TOKEN as string) ||
+      localStorage.getItem('padula_gmail_access_token') ||
+      '';
+    const customUrl =
+      (import.meta.env.VITE_EMAIL_API_URL as string) ||
+      localStorage.getItem('padula_custom_email_api') ||
+      '';
+    return token.trim().length > 10 || customUrl.trim().startsWith('http');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Directly opens the user's connected Gmail Compose window (on Desktop) or installed Gmail App (on Mobile)
+ * pre-filled with the recipient's Gmail address, official subject, and appointment letter + credentials.
+ * Must be called from a user interaction handler so the browser allows opening the window.
+ */
+export function openGmailComposeWindow(to: string, subject: string, body: string): void {
+  if (typeof window === 'undefined') return;
+  const cleanTo = to.trim();
+  const encTo = encodeURIComponent(cleanTo);
+  const encSubj = encodeURIComponent(subject.trim());
+  const encBody = encodeURIComponent(body.trim());
+  const mailtoUrl = `mailto:${encTo}?subject=${encSubj}&body=${encBody}`;
+  const webUrl = buildGmailComposeUrl(cleanTo, subject, body);
+
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+  if (isAndroid) {
+    const gmailIntent = `intent://co?to=${encTo}&subject=${encSubj}&body=${encBody}#Intent;package=com.google.android.gm;scheme=googlegmail;S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+    window.location.href = gmailIntent;
+    return;
+  }
+
+  if (isIOS) {
+    let appOpened = false;
+    const onVis = () => {
+      if (document.hidden) appOpened = true;
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.location.href = `googlegmail:///co?to=${encTo}&subject=${encSubj}&body=${encBody}`;
+    window.setTimeout(() => {
+      document.removeEventListener('visibilitychange', onVis);
+      if (!appOpened && !document.hidden) {
+        window.location.href = mailtoUrl;
+      }
+    }, 1200);
+    return;
+  }
+
+  const width = 760;
+  const height = 680;
+  const left = Math.max(0, Math.round((window.screen.width - width) / 2));
+  const top = Math.max(0, Math.round((window.screen.height - height) / 2));
+  const popup = window.open(
+    webUrl,
+    'padula_gmail_compose',
+    `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes`
+  );
+  if (!popup) {
+    window.open(webUrl, '_blank', 'noopener,noreferrer');
+  }
 }
 
 /**
@@ -95,7 +169,7 @@ export async function sendEmailViaOfficialApi(payload: EmailPayload): Promise<Em
   const cleanFrom = payload.fromEmail.trim().toLowerCase();
   const nowIso = new Date().toISOString();
   const txSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
-  const txId = `GM-API-${Date.now().toString().slice(-6)}-${txSuffix}`;
+  const txId = `INV-${Date.now().toString().slice(-6)}-${txSuffix}`;
   const webComposeUrl = buildGmailComposeUrl(cleanTo, payload.subject, payload.body);
 
   // 1. Direct Google Gmail REST API via OAuth2 Bearer token (if configured)
@@ -123,12 +197,13 @@ export async function sendEmailViaOfficialApi(payload: EmailPayload): Promise<Em
         const gmData = await gmRes.json().catch(() => ({}));
         const result: EmailDispatchResult = {
           success: true,
+          deliveredDirectly: true,
           transactionId: gmData?.id ? `GMAIL-${gmData.id}` : txId,
-          provider: 'Google Gmail REST API (gmail.googleapis.com)',
+          provider: 'Official Gmail',
           recipient: cleanTo,
           sender: `${payload.fromName} <${cleanFrom}>`,
           timestamp: nowIso,
-          message: `Official appointment letter sent automatically to ${cleanTo} via Google Gmail REST API.`,
+          message: `Sent to ${cleanTo} via Gmail.`,
           webComposeUrl,
         };
         recordDispatchedEmail(result, payload);
@@ -175,12 +250,13 @@ export async function sendEmailViaOfficialApi(payload: EmailPayload): Promise<Em
       if (response.ok) {
         const result: EmailDispatchResult = {
           success: true,
+          deliveredDirectly: true,
           transactionId: txId,
-          provider: `Live API (${new URL(customEndpoint).hostname})`,
+          provider: 'Official Gmail',
           recipient: cleanTo,
           sender: `${payload.fromName} <${cleanFrom}>`,
           timestamp: nowIso,
-          message: `Official appointment letter successfully transmitted to ${cleanTo} via live API endpoint.`,
+          message: `Sent to ${cleanTo} via Gmail.`,
           webComposeUrl,
         };
         recordDispatchedEmail(result, payload);
@@ -215,15 +291,16 @@ export async function sendEmailViaOfficialApi(payload: EmailPayload): Promise<Em
 
     if (fsResponse.ok) {
       const fsData = await fsResponse.json().catch(() => ({}));
-      if (fsData?.success !== false && fsData?.success !== 'false') {
+      if (fsData?.success === true || fsData?.success === 'true') {
         const fsResult: EmailDispatchResult = {
           success: true,
+          deliveredDirectly: true,
           transactionId: txId,
-          provider: 'Live HTTP Email Relay (FormSubmit + Portal Inbox)',
+          provider: 'Official Gmail',
           recipient: cleanTo,
           sender: `${payload.fromName} <${cleanFrom}>`,
           timestamp: nowIso,
-          message: `Official appointment letter delivered to ${cleanTo} via Live HTTP Email Relay and Portal Inbox.`,
+          message: `Sent to ${cleanTo} via Gmail.`,
           webComposeUrl,
         };
         recordDispatchedEmail(fsResult, payload);
@@ -231,20 +308,19 @@ export async function sendEmailViaOfficialApi(payload: EmailPayload): Promise<Em
       }
     }
   } catch (fsErr) {
-    console.warn('[EmailAPI] FormSubmit AJAX relay unavailable, delivering via Institutional Portal & Supabase Cloud Inbox:', fsErr);
+    console.warn('[EmailAPI] FormSubmit AJAX relay unavailable:', fsErr);
   }
 
-  // 4. Institutional Portal & Supabase Cloud Inbox fallback
-  await new Promise(resolve => setTimeout(resolve, 450));
-
+  // 4. Connected Gmail Composer + In-App Portal Inbox
   const relayResult: EmailDispatchResult = {
     success: true,
+    deliveredDirectly: false,
     transactionId: txId,
-    provider: 'Institutional Portal & Supabase Cloud Inbox (@asiancollege.edu.ph)',
+    provider: 'Official Gmail',
     recipient: cleanTo,
     sender: `${payload.fromName} <${cleanFrom}>`,
     timestamp: nowIso,
-    message: `Official appointment letter delivered to ${cleanTo}'s Institutional Portal & Supabase Cloud Inbox.`,
+    message: `Opened in Gmail for ${cleanTo} — click Send in the Gmail window to deliver.`,
     webComposeUrl,
   };
   recordDispatchedEmail(relayResult, payload);

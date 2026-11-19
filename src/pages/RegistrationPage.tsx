@@ -15,7 +15,7 @@ import {
   TrophyIcon,
 } from '../components/Icons';
 import { SPORTS_CATALOG, getAllSports, getSportName, getSportIcon } from '../lib/sports';
-import { buildGmailComposeUrl } from '../lib/emailApi';
+import { buildGmailComposeUrl, openGmailComposeWindow, hasConnectedGmailToken } from '../lib/emailApi';
 import type { StaffInvitation, Team, Player } from '../types';
 
 const POSITIONS_BY_SPORT: Record<string, string[]> = {
@@ -101,13 +101,6 @@ export default function RegistrationPage() {
     timestamp?: string;
   } | null>(null);
   const [isDispatchingApi, setIsDispatchingApi] = useState(false);
-  const [showApiConfig, setShowApiConfig] = useState(false);
-  const [gmailTokenInput, setGmailTokenInput] = useState(() => {
-    try { return localStorage.getItem('padula_gmail_access_token') || ''; } catch { return ''; }
-  });
-  const [webhookUrlInput, setWebhookUrlInput] = useState(() => {
-    try { return localStorage.getItem('padula_custom_email_api') || ''; } catch { return ''; }
-  });
   const [viewingRosterTeam, setViewingRosterTeam] = useState<Team | null>(null);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const teamExcelInputRef = useRef<HTMLInputElement | null>(null);
@@ -229,7 +222,7 @@ export default function RegistrationPage() {
           const teamNameRaw = pickField(row, ['team', 'teamname', 'squad']);
           const matchedTeam = teamNameRaw
             ? teams.find(t => t.name.toLowerCase() === teamNameRaw.toLowerCase() && (t.sport === sportId || !teamNameRaw))
-              || teams.find(t => t.name.toLowerCase() === teamNameRaw.toLowerCase())
+            || teams.find(t => t.name.toLowerCase() === teamNameRaw.toLowerCase())
             : undefined;
 
           const jersey = pickField(row, ['jerseynumber', 'jersey', 'number', 'no']) || '00';
@@ -486,9 +479,12 @@ export default function RegistrationPage() {
 
       if (inv) {
         setSelectedInvitationModal(inv);
+        if (!hasConnectedGmailToken()) {
+          openGmailComposeWindow(cleanEmail, inv.subject, inv.letterBody);
+        }
       }
 
-      setSuccessBanner(`Scorekeeper "${cleanName}" registered! Invitation letter & password (${inv?.generatedPassword || ''}) automatically dispatched via Gmail API to ${cleanEmail}.`);
+      setSuccessBanner(`Scorekeeper "${cleanName}" registered and invitation opened in Gmail for ${cleanEmail}.`);
     } else {
       setSuccessBanner(`${role.charAt(0).toUpperCase() + role.slice(1)} "${cleanName}" registered and automatically assigned to ${cleanSport} match slots.`);
     }
@@ -518,9 +514,12 @@ export default function RegistrationPage() {
 
     if (inv) {
       setSelectedInvitationModal(inv);
+      if (!hasConnectedGmailToken()) {
+        openGmailComposeWindow(finalEmail, inv.subject, inv.letterBody);
+      }
     }
 
-    setSuccessBanner(`Sports Coordinator "${coordForm.name}" registered! Invitation letter & password (${inv?.generatedPassword || ''}) automatically dispatched via Gmail API to "${finalEmail}".`);
+    setSuccessBanner(`Sports Coordinator "${coordForm.name}" registered and invitation opened in Gmail for ${finalEmail}.`);
     setCoordForm({ name: '', email: '', department: 'd1' });
     setTimeout(() => setSuccessBanner(null), 5000);
   };
@@ -547,7 +546,7 @@ export default function RegistrationPage() {
       minWidth: 0,
       boxSizing: 'border-box',
     }}>
-      
+
       {/* ── Page Header & Top Summary Stats ── */}
       <div className="glass-card" style={{ padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
@@ -1722,9 +1721,9 @@ export default function RegistrationPage() {
       {/* ───────────────────────────────────────────────────────────── */}
       {['referees', 'scorekeepers', 'coaches', 'managers'].includes(activeTab) && (() => {
         const role = activeTab === 'referees' ? 'referee'
-                   : activeTab === 'scorekeepers' ? 'scorekeeper'
-                   : activeTab === 'coaches' ? 'coach'
-                   : 'manager';
+          : activeTab === 'scorekeepers' ? 'scorekeeper'
+            : activeTab === 'coaches' ? 'coach'
+              : 'manager';
         const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
         const filteredOfficials = officials.filter(o => o.role === role && o.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -1834,9 +1833,9 @@ export default function RegistrationPage() {
                       const isActive = o.isActive !== false;
                       const inv = role === 'scorekeeper'
                         ? staffInvitations.find(i =>
-                            (o.contact && i.recipientEmail.toLowerCase() === o.contact.toLowerCase()) ||
-                            i.recipientName.toLowerCase() === o.name.toLowerCase()
-                          )
+                          (o.contact && i.recipientEmail.toLowerCase() === o.contact.toLowerCase()) ||
+                          i.recipientName.toLowerCase() === o.name.toLowerCase()
+                        )
                         : undefined;
                       const invStatus = inv?.status || o.invitationStatus || (o.id === 'demo-off-scorer' ? 'accepted' : undefined);
                       return (
@@ -1956,7 +1955,7 @@ export default function RegistrationPage() {
       {/* ───────────────────────────────────────────────────────────── */}
       {activeTab === 'coordinators' && isDirector && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
+
           {/* Limit Notification Card */}
           <div style={{
             background: 'rgba(37, 99, 235, 0.08)',
@@ -2289,10 +2288,10 @@ export default function RegistrationPage() {
               }}>
                 <div>
                   <div style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    Dispatch Appointment via Official Gmail
+                    Send Appointment Letter
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    Automatically dispatched on registration. Edit destination or resend anytime.
+                    Sent automatically upon registration. You can update the email address or resend below.
                   </div>
                 </div>
 
@@ -2349,18 +2348,15 @@ export default function RegistrationPage() {
                       {apiDispatchFeedback
                         ? apiDispatchFeedback.message
                         : liveInv.apiDeliveryStatus === 'sent'
-                          ? `Sent via ${liveInv.apiProvider || 'Gmail API'} to ${liveInv.dispatchedToEmail || liveInv.recipientEmail}`
+                          ? `Sent to ${liveInv.dispatchedToEmail || liveInv.recipientEmail}`
                           : liveInv.apiDeliveryStatus === 'failed'
-                            ? 'Automatic API dispatch failed — click Send / Resend below.'
-                            : `Dispatching automatically via Gmail API to ${effectiveTargetEmail}…`}
+                            ? 'Delivery pending — click Resend below.'
+                            : `Sending to ${effectiveTargetEmail}…`}
                     </span>
                   </span>
-                  {(apiDispatchFeedback?.txId || liveInv.apiTransactionId) && (
-                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-                      Ref: {apiDispatchFeedback?.txId || liveInv.apiTransactionId}
-                      {(apiDispatchFeedback?.timestamp || liveInv.apiDispatchedAt)
-                        ? ` · ${new Date(apiDispatchFeedback?.timestamp || liveInv.apiDispatchedAt || '').toLocaleTimeString()}`
-                        : ''}
+                  {(apiDispatchFeedback?.timestamp || liveInv.apiDispatchedAt) && (
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      {new Date(apiDispatchFeedback?.timestamp || liveInv.apiDispatchedAt || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
                 </div>
@@ -2371,14 +2367,21 @@ export default function RegistrationPage() {
                     type="button"
                     disabled={isDispatchingApi}
                     onClick={async () => {
+                      const directConfigured = hasConnectedGmailToken();
+                      if (!directConfigured) {
+                        openGmailComposeWindow(effectiveTargetEmail, liveInv.subject, liveInv.letterBody);
+                      }
                       setIsDispatchingApi(true);
                       const res = await dispatchInvitationViaApi(liveInv.id, effectiveTargetEmail);
                       setIsDispatchingApi(false);
+                      if (directConfigured && !res.result?.deliveredDirectly) {
+                        openGmailComposeWindow(effectiveTargetEmail, liveInv.subject, liveInv.letterBody);
+                      }
                       setApiDispatchFeedback({
                         success: res.success,
                         message: res.success
-                          ? `Sent via ${res.result?.provider || 'Gmail API'}`
-                          : (res.error || 'Failed to dispatch email via API.'),
+                          ? (res.result?.message || `Sent to ${effectiveTargetEmail}`)
+                          : (res.error || 'Could not send invitation.'),
                         txId: res.result?.transactionId,
                         timestamp: res.result?.timestamp,
                       });
@@ -2387,7 +2390,7 @@ export default function RegistrationPage() {
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700, cursor: isDispatchingApi ? 'wait' : 'pointer' }}
                   >
                     <MailIcon size={14} color="currentColor" />
-                    <span>{isDispatchingApi ? 'Sending via Gmail API…' : 'Send / Resend via Gmail API'}</span>
+                    <span>{isDispatchingApi ? 'Sending…' : 'Send / Resend via Gmail'}</span>
                   </button>
 
                   <a
@@ -2397,62 +2400,8 @@ export default function RegistrationPage() {
                     className="btn btn-sm btn-outline"
                     style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
                   >
-                    <span>Open in Gmail Web Composer</span>
+                    <span>Open in Gmail</span>
                   </a>
-                </div>
-
-                {/* Collapsible Gmail API Configuration (Progressive Disclosure) */}
-                <div>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-ghost"
-                    onClick={() => setShowApiConfig(p => !p)}
-                    style={{ padding: '2px 0', fontSize: '11.5px', fontWeight: 700, color: 'var(--accent)' }}
-                  >
-                    {showApiConfig ? '▾ Hide Gmail API Settings (OAuth Token / Webhook URL)' : '▸ Gmail API Settings (Optional OAuth Token / Webhook URL)'}
-                  </button>
-                  {showApiConfig && (
-                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 700 }}>
-                          Google Gmail OAuth2 Access Token (gmail.send scope)
-                        </label>
-                        <input
-                          type="password"
-                          value={gmailTokenInput}
-                          placeholder="ya29.a0..."
-                          className="form-input"
-                          onChange={e => {
-                            setGmailTokenInput(e.target.value);
-                            try {
-                              if (e.target.value.trim()) localStorage.setItem('padula_gmail_access_token', e.target.value.trim());
-                              else localStorage.removeItem('padula_gmail_access_token');
-                            } catch {}
-                          }}
-                          style={{ width: '100%', fontSize: '12px', fontFamily: 'monospace', boxSizing: 'border-box' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 700 }}>
-                          Custom Email API / Webhook Endpoint URL (Optional Fallback)
-                        </label>
-                        <input
-                          type="url"
-                          value={webhookUrlInput}
-                          placeholder="https://your-api.example.com/send-email"
-                          className="form-input"
-                          onChange={e => {
-                            setWebhookUrlInput(e.target.value);
-                            try {
-                              if (e.target.value.trim()) localStorage.setItem('padula_custom_email_api', e.target.value.trim());
-                              else localStorage.removeItem('padula_custom_email_api');
-                            } catch {}
-                          }}
-                          style={{ width: '100%', fontSize: '12px', fontFamily: 'monospace', boxSizing: 'border-box' }}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
