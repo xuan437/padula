@@ -25,6 +25,7 @@ import AnnouncementsPage from './pages/AnnouncementsPage';
 import SchedulePage from './pages/SchedulePage';
 import Sidebar from './components/Sidebar';
 import MockModeBanner from './components/MockModeBanner';
+import MiniGuideAvatar from './components/MiniGuideAvatar';
 import { isMockModeActive } from './lib/config';
 
 function AppContent() {
@@ -188,7 +189,12 @@ function AppContent() {
 }
 
 function App() {
-  return <AppContent />;
+  return (
+    <>
+      <AppContent />
+      <MiniGuideAvatar />
+    </>
+  );
 }
 
 export default App;
