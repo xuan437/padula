@@ -12,7 +12,6 @@ import {
   PrinterIcon,
   BracketsIcon,
   CalendarIcon,
-  SearchIcon,
   ShieldIcon,
   MoonIcon,
   SunIcon,
@@ -1508,47 +1507,14 @@ export default function GuestPublicPage() {
           })}
         </nav>
 
-        {/* Search Teams + My Team Star Filter on the Tab Row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 240px', maxWidth: '100%', minWidth: 0 }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <input
-              type="text"
-              className="form-input"
-              value={searchTeam}
-              onChange={e => setSearchTeam(e.target.value)}
-              style={{
-                paddingLeft: '32px',
-                paddingRight: '26px',
-                paddingTop: '8px',
-                paddingBottom: '8px',
-                fontSize: '12.5px',
-                borderRadius: '10px',
-              }}
-            />
-            <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-              <SearchIcon size={14} />
-            </div>
-            {searchTeam && (
-              <button
-                type="button"
-                onClick={() => { setSearchTeam(''); setMyTeam(''); }}
-                style={{
-                  position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <XIcon size={12} />
-              </button>
-            )}
-          </div>
-
+        {/* My Team Star Filter on the Tab Row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '100%', minWidth: 0 }}>
           <select
             value={myTeam}
             onChange={e => handleToggleMyTeam(e.target.value)}
             className="form-input"
             title="Bookmark My Team to highlight and filter their matches"
-            style={{ width: 'auto', maxWidth: '150px', padding: '8px 10px', fontSize: '12px', borderRadius: '10px', fontWeight: 700 }}
+            style={{ width: 'auto', maxWidth: '170px', padding: '8px 10px', fontSize: '12px', borderRadius: '10px', fontWeight: 700 }}
           >
             <option value="">★ My Team</option>
             {teams.map(t => (
