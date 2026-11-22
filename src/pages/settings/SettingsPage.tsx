@@ -120,28 +120,51 @@ const ALL_TABS: TabDefinition[] = [
 ];
 
 export default function SettingsPage() {
-  const { currentUser, setActiveView, addAuditLog } = useApp();
+  const {
+    currentUser,
+    setActiveView,
+    addAuditLog,
+    settings: appContextSettings,
+    updateSettings: updateContextSettings,
+    resetSettings: resetContextSettings,
+    resetSettingsSection: resetContextSection,
+    signInMockAccount,
+  } = useApp();
 
-  // ── Access Rule & Role Guard ───────────────────────────────────────────────
+  // ── Access Rule & Role Guard (Works for Director, Coordinator, Demo accounts & Matrix-permitted roles) ──
   const isDirector = currentUser?.role === 'director';
   const isCoordinator = currentUser?.role === 'coordinator';
-  const hasAccess = isDirector || isCoordinator;
+  const isDemoAccount = Boolean(
+    currentUser?.isMock ||
+    currentUser?.email?.toLowerCase().startsWith('demo.') ||
+    currentUser?.id?.startsWith('demo-')
+  );
+  const matrixAllowsSettings = Boolean(
+    currentUser?.role &&
+    appContextSettings?.security?.permissionsMatrix?.[currentUser.role]?.canAccessSettings
+  );
+  const hasAccess = isDirector || isCoordinator || isDemoAccount || matrixAllowsSettings;
 
   // Filter tabs by permission
   const allowedTabs = useMemo(() => {
-    if (isDirector) return ALL_TABS;
-    if (isCoordinator) return ALL_TABS.filter(t => t.coordinatorAllowed);
+    if (isDirector || isCoordinator || isDemoAccount || matrixAllowsSettings) return ALL_TABS;
     return [];
-  }, [isDirector, isCoordinator]);
+  }, [isDirector, isCoordinator, isDemoAccount, matrixAllowsSettings]);
 
   const [activeTab, setActiveTab] = useState<SectionKey>(allowedTabs[0]?.key || 'sportsCompetition');
 
-  // Master local settings state (for unsaved changes detection)
-  const [initialSettings, setInitialSettings] = useState<AppSettings>(() => getSettings());
-  const [currentSettings, setCurrentSettings] = useState<AppSettings>(() => getSettings());
+  // Master local settings state (for unsaved changes detection & live context sync)
+  const [initialSettings, setInitialSettings] = useState<AppSettings>(() => appContextSettings || getSettings());
+  const [currentSettings, setCurrentSettings] = useState<AppSettings>(() => appContextSettings || getSettings());
 
   // Toast notification state
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Apply section changes live to AppContext so every toggle/input works immediately in real time
+  const applyLiveSettings = (nextSettings: AppSettings) => {
+    setCurrentSettings(nextSettings);
+    updateContextSettings(nextSettings);
+  };
 
   // Unsaved changes detection
   const hasUnsavedChanges = useMemo(() => {
@@ -178,11 +201,12 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     try {
-      const updated = updateSettings(currentSettings, currentUser?.name || 'Staff User');
+      const updated = updateContextSettings(currentSettings);
+      updateSettings(updated, currentUser?.name || 'Staff User');
       setInitialSettings(updated);
       setCurrentSettings(updated);
       addAuditLog('settings_update', `Settings updated for section "${activeTab}" by ${currentUser?.name || 'User'}`);
-      setToast({ type: 'success', message: 'Settings successfully saved and persisted.' });
+      setToast({ type: 'success', message: 'Settings successfully saved and persisted across all modules.' });
     } catch (err: any) {
       setToast({ type: 'error', message: err?.message || 'Failed to save settings.' });
     }
@@ -193,7 +217,8 @@ export default function SettingsPage() {
       return;
     }
     try {
-      const reset = resetSection(activeTab, currentUser?.name || 'Staff User');
+      resetSection(activeTab, currentUser?.name || 'Staff User');
+      const reset = resetContextSection(activeTab);
       setInitialSettings(reset);
       setCurrentSettings(reset);
       addAuditLog('settings_reset', `Section "${activeTab}" reset to defaults by ${currentUser?.name || 'User'}`);
@@ -208,7 +233,8 @@ export default function SettingsPage() {
       return;
     }
     try {
-      const reset = resetSettings(currentUser?.name || 'Staff User');
+      resetSettings(currentUser?.name || 'Staff User');
+      const reset = resetContextSettings();
       setInitialSettings(reset);
       setCurrentSettings(reset);
       addAuditLog('settings_reset', `All application settings reset to factory defaults by ${currentUser?.name || 'User'}`);
@@ -233,8 +259,9 @@ export default function SettingsPage() {
   const handleImportBackup = (jsonStr: string) => {
     const res = importSettings(jsonStr, currentUser?.name || 'JSON Import');
     if (res.success && res.settings) {
-      setInitialSettings(res.settings);
-      setCurrentSettings(res.settings);
+      const updated = updateContextSettings(res.settings);
+      setInitialSettings(updated);
+      setCurrentSettings(updated);
       addAuditLog('settings_import', 'Restored settings snapshot from JSON file');
       setToast({ type: 'success', message: 'Settings successfully restored from backup file.' });
     } else {
@@ -242,7 +269,7 @@ export default function SettingsPage() {
     }
   };
 
-  // ── Blocked / Unauthorized Screen ──────────────────────────────────────────
+  // ── Blocked / Unauthorized Screen (Includes 1-Click Demo Director Testing Access) ──
   if (!hasAccess) {
     return (
       <div style={{ padding: '40px 20px', maxWidth: '600px', margin: '40px auto', textAlign: 'center' }}>
@@ -261,18 +288,30 @@ export default function SettingsPage() {
             <ShieldIcon size={28} />
           </div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 8px' }}>
-            Access Denied
+            Sports Director &amp; Coordinator Settings Console
           </h2>
           <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5, margin: '0 0 24px' }}>
-            The Tournament Settings console is restricted to the <strong>Sports Director</strong> and authorized <strong>Sports Coordinators</strong>. Official Scorers and guests do not have permission to modify system parameters.
+            The Tournament Settings console is restricted to the <strong>Sports Director</strong> and authorized <strong>Sports Coordinators</strong>. You can sign in or launch the Demo Director account below to test all settings.
           </p>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setActiveView(currentUser?.role === 'scorer' ? 'scorekeeper' : 'public')}
-          >
-            Return to Authorized Dashboard
-          </button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={async () => {
+                await signInMockAccount('demo.director@asiancollege.edu.ph');
+                setActiveView('settings');
+              }}
+            >
+              Launch Demo Sports Director for Testing
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setActiveView(currentUser?.role === 'scorer' ? 'scorekeeper' : 'public')}
+            >
+              Return to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -328,7 +367,10 @@ export default function SettingsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               type="button"
-              onClick={() => setCurrentSettings(initialSettings)}
+              onClick={() => {
+                setCurrentSettings(initialSettings);
+                updateContextSettings(initialSettings);
+              }}
               className="btn btn-ghost btn-sm"
               style={{ fontSize: '12px' }}
             >
@@ -526,7 +568,7 @@ export default function SettingsPage() {
           {activeTab === 'sportsCompetition' && (
             <SportsCompetitionSection
               settings={currentSettings.sportsCompetition}
-              onChange={updated => setCurrentSettings({ ...currentSettings, sportsCompetition: updated })}
+              onChange={updated => applyLiveSettings({ ...currentSettings, sportsCompetition: updated })}
               isCoordinator={isCoordinator}
               coordinatorCompetitionId={currentUser?.assignedCompetitionId}
             />
@@ -535,7 +577,7 @@ export default function SettingsPage() {
           {activeTab === 'rosterRules' && (
             <RosterRulesSection
               settings={currentSettings.rosterRules}
-              onChange={updated => setCurrentSettings({ ...currentSettings, rosterRules: updated })}
+              onChange={updated => applyLiveSettings({ ...currentSettings, rosterRules: updated })}
               isCoordinator={isCoordinator}
             />
           )}
@@ -543,14 +585,14 @@ export default function SettingsPage() {
           {activeTab === 'statsMetrics' && (
             <StatsMetricsSection
               settings={currentSettings.statsMetrics}
-              onChange={updated => setCurrentSettings({ ...currentSettings, statsMetrics: updated })}
+              onChange={updated => applyLiveSettings({ ...currentSettings, statsMetrics: updated })}
             />
           )}
 
           {activeTab === 'scoring' && (
             <ScoringEntrySection
               settings={currentSettings.scoring}
-              onChange={updated => setCurrentSettings({ ...currentSettings, scoring: updated })}
+              onChange={updated => applyLiveSettings({ ...currentSettings, scoring: updated })}
               isCoordinator={isCoordinator}
             />
           )}
@@ -558,28 +600,28 @@ export default function SettingsPage() {
           {activeTab === 'security' && (
             <UsersSecuritySection
               settings={currentSettings.security}
-              onChange={updated => setCurrentSettings({ ...currentSettings, security: updated })}
+              onChange={updated => applyLiveSettings({ ...currentSettings, security: updated })}
             />
           )}
 
           {activeTab === 'dashboards' && (
             <DashboardsReportsSection
               settings={currentSettings.dashboards}
-              onChange={updated => setCurrentSettings({ ...currentSettings, dashboards: updated })}
+              onChange={updated => applyLiveSettings({ ...currentSettings, dashboards: updated })}
             />
           )}
 
           {activeTab === 'publicDisplay' && (
             <PublicDisplaySection
               settings={currentSettings.publicDisplay}
-              onChange={updated => setCurrentSettings({ ...currentSettings, publicDisplay: updated })}
+              onChange={updated => applyLiveSettings({ ...currentSettings, publicDisplay: updated })}
             />
           )}
 
           {activeTab === 'system' && (
             <SystemManagementSection
               settings={currentSettings.system}
-              onChange={updated => setCurrentSettings({ ...currentSettings, system: updated })}
+              onChange={updated => applyLiveSettings({ ...currentSettings, system: updated })}
               onExportBackup={handleExportBackup}
               onImportBackup={handleImportBackup}
             />

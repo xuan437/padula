@@ -237,14 +237,14 @@ export interface RolePermissions {
 }
 
 export interface CoordinatorSlot {
-  slotNumber: 1 | 2 | 3;
+  slotNumber: number;
   userId?: string;
   assignedCompetitionId?: string;
   assignedCompetitionName?: string;
 }
 
 export interface SecuritySettings {
-  maxCoordinators: 3;
+  maxCoordinators: number;
   oneSportPerScorer: boolean;
   allowedEmailDomain: string; // e.g. "asiancollege.edu.ph"
   sessionTimeoutMinutes: number; // e.g. 30

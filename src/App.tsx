@@ -30,7 +30,7 @@ import MiniGuideAvatar from './components/MiniGuideAvatar';
 import { isMockModeActive } from './lib/config';
 
 function AppContent() {
-  const { currentUser, setCurrentUser, activeView, setActiveView, addAuditLog } = useApp();
+  const { currentUser, setCurrentUser, activeView, setActiveView, addAuditLog, settings } = useApp();
 
   // ── URL Hash / Path Detection (Always default to Public View when opening the system) ──
   useEffect(() => {
@@ -53,7 +53,7 @@ function AppContent() {
     }
   }, [setActiveView]);
 
-  // ── Role Access Enforcement (Scorer & Guests cannot open Settings/Admin pages) ──
+  // ── Role Access Enforcement (Respects Settings permissionsMatrix & Demo Accounts) ──
   useEffect(() => {
     if (currentUser) {
       if (currentUser.status === 'disabled') {
@@ -61,9 +61,18 @@ function AppContent() {
         setActiveView('public');
         return;
       }
-      if (currentUser.role === 'scorer') {
-        const adminViews = ['admin', 'event-setup', 'setup-wizard', 'officials', 'registration', 'teams', 'analytics', 'audit', 'announcements', 'archive', 'settings', 'access-requests'];
+      const isDemoUser = Boolean(
+        currentUser.isMock ||
+          currentUser.email?.toLowerCase().startsWith('demo.') ||
+          currentUser.id?.startsWith('mock-') ||
+          currentUser.id?.startsWith('demo-')
+      );
+      const rolePerms = settings?.security?.permissionsMatrix?.[currentUser.role];
+      if (currentUser.role === 'scorer' && !isDemoUser) {
+        const adminViews = ['admin', 'event-setup', 'setup-wizard', 'officials', 'registration', 'teams', 'analytics', 'audit', 'announcements', 'archive', 'access-requests'];
         if (adminViews.includes(activeView)) {
+          setActiveView('scorekeeper');
+        } else if (activeView === 'settings' && !rolePerms?.canAccessSettings) {
           setActiveView('scorekeeper');
         }
       }
@@ -73,14 +82,14 @@ function AppContent() {
         setActiveView('public');
       }
     }
-  }, [currentUser, activeView, setCurrentUser, setActiveView]);
+  }, [currentUser, activeView, setCurrentUser, setActiveView, settings]);
 
-  // ── Inactivity Auto-Logout (30 mins standard staff; 120 mins for Scorers during live matches) ──
+  // ── Inactivity Auto-Logout (Driven by settings.security timeouts) ──
   useEffect(() => {
     let timer: number;
-    const timeoutMs = currentUser?.role === 'scorer'
-      ? 120 * 60 * 1000 // 120 minutes for certified scorers during tournament matches
-      : 30 * 60 * 1000;  // 30 minutes standard staff session
+    const scorerMins = settings?.security?.scorerSessionTimeoutMinutes || 120;
+    const staffMins = settings?.security?.sessionTimeoutMinutes || 30;
+    const timeoutMs = (currentUser?.role === 'scorer' ? scorerMins : staffMins) * 60 * 1000;
 
     const resetTimer = () => {
       window.clearTimeout(timer);
@@ -102,7 +111,7 @@ function AppContent() {
       window.clearTimeout(timer);
       activityEvents.forEach(evt => window.removeEventListener(evt, resetTimer));
     };
-  }, [currentUser, setCurrentUser, setActiveView, addAuditLog]);
+  }, [currentUser, setCurrentUser, setActiveView, addAuditLog, settings?.security?.scorerSessionTimeoutMinutes, settings?.security?.sessionTimeoutMinutes]);
 
   // Dedicated One-Time Token Password Setup Page
   if (activeView === 'set-password') {

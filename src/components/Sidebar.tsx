@@ -31,7 +31,7 @@ interface NavGroup {
 }
 
 const Sidebar: React.FC = () => {
-  const { currentUser, setCurrentUser, activeView, setActiveView, matches, accessRequests } = useApp();
+  const { currentUser, setCurrentUser, activeView, setActiveView, matches, accessRequests, settings } = useApp();
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('padula_theme') as 'light' | 'dark' | null;
@@ -171,7 +171,13 @@ const Sidebar: React.FC = () => {
     }
 
     // Scorer subset
-    return [
+    const canScorerAccessSettings = Boolean(
+      currentUser.isMock ||
+        currentUser.email?.toLowerCase().startsWith('demo.') ||
+        currentUser.id?.startsWith('mock-') ||
+        settings?.security?.permissionsMatrix?.scorer?.canAccessSettings
+    );
+    const scorerGroups: NavGroup[] = [
       {
         heading: 'Scoring',
         items: [
@@ -190,6 +196,15 @@ const Sidebar: React.FC = () => {
         ],
       },
     ];
+    if (canScorerAccessSettings) {
+      scorerGroups.push({
+        heading: 'Testing & Admin',
+        items: [
+          { id: 'settings', label: 'Settings', hint: 'Test settings & demo controls', icon: SettingsIcon },
+        ],
+      });
+    }
+    return scorerGroups;
   };
 
   const groups = getGroupsForRole(currentUser.role);

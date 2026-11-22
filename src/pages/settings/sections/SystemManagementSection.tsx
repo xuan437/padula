@@ -22,14 +22,27 @@ export default function SystemManagementSection({
   onExportBackup,
   onImportBackup,
 }: Props) {
-  const { addAuditLog } = useApp();
+  const {
+    addAuditLog,
+    currentUser,
+    signInMockAccount,
+    seedDemoData,
+    clearAllMatches,
+    events,
+    setEvents,
+    teams,
+    registerTeam,
+    registerPlayer,
+  } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // CSV Bulk Import simulation state
+  // CSV Bulk Import state
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvPreviewRows, setCsvPreviewRows] = useState<string[][]>([]);
   const [csvImportSuccess, setCsvImportSuccess] = useState(false);
   const [archiveSuccess, setArchiveSuccess] = useState(false);
+  const [restoreSuccess, setRestoreSuccess] = useState(false);
+  const [demoNotice, setDemoNotice] = useState<string | null>(null);
 
   const handleUpdateBranding = <K extends keyof typeof settings.branding>(
     field: K,
@@ -56,29 +69,114 @@ export default function SystemManagementSection({
     e.target.value = '';
   };
 
+  const SAMPLE_DEMO_CSV_ROWS: string[][] = [
+    ['John Dela Cruz', 'Basketball', 'CSE Titans', '#23', 'Guard', 'Enrolled & Verified'],
+    ['Maria Santos', 'Volleyball', 'HTM Chefs', '#10', 'Setter', 'Enrolled & Verified'],
+    ['Carlos Reyes', 'Football', 'BAA Falcons', '#7', 'Forward', 'Enrolled & Verified'],
+    ['Alyssa Mendoza', 'Badminton', 'SHS Phoenix', '#14', 'Singles', 'Enrolled & Verified'],
+  ];
+
+  const handleLoadSampleDemoCsv = () => {
+    setCsvFile(new File(['sample'], 'padula_demo_roster_2026.csv', { type: 'text/csv' }));
+    setCsvImportSuccess(false);
+    setCsvPreviewRows(SAMPLE_DEMO_CSV_ROWS);
+  };
+
   const handleCsvSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setCsvFile(file);
     setCsvImportSuccess(false);
 
-    // Mock preview rows
-    setCsvPreviewRows([
-      ['John Dela Cruz', 'Basketball', 'CSE Titans', '#23', 'Guard', 'Enrolled & Verified'],
-      ['Maria Santos', 'Volleyball', 'HTM Chefs', '#10', 'Setter', 'Enrolled & Verified'],
-      ['Carlos Reyes', 'Football', 'BAA Falcons', '#7', 'Forward', 'Enrolled & Verified'],
-    ]);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = (ev.target?.result as string) || '';
+      const lines = text
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+      if (lines.length > 0) {
+        const parsed = lines.map(line =>
+          line.split(',').map(cell => cell.replace(/^"|"$/g, '').trim())
+        );
+        // Skip header row if first cell looks like a header
+        const startIdx = parsed[0]?.[0]?.toLowerCase().includes('name') || parsed[0]?.[0]?.toLowerCase().includes('athlete') ? 1 : 0;
+        const rows = parsed.slice(startIdx).map(r => [
+          r[0] || 'Student Athlete',
+          r[1] || 'Basketball',
+          r[2] || 'CSE Titans',
+          r[3] || '#1',
+          r[4] || 'Player',
+          r[5] || 'Enrolled & Verified',
+        ]);
+        setCsvPreviewRows(rows.length > 0 ? rows : SAMPLE_DEMO_CSV_ROWS);
+      } else {
+        setCsvPreviewRows(SAMPLE_DEMO_CSV_ROWS);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleExecuteCsvImport = () => {
+    let importedCount = 0;
+    csvPreviewRows.forEach((row, idx) => {
+      const [name, sport, deptOrTeam, jerseyStr, position] = row;
+      if (!name) return;
+      const cleanSport = sport || 'Basketball';
+      const cleanTeamName = deptOrTeam || 'CSE Titans';
+      const existingTeam = teams.find(
+        t => t.name.toLowerCase() === cleanTeamName.toLowerCase() && t.sport.toLowerCase() === cleanSport.toLowerCase()
+      );
+      let teamId = existingTeam?.id;
+      if (!teamId) {
+        teamId = registerTeam({
+          name: cleanTeamName,
+          department: cleanTeamName.split(' ')[0] || 'CSE',
+          sport: cleanSport,
+          division: "Men's",
+          coach: 'Coach Appointed',
+          players: [],
+          isActive: true,
+        });
+      }
+      const jerseyStrClean = String(jerseyStr || '').replace(/[^0-9]/g, '') || String(idx + 1);
+      registerPlayer({
+        name,
+        studentId: `2026-CSV-${100 + idx}`,
+        teamId,
+        sport: cleanSport,
+        department: cleanTeamName.split(' ')[0] || 'CSE',
+        division: "Men's",
+        jerseyNumber: jerseyStrClean,
+        position: position || 'Player',
+        medicalCleared: true,
+        rosterStatus: 'in_play',
+        isActive: true,
+      });
+      importedCount++;
+    });
+
     setCsvImportSuccess(true);
-    addAuditLog('team_register', `Bulk roster imported via CSV (${csvPreviewRows.length} student-athletes registered)`);
+    addAuditLog('team_register', `Bulk roster imported via CSV (${importedCount} student-athletes registered into live database)`);
   };
 
   const handleTriggerArchive = () => {
+    const nowIso = new Date().toISOString();
+    const updated = events.map(e => ({ ...e, status: 'completed' as const, archived: true, archivedAt: nowIso }));
+    setEvents(updated);
     setArchiveSuccess(true);
-    addAuditLog('event_archive', `Padula 2026 season archived into historical analytics records.`);
+    setRestoreSuccess(false);
+    addAuditLog('event_archive', `Padula 2026 season (${updated.length} events) archived into historical analytics records.`);
     setTimeout(() => setArchiveSuccess(false), 4000);
+  };
+
+  const handleRestoreArchivedEvents = () => {
+    const updated = events.map(e => (e.archived ? { ...e, status: 'ongoing' as const, archived: false, archivedAt: undefined } : e));
+    setEvents(updated);
+    setRestoreSuccess(true);
+    setArchiveSuccess(false);
+    addAuditLog('settings_update', `Restored archived tournament events back to active ongoing status.`);
+    setTimeout(() => setRestoreSuccess(false), 4000);
   };
 
   return (
@@ -170,38 +268,63 @@ export default function SystemManagementSection({
           {/* Archive Action */}
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
-              ARCHIVE COMPLETED SEASON
+              ARCHIVE / RESTORE COMPLETED SEASON ({events.filter(e => e.archived).length}/{events.length} Archived)
             </label>
-            <button
-              type="button"
-              onClick={handleTriggerArchive}
-              style={{
-                width: '100%',
-                padding: '9px 12px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 700,
-                background: archiveSuccess ? '#16a34a' : 'rgba(59, 130, 246, 0.1)',
-                color: archiveSuccess ? '#ffffff' : '#3b82f6',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-              }}
-            >
-              {archiveSuccess ? <><CheckIcon size={14} /> Season Successfully Archived</> : <><LayersIcon size={14} /> Archive Finished Tournament Event</>}
-            </button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleTriggerArchive}
+                style={{
+                  flex: 1,
+                  padding: '9px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  background: archiveSuccess ? '#16a34a' : 'rgba(59, 130, 246, 0.1)',
+                  color: archiveSuccess ? '#ffffff' : '#3b82f6',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                }}
+              >
+                {archiveSuccess ? <><CheckIcon size={14} /> Season Archived</> : <><LayersIcon size={14} /> Archive Events</>}
+              </button>
+              <button
+                type="button"
+                onClick={handleRestoreArchivedEvents}
+                className="btn btn-outline"
+                style={{
+                  padding: '9px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                }}
+              >
+                {restoreSuccess ? '✓ Restored' : 'Restore Archived'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Bulk CSV Import with Preview & Report ── */}
       <div className="glass-card" style={{ padding: '20px' }}>
-        <h3 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 800 }}>
-          Bulk Roster &amp; Schedule Import (CSV)
-        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+            Bulk Roster &amp; Schedule Import (CSV)
+          </h3>
+          <button
+            type="button"
+            onClick={handleLoadSampleDemoCsv}
+            className="btn btn-outline btn-sm"
+            style={{ fontSize: '12px', fontWeight: 700 }}
+          >
+            Load Sample Demo CSV Roster
+          </button>
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
@@ -332,6 +455,107 @@ export default function SystemManagementSection({
               <option value="UTC (GMT+0)">UTC (GMT+0)</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* ── Demo Account & Live Testing Sandbox Controls ── */}
+      <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(56, 189, 248, 0.35)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+          <div>
+            <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800 }}>
+              Demo Account &amp; Live Testing Sandbox Controls
+            </h3>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              Instantly switch between official / demo accounts or re-seed tournament brackets to test all Settings changes live.
+            </span>
+          </div>
+          <span style={{
+            fontSize: '11.5px',
+            fontWeight: 800,
+            padding: '4px 10px',
+            borderRadius: '999px',
+            background: 'rgba(56, 189, 248, 0.14)',
+            color: '#38bdf8',
+          }}>
+            Active Account: {currentUser?.name || 'Guest'} ({currentUser?.role || 'guest'})
+          </span>
+        </div>
+
+        {demoNotice && (
+          <div style={{
+            marginBottom: '12px',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            background: 'rgba(34, 197, 94, 0.14)',
+            border: '1px solid rgba(34, 197, 94, 0.35)',
+            color: '#22c55e',
+            fontSize: '12.5px',
+            fontWeight: 700,
+          }}>
+            ✓ {demoNotice}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={async () => {
+              await signInMockAccount('demo.director@asiancollege.edu.ph');
+              setDemoNotice('Switched to Demo Director (demo.director@asiancollege.edu.ph) with full Settings access.');
+            }}
+            className="btn btn-primary btn-sm"
+            style={{ fontSize: '12px' }}
+          >
+            Switch to Demo Director
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              await signInMockAccount('demo.coordinator@asiancollege.edu.ph');
+              setDemoNotice('Switched to Demo Coordinator (demo.coordinator@asiancollege.edu.ph) — Settings & Tournament Control unlocked for testing.');
+            }}
+            className="btn btn-outline btn-sm"
+            style={{ fontSize: '12px' }}
+          >
+            Switch to Demo Coordinator
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              await signInMockAccount('demo.scorer@asiancollege.edu.ph');
+              setDemoNotice('Switched to Demo Scorer (demo.scorer@asiancollege.edu.ph) — Scorer Desk & Settings testing active.');
+            }}
+            className="btn btn-outline btn-sm"
+            style={{ fontSize: '12px' }}
+          >
+            Switch to Demo Scorer
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              seedDemoData();
+              setDemoNotice('Demo tournament data, teams, rosters, and matches seeded using current Settings rules.');
+            }}
+            className="btn btn-outline btn-sm"
+            style={{ fontSize: '12px' }}
+          >
+            Seed / Reset Demo Tournament Data
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              clearAllMatches();
+              setDemoNotice('Cleared all active matches for fresh bracket testing.');
+            }}
+            className="btn btn-outline btn-sm"
+            style={{ fontSize: '12px', color: '#ef4444' }}
+          >
+            Clear All Matches
+          </button>
         </div>
       </div>
     </div>

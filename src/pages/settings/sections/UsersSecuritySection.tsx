@@ -21,7 +21,7 @@ export default function UsersSecuritySection({
   settings,
   onChange,
 }: Props) {
-  const { auditLogs, staff } = useApp();
+  const { auditLogs, staff, registeredUsers, addAuditLog } = useApp();
 
   // Audit Log filters
   const [auditSearch, setAuditSearch] = useState('');
@@ -41,8 +41,29 @@ export default function UsersSecuritySection({
     }).slice(0, 50); // limit to recent 50
   }, [auditLogs, auditSearch, actionFilter, roleFilter]);
 
+  // All coordinators across staff + registeredUsers + built-in demo coordinator for testing
+  const allCoordinators = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; email: string }>();
+    staff.filter(s => s.role === 'coordinator').forEach(s => {
+      map.set(s.id, { id: s.id, name: s.name, email: s.email });
+    });
+    registeredUsers.filter(u => u.role === 'coordinator').forEach(u => {
+      if (!map.has(u.id)) {
+        map.set(u.id, { id: u.id, name: u.name, email: u.email });
+      }
+    });
+    if (!map.has('mock-coordinator')) {
+      map.set('mock-coordinator', {
+        id: 'mock-coordinator',
+        name: 'Demo Coordinator',
+        email: 'demo.coordinator@asiancollege.edu.ph',
+      });
+    }
+    return Array.from(map.values());
+  }, [staff, registeredUsers]);
+
   // Current active coordinators count
-  const activeCoordinators = staff.filter(s => s.role === 'coordinator' && s.status === 'active');
+  const activeCoordinators = allCoordinators;
 
   const handleUpdatePermission = (
     role: UserRole,
@@ -86,7 +107,35 @@ export default function UsersSecuritySection({
       ...settings,
       forceLogoutAllActiveSessions: true,
     });
+    addAuditLog('settings_update', 'Emergency Force Logout broadcasted across all active sessions');
     setTimeout(() => setForceLogoutTriggered(false), 4000);
+  };
+
+  const handleAddCoordinatorSlot = () => {
+    const nextSlotNumber = settings.coordinators.length > 0
+      ? Math.max(...settings.coordinators.map(c => c.slotNumber)) + 1
+      : 1;
+    onChange({
+      ...settings,
+      coordinators: [
+        ...settings.coordinators,
+        {
+          slotNumber: nextSlotNumber,
+          userId: undefined,
+          assignedCompetitionId: `comp-${nextSlotNumber}`,
+          assignedCompetitionName: 'All Sports / Unassigned Scope',
+        },
+      ],
+    });
+    addAuditLog('settings_update', `Added Coordinator Slot #${nextSlotNumber}`);
+  };
+
+  const handleRemoveCoordinatorSlot = (slotNumber: number) => {
+    onChange({
+      ...settings,
+      coordinators: settings.coordinators.filter(c => c.slotNumber !== slotNumber),
+    });
+    addAuditLog('settings_update', `Removed Coordinator Slot #${slotNumber}`);
   };
 
   return (
@@ -104,23 +153,33 @@ export default function UsersSecuritySection({
             </span>
           </div>
 
-          <span style={{
-            fontSize: '12px',
-            fontWeight: 800,
-            padding: '4px 10px',
-            borderRadius: '12px',
-            background: 'rgba(34, 197, 94, 0.12)',
-            color: '#22c55e',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-          }}>
-            {activeCoordinators.length} Active Coordinators
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: 800,
+              padding: '4px 10px',
+              borderRadius: '12px',
+              background: 'rgba(34, 197, 94, 0.12)',
+              color: '#22c55e',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+            }}>
+              {activeCoordinators.length} Active Coordinators
+            </span>
+            <button
+              type="button"
+              onClick={handleAddCoordinatorSlot}
+              className="btn btn-primary btn-sm"
+              style={{ fontSize: '11.5px', padding: '5px 12px' }}
+            >
+              + Add Coordinator Slot
+            </button>
+          </div>
         </div>
 
         {/* Dedicated Slots */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
           {settings.coordinators.map(slot => {
-            const assignedStaff = staff.find(s => s.id === slot.userId);
+            const assignedStaff = allCoordinators.find(s => s.id === slot.userId);
             return (
               <div
                 key={slot.slotNumber}
@@ -138,16 +197,37 @@ export default function UsersSecuritySection({
                   <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)' }}>
                     Slot #{slot.slotNumber}
                   </span>
-                  <span style={{
-                    fontSize: '10.5px',
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    fontWeight: 700,
-                    background: slot.userId ? 'rgba(34, 197, 94, 0.15)' : 'rgba(148, 163, 184, 0.1)',
-                    color: slot.userId ? '#22c55e' : 'var(--text-muted)',
-                  }}>
-                    {slot.userId ? 'Assigned' : 'Available'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      fontSize: '10.5px',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                      background: slot.userId ? 'rgba(34, 197, 94, 0.15)' : 'rgba(148, 163, 184, 0.1)',
+                      color: slot.userId ? '#22c55e' : 'var(--text-muted)',
+                    }}>
+                      {slot.userId ? 'Assigned' : 'Available'}
+                    </span>
+                    {settings.coordinators.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCoordinatorSlot(slot.slotNumber)}
+                        style={{
+                          fontSize: '10px',
+                          padding: '2px 6px',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                        }}
+                        title="Remove Coordinator Slot"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
@@ -166,7 +246,7 @@ export default function UsersSecuritySection({
                     style={{ width: '100%', padding: '6px 8px', fontSize: '12px', fontWeight: 600 }}
                   >
                     <option value="">— Unassigned Slot —</option>
-                    {staff.filter(s => s.role === 'coordinator').map(s => (
+                    {allCoordinators.map(s => (
                       <option key={s.id} value={s.id}>{s.name} ({s.email})</option>
                     ))}
                   </select>
@@ -339,7 +419,6 @@ export default function UsersSecuritySection({
             <tbody>
               {ROLES_ORDER.map(role => {
                 const perms = settings.permissionsMatrix[role];
-                const isDirector = role === 'director';
                 return (
                   <tr key={role} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '12px', fontWeight: 700, textTransform: 'capitalize' }}>
@@ -348,7 +427,6 @@ export default function UsersSecuritySection({
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
-                        disabled={isDirector}
                         checked={perms.canViewMatches}
                         onChange={e => handleUpdatePermission(role, 'canViewMatches', e.target.checked)}
                       />
@@ -356,7 +434,6 @@ export default function UsersSecuritySection({
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
-                        disabled={isDirector}
                         checked={perms.canEnterScores}
                         onChange={e => handleUpdatePermission(role, 'canEnterScores', e.target.checked)}
                       />
@@ -364,7 +441,6 @@ export default function UsersSecuritySection({
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
-                        disabled={isDirector}
                         checked={perms.canEditFinalScores}
                         onChange={e => handleUpdatePermission(role, 'canEditFinalScores', e.target.checked)}
                       />
@@ -372,7 +448,6 @@ export default function UsersSecuritySection({
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
-                        disabled={isDirector}
                         checked={perms.canApproveRosters}
                         onChange={e => handleUpdatePermission(role, 'canApproveRosters', e.target.checked)}
                       />
@@ -380,7 +455,6 @@ export default function UsersSecuritySection({
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
-                        disabled={isDirector}
                         checked={perms.canManageSchedules}
                         onChange={e => handleUpdatePermission(role, 'canManageSchedules', e.target.checked)}
                       />
@@ -388,7 +462,6 @@ export default function UsersSecuritySection({
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
-                        disabled={isDirector}
                         checked={perms.canManageUsers}
                         onChange={e => handleUpdatePermission(role, 'canManageUsers', e.target.checked)}
                       />
@@ -396,7 +469,6 @@ export default function UsersSecuritySection({
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
-                        disabled={isDirector}
                         checked={perms.canAccessSettings}
                         onChange={e => handleUpdatePermission(role, 'canAccessSettings', e.target.checked)}
                       />

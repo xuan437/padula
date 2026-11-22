@@ -326,9 +326,91 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Settings State
   const [settings, setSettingsState] = useState<AppSettings>(() => getSettings());
 
+  // Apply primary accent color live whenever settings.system.branding.primaryColor changes
+  useEffect(() => {
+    const color = settings?.system?.branding?.primaryColor;
+    if (color && typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--accent', color);
+    }
+  }, [settings?.system?.branding?.primaryColor]);
+
+  // Sync Settings changes (Venues, Departments, Divisions, Competition Formats) into live AppContext state
+  const syncEntitiesFromSettings = useCallback((updated: AppSettings) => {
+    const setup = updated.sportsCompetition?.eventSetup;
+    if (setup) {
+      if (Array.isArray(setup.venues) && setup.venues.length > 0) {
+        setVenues(prev => {
+          const next = [...prev];
+          setup.venues.forEach((vName, idx) => {
+            if (vName && !next.some(v => v.name.toLowerCase() === vName.toLowerCase())) {
+              next.push({
+                id: `v-cfg-${idx}-${Date.now()}`,
+                name: vName,
+                capacity: 500,
+                location: updated.system?.branding?.campusName || 'Asian College Dumaguete Campus',
+                sports: ['All Sports'],
+              });
+            }
+          });
+          return next;
+        });
+      }
+      if (Array.isArray(setup.departments) && setup.departments.length > 0) {
+        setDepartments(prev => {
+          const next = [...prev];
+          setup.departments.forEach((dEntry, idx) => {
+            const shortName = dEntry.split('—')[0]?.split('-')[0]?.trim() || dEntry.trim();
+            if (shortName && !next.some(d => d.shortName.toLowerCase() === shortName.toLowerCase() || d.name.toLowerCase() === dEntry.toLowerCase())) {
+              next.push({
+                id: shortName.toLowerCase().replace(/[^a-z0-9]/g, '') || `dept-${idx}`,
+                name: dEntry.trim(),
+                shortName,
+                color: '#3b82f6',
+              });
+            }
+          });
+          return next;
+        });
+      }
+      if (Array.isArray(setup.divisions) && setup.divisions.length > 0) {
+        setDivisions(prev => {
+          const next = [...prev];
+          setup.divisions.forEach((divName, idx) => {
+            if (divName && !next.some(d => d.name.toLowerCase() === divName.toLowerCase())) {
+              next.push({
+                id: `div-cfg-${idx}-${Date.now()}`,
+                name: divName.trim(),
+                sportId: 's1',
+              });
+            }
+          });
+          return next;
+        });
+      }
+    }
+
+    const formats = updated.sportsCompetition?.competitionFormats;
+    if (Array.isArray(formats) && formats.length > 0) {
+      setEvents(prev =>
+        prev.map(ev => {
+          const fmt = formats.find(
+            f => f.sportId === ev.sport || f.sportName.toLowerCase() === getSportName(ev.sport).toLowerCase()
+          );
+          if (!fmt) return ev;
+          const mappedFormat: TournamentFormat =
+            fmt.bracketType === 'round_robin' || fmt.bracketType === 'group_stage_knockout'
+              ? 'round_robin'
+              : 'single_elimination';
+          return { ...ev, format: mappedFormat };
+        })
+      );
+    }
+  }, []);
+
   const handleUpdateSettings = (partial: Partial<AppSettings>): AppSettings => {
     const updated = updateStoredSettings(partial, currentUser?.name || 'Staff User');
     setSettingsState(updated);
+    syncEntitiesFromSettings(updated);
     supabase.from('system_settings').upsert([{ id: 'default', data: updated, updated_at: new Date().toISOString() }]).then();
     return updated;
   };
@@ -336,6 +418,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const handleResetSettings = (): AppSettings => {
     const reset = resetStoredSettings(currentUser?.name || 'Staff User');
     setSettingsState(reset);
+    syncEntitiesFromSettings(reset);
     supabase.from('system_settings').upsert([{ id: 'default', data: reset, updated_at: new Date().toISOString() }]).then();
     return reset;
   };
@@ -343,6 +426,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const handleResetSection = <K extends keyof AppSettings>(sectionKey: K): AppSettings => {
     const reset = resetStoredSection(sectionKey, currentUser?.name || 'Staff User');
     setSettingsState(reset);
+    syncEntitiesFromSettings(reset);
     supabase.from('system_settings').upsert([{ id: 'default', data: reset, updated_at: new Date().toISOString() }]).then();
     return reset;
   };

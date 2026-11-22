@@ -997,7 +997,7 @@ function QRPosterModal({ url, onClose }: { url: string; onClose: () => void }) {
 // MAIN COMPONENT: GUEST PUBLIC RESULTS PAGE
 // ═════════════════════════════════════════════════════════════════════════════
 export default function GuestPublicPage() {
-  const { matches, teams, players, announcements, departments, events, venues, computeMedalTally, computeStandings, setActiveView, currentUser } = useApp();
+  const { matches, teams, players, announcements, departments, events, venues, computeMedalTally, computeStandings, setActiveView, currentUser, settings } = useApp();
 
   // Helper to resolve full Event & Venue details for any match
   const getMatchContext = (m: Match) => {
@@ -1453,15 +1453,15 @@ export default function GuestPublicPage() {
           minWidth: 0,
         }}>
           {([
-            { id: 'live', label: 'Live', icon: <FlameIcon size={14} />, count: liveMatches.length },
-            { id: 'results', label: 'Results', icon: <TrophyIcon size={14} />, count: finishedMatches.length },
-            { id: 'standings', label: 'Standings', icon: <MedalIcon size={14} />, count: undefined },
-            { id: 'brackets', label: 'Brackets', icon: <BracketsIcon size={14} />, count: undefined },
-            { id: 'schedule', label: 'Schedule', icon: <CalendarIcon size={14} />, count: scheduledMatches.length },
-            { id: 'tally', label: 'Medal Tally', icon: <MedalIcon size={14} />, count: undefined },
-            { id: 'announcements', label: 'Announcements', icon: <FileTextIcon size={14} />, count: announcements.length },
-            { id: 'predictions', label: 'Predictions', icon: <SparklesIcon size={14} />, count: undefined },
-          ]).map(t => {
+            { id: 'live', label: 'Live', icon: <FlameIcon size={14} />, count: liveMatches.length, visible: true },
+            { id: 'results', label: 'Results', icon: <TrophyIcon size={14} />, count: finishedMatches.length, visible: true },
+            { id: 'standings', label: 'Standings', icon: <MedalIcon size={14} />, count: undefined, visible: settings?.publicDisplay?.showPublicStandings !== false },
+            { id: 'brackets', label: 'Brackets', icon: <BracketsIcon size={14} />, count: undefined, visible: settings?.publicDisplay?.showPublicBrackets !== false },
+            { id: 'schedule', label: 'Schedule', icon: <CalendarIcon size={14} />, count: scheduledMatches.length, visible: settings?.publicDisplay?.showPublicSchedule !== false },
+            { id: 'tally', label: 'Medal Tally', icon: <MedalIcon size={14} />, count: undefined, visible: settings?.publicDisplay?.showPublicMedalTally !== false },
+            { id: 'announcements', label: 'Announcements', icon: <FileTextIcon size={14} />, count: announcements.length, visible: true },
+            { id: 'predictions', label: 'Predictions', icon: <SparklesIcon size={14} />, count: undefined, visible: true },
+          ]).filter(t => t.visible).map(t => {
             const isActive = tab === t.id;
             return (
               <button

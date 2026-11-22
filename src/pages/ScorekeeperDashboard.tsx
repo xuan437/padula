@@ -1515,13 +1515,23 @@ export default function ScorekeeperDashboard() {
     setAssignmentModalMatch(null);
   };
 
-  if (currentUser?.role !== 'scorer') {
+  const isAllowedScorerDesk = Boolean(
+    currentUser &&
+      (currentUser.role === 'scorer' ||
+        currentUser.role === 'director' ||
+        currentUser.role === 'coordinator' ||
+        currentUser.isMock ||
+        currentUser.email?.toLowerCase().startsWith('demo.') ||
+        settings.security.permissionsMatrix[currentUser.role]?.canEnterScores)
+  );
+
+  if (!isAllowedScorerDesk) {
     return (
       <div className="dashboard-content">
         <div className="glass-card" style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Scorekeeper-Only Desk</h2>
           <p style={{ marginBottom: '16px', fontSize: '13.5px' }}>
-            The Scoring Desk is reserved exclusively for Official Scorekeepers. Directors and Coordinators manage tournament operations from the Operations Dashboard.
+            The Scoring Desk is reserved for Official Scorekeepers, Sports Coordinators, and the Sports Director.
           </p>
           <button className="btn btn-primary" onClick={() => setActiveView('admin')}>
             Return to Operations Dashboard
