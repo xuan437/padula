@@ -123,12 +123,16 @@ const SPORT_TREES_16: Record<string, SportBracketTree> = {
 function MatchNodeBox({
   team,
   align = 'left',
+  fullWidth = false,
 }: {
   team: BracketTeamEntry;
   align?: 'left' | 'right' | 'center';
+  fullWidth?: boolean;
 }) {
   const isWinner = !!team.isWinner;
   const isLive = !!team.isLive;
+  const isTbdOnly = (!team.name || team.name.trim().toUpperCase() === 'TBD') && !team.seed && team.score === undefined;
+  const effectiveAlign: 'left' | 'right' | 'center' = isTbdOnly ? 'center' : align;
 
   return (
     <div
@@ -141,21 +145,39 @@ function MatchNodeBox({
           ? '1.5px solid #38bdf8'
           : '1px solid var(--border, #e2e8f0)',
         borderRadius: '7px',
-        padding: '0 8px',
-        width: '136px',
+        padding: '0 10px',
+        width: fullWidth ? '100%' : '136px',
         height: '34px',
         boxSizing: 'border-box',
         display: 'flex',
+        flexDirection: effectiveAlign === 'right' ? 'row-reverse' : 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: effectiveAlign === 'center' && team.score === undefined ? 'center' : 'space-between',
+        gap: '6px',
         position: 'relative',
         boxShadow: isWinner ? '0 2px 6px rgba(2, 132, 199,0.14)' : '0 1px 2px rgba(0,0,0,0.05)',
         transition: 'all 0.15s ease',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden', flex: 1 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: effectiveAlign === 'right' ? 'row-reverse' : 'row',
+          alignItems: 'center',
+          justifyContent:
+            effectiveAlign === 'center'
+              ? 'center'
+              : effectiveAlign === 'right'
+              ? 'flex-end'
+              : 'flex-start',
+          gap: '5px',
+          overflow: 'hidden',
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
         {team.seed && (
-          <span style={{ fontSize: '9px', color: 'var(--text-muted, #94a3b8)', fontWeight: 800 }}>
+          <span style={{ fontSize: '9px', color: 'var(--text-muted, #94a3b8)', fontWeight: 800, flexShrink: 0 }}>
             {team.seed}
           </span>
         )}
@@ -166,8 +188,9 @@ function MatchNodeBox({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            textAlign: align,
-            maxWidth: team.score !== undefined ? '80px' : '110px',
+            textAlign: effectiveAlign,
+            flex: effectiveAlign === 'center' ? undefined : 1,
+            minWidth: 0,
           }}
           title={team.name}
         >
@@ -186,7 +209,6 @@ function MatchNodeBox({
             padding: '1px 5px',
             borderRadius: '4px',
             flexShrink: 0,
-            marginLeft: '4px',
           }}
         >
           {team.score}
@@ -285,13 +307,15 @@ function MatchNumberBadge({
 export default function TournamentTreeBracket({
   initialSportId = 's1',
   showSportSelector = true,
+  isPublicView = false,
   onSportChange,
 }: {
   initialSportId?: string;
   showSportSelector?: boolean;
+  isPublicView?: boolean;
   onSportChange?: (sportId: string) => void;
 }) {
-  const { matches, teams, deleteBracket, currentUser } = useApp();
+  const { matches, teams, deleteBracket, currentUser, activeView } = useApp();
   const [selectedSport, setSelectedSport] = useState<string>(initialSportId || 's1');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -300,18 +324,6 @@ export default function TournamentTreeBracket({
       setSelectedSport(initialSportId);
     }
   }, [initialSportId]);
-
-  // Auto-center horizontal scroll viewport on the Gold Medal Final on mount / sport change
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      const el = scrollContainerRef.current;
-      // 1260px total canvas width; Gold Medal Final box center is X = 630px
-      const targetScroll = 630 - (el.clientWidth / 2);
-      if (targetScroll > 0) {
-        el.scrollLeft = targetScroll;
-      }
-    }
-  }, [selectedSport]);
 
   const handleSelectSport = (sportId: string) => {
     setSelectedSport(sportId);
@@ -674,6 +686,15 @@ export default function TournamentTreeBracket({
     };
   }, [matches, teams, selectedSport, sportMeta]);
 
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const el = scrollContainerRef.current;
+      const canvasWidth = treeData.hasR16 ? 1260 : 920;
+      const targetScroll = (canvasWidth - el.clientWidth) / 2;
+      el.scrollLeft = targetScroll > 0 ? targetScroll : 0;
+    }
+  }, [selectedSport, treeData.hasR16]);
+
   return (
     <div style={{
       display: 'flex',
@@ -773,7 +794,7 @@ export default function TournamentTreeBracket({
             Single Elimination Structure · {treeData.totalTeams ?? 16} Teams ({treeData.hasR16 ? 'Round of 16 to Championship Gold' : 'Quarter-Finals to Championship Gold'})
           </p>
 
-          {(currentUser?.role === 'director' || currentUser?.role === 'coordinator') && (
+          {activeView !== 'public' && !isPublicView && showSportSelector && (currentUser?.role === 'director' || currentUser?.role === 'coordinator') && (
             <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
               <button
                 type="button"
@@ -803,7 +824,7 @@ export default function TournamentTreeBracket({
           )}
         </div>
 
-        {/* Dedicated Horizontal Scroll Viewport for the 1260px Bracket Tree */}
+        {/* Dedicated Horizontal Scroll Viewport for the Symmetrical Bracket Tree */}
         <div
           ref={scrollContainerRef}
           className="bracket-tree-scroll-container"
@@ -815,261 +836,267 @@ export default function TournamentTreeBracket({
             paddingBottom: '12px',
           }}
         >
-          {/* ── Mathematical 1260px x 425px Canvas ────────────────────────────── */}
-          <div style={{ position: 'relative', width: '1260px', minWidth: '1260px', height: '425px', margin: '0 auto' }}>
-          
-          {/* ── EXACT MATHEMATICAL SVG CONNECTOR NETWORK (ZERO MISALIGNMENT) ── */}
-          <svg
-            width="1260"
-            height="425"
-            style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 1 }}
-          >
-            {/* ── LEFT: R16 to QF (Only if Round of 16 exists in this tournament) ── */}
-            {treeData.hasR16 && (
-              <>
-                {/* Pair 1 (boxes at 33 & 73 -> QF at 53) */}
-                <path d="M 156 33 H 173 V 73 H 156 M 88 53 H 190" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-                {/* Pair 2 (boxes at 127 & 167 -> QF at 147) */}
-                <path d="M 156 127 H 173 V 167 H 156 M 88 147 H 190" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-                {/* Pair 3 (boxes at 253 & 293 -> QF at 273) */}
-                <path d="M 156 253 H 173 V 293 H 156 M 88 273 H 190" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-                {/* Pair 4 (boxes at 347 & 387 -> QF at 367) */}
-                <path d="M 156 347 H 173 V 387 H 156 M 88 367 H 190" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-              </>
-            )}
-
-            {/* ── LEFT: QF to SF (Anchored across match badges directly to SF nodes) ── */}
-            {/* Upper QF (53 & 147 -> stem at 100 through Match #1 badge to SF Upper box at 365) */}
-            <path d="M 326 53 H 345 V 147 H 326 M 258 100 H 365" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-            {/* Lower QF (273 & 367 -> stem at 320 through Match #2 badge to SF Lower box at 365) */}
-            <path d="M 326 273 H 345 V 367 H 326 M 258 320 H 365" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-
-            {/* ── LEFT: SF to Final (Anchored across Match #5 badge directly to Championship Final at 540) ── */}
-            {/* Left SF (100 & 320 -> stem at 210 through Match #5 badge to Gold Medal Final box at 540) */}
-            <path d="M 501 100 H 520 V 320 H 501 M 433 210 H 540" stroke="var(--border)" strokeWidth="2" fill="none" />
-
-            {/* ── RIGHT: Final to SF (Anchored across Match #6 badge directly to Championship Final at 720) ── */}
-            {/* Right SF (100 & 320 -> stem at 210 through Match #6 badge to Gold Medal Final box at 720) */}
-            <path d="M 759 100 H 740 V 320 H 759 M 827 210 H 720" stroke="var(--border)" strokeWidth="2" fill="none" />
-
-            {/* ── RIGHT: SF to QF (Anchored across match badges directly to SF nodes) ── */}
-            {/* Upper QF (53 & 147 -> stem at 100 through Match #3 badge to SF Upper box at 895) */}
-            <path d="M 934 53 H 915 V 147 H 934 M 1002 100 H 895" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-            {/* Lower QF (273 & 367 -> stem at 320 through Match #4 badge to SF Lower box at 895) */}
-            <path d="M 934 273 H 915 V 367 H 934 M 1002 320 H 895" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-
-            {/* ── RIGHT: QF to R16 (Only if Round of 16 exists in this tournament) ── */}
-            {treeData.hasR16 && (
-              <>
-                {/* Pair 1 (boxes at 33 & 73 -> QF at 53) */}
-                <path d="M 1104 33 H 1087 V 73 H 1104 M 1172 53 H 1070" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-                {/* Pair 2 (boxes at 127 & 167 -> QF at 147) */}
-                <path d="M 1104 127 H 1087 V 167 H 1104 M 1172 147 H 1070" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-                {/* Pair 3 (boxes at 253 & 293 -> QF at 273) */}
-                <path d="M 1104 253 H 1087 V 293 H 1104 M 1172 273 H 1070" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-                {/* Pair 4 (boxes at 347 & 387 -> QF at 367) */}
-                <path d="M 1104 347 H 1087 V 387 H 1104 M 1172 367 H 1070" stroke="var(--border)" strokeWidth="1.75" fill="none" />
-              </>
-            )}
-          </svg>
-
-          {/* ── ROUND LABELS BAR (Mathematically aligned to each column's exact horizontal position) ── */}
-          <div style={{
-            position: 'absolute',
-            top: '-4px',
-            left: 0,
-            width: '100%',
-            height: '20px',
-            zIndex: 3,
-            pointerEvents: 'none',
-          }}>
-            {treeData.hasR16 && (
-              <span style={{ position: 'absolute', left: '20px', width: '136px', textAlign: 'center', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Round of 16
-              </span>
-            )}
-            <span style={{ position: 'absolute', left: '190px', width: '136px', textAlign: 'center', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Quarter-Finals
-            </span>
-            <span style={{ position: 'absolute', left: '365px', width: '136px', textAlign: 'center', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Semi-Finals
-            </span>
-            <span style={{ position: 'absolute', left: '540px', width: '180px', textAlign: 'center', fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Championship Final
-            </span>
-            <span style={{ position: 'absolute', left: '759px', width: '136px', textAlign: 'center', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Semi-Finals
-            </span>
-            <span style={{ position: 'absolute', left: '934px', width: '136px', textAlign: 'center', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Quarter-Finals
-            </span>
-            {treeData.hasR16 && (
-              <span style={{ position: 'absolute', left: '1104px', width: '136px', textAlign: 'center', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Round of 16
-              </span>
-            )}
-          </div>
-
-          {/* ── LEFT COLUMN 1: ROUND OF 16 (X = 20) (Rendered only if R16 exists) ── */}
-          {treeData.hasR16 && (
-            <>
-              <div style={{ position: 'absolute', left: '20px', top: '16px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[0][0]} /></div>
-              <div style={{ position: 'absolute', left: '20px', top: '56px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[0][1]} /></div>
-              {treeData.matchLabels?.r16[0] && <MatchNumberBadge num={treeData.matchLabels.r16[0].num} status={treeData.matchLabels.r16[0].status} isNextUp={treeData.matchLabels.r16[0].isNextUp} left={88} top={53} />}
-              
-              <div style={{ position: 'absolute', left: '20px', top: '110px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[1][0]} /></div>
-              <div style={{ position: 'absolute', left: '20px', top: '150px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[1][1]} /></div>
-              {treeData.matchLabels?.r16[1] && <MatchNumberBadge num={treeData.matchLabels.r16[1].num} status={treeData.matchLabels.r16[1].status} isNextUp={treeData.matchLabels.r16[1].isNextUp} left={88} top={147} />}
-
-              <div style={{ position: 'absolute', left: '20px', top: '236px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[2][0]} /></div>
-              <div style={{ position: 'absolute', left: '20px', top: '276px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[2][1]} /></div>
-              {treeData.matchLabels?.r16[2] && <MatchNumberBadge num={treeData.matchLabels.r16[2].num} status={treeData.matchLabels.r16[2].status} isNextUp={treeData.matchLabels.r16[2].isNextUp} left={88} top={273} />}
-
-              <div style={{ position: 'absolute', left: '20px', top: '330px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[3][0]} /></div>
-              <div style={{ position: 'absolute', left: '20px', top: '370px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[3][1]} /></div>
-              {treeData.matchLabels?.r16[3] && <MatchNumberBadge num={treeData.matchLabels.r16[3].num} status={treeData.matchLabels.r16[3].status} isNextUp={treeData.matchLabels.r16[3].isNextUp} left={88} top={367} />}
-            </>
-          )}
-
-          {/* ── LEFT COLUMN 2: QUARTER-FINALS (X = 190) ──────────────────────── */}
-          <div style={{ position: 'absolute', left: '190px', top: '36px', zIndex: 2 }}><MatchNodeBox team={treeData.leftQF[0][0]} /></div>
-          <div style={{ position: 'absolute', left: '190px', top: '130px', zIndex: 2 }}><MatchNodeBox team={treeData.leftQF[0][1]} /></div>
-          {treeData.matchLabels?.qf[0] && <MatchNumberBadge num={treeData.matchLabels.qf[0].num} status={treeData.matchLabels.qf[0].status} isNextUp={treeData.matchLabels.qf[0].isNextUp} left={258} top={100} />}
-
-          <div style={{ position: 'absolute', left: '190px', top: '256px', zIndex: 2 }}><MatchNodeBox team={treeData.leftQF[1][0]} /></div>
-          <div style={{ position: 'absolute', left: '190px', top: '350px', zIndex: 2 }}><MatchNodeBox team={treeData.leftQF[1][1]} /></div>
-          {treeData.matchLabels?.qf[1] && <MatchNumberBadge num={treeData.matchLabels.qf[1].num} status={treeData.matchLabels.qf[1].status} isNextUp={treeData.matchLabels.qf[1].isNextUp} left={258} top={320} />}
-
-          {/* ── LEFT COLUMN 3: SEMI-FINALS (X = 365) ─────────────────────────── */}
-          <div style={{ position: 'absolute', left: '365px', top: '83px', zIndex: 2 }}><MatchNodeBox team={treeData.leftSF[0]} /></div>
-          <div style={{ position: 'absolute', left: '365px', top: '303px', zIndex: 2 }}><MatchNodeBox team={treeData.leftSF[1]} /></div>
-          {treeData.matchLabels?.sf[0] && <MatchNumberBadge num={treeData.matchLabels.sf[0].num} status={treeData.matchLabels.sf[0].status} isNextUp={treeData.matchLabels.sf[0].isNextUp} left={433} top={210} />}
-
-          {/* ── CENTER: CHAMPIONSHIP FINAL & TROPHY (X = 540) ────────────────── */}
-          <div
-            style={{
+          {(() => {
+            const hasR16 = Boolean(treeData.hasR16);
+            const xOffset = hasR16 ? 0 : 170;
+            const canvasWidth = hasR16 ? 1260 : 920;
+            const x = (val: number) => val - xOffset;
+            const roundLabelStyle = (leftPx: number, widthPx: number, isFinal = false): React.CSSProperties => ({
               position: 'absolute',
-              left: '540px',
-              top: '112px',
-              width: '180px',
-              zIndex: 4,
+              top: 0,
+              left: `${leftPx}px`,
+              width: `${widthPx}px`,
+              height: '22px',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: 'center',
               textAlign: 'center',
-              background: 'var(--bg-elevated)',
-              padding: '12px 12px',
-              borderRadius: '14px',
-              border: '2px solid var(--accent)',
-              boxShadow: '0 8px 24px rgba(2, 132, 199,0.18)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-              <TrophyIcon size={16} color="#eab308" />
-              <span style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Gold Medal Final
-              </span>
-            </div>
-
-            {treeData.matchLabels?.final && (
-              <div style={{
-                marginBottom: '6px',
-                padding: '2px 8px',
-                borderRadius: '999px',
-                fontSize: '9.5px',
-                fontWeight: 900,
-                background: treeData.matchLabels.final.status === 'live'
-                  ? '#0284c7'
-                  : treeData.matchLabels.final.isNextUp
-                  ? '#0ea5e9'
-                  : 'rgba(2, 132, 199, 0.14)',
-                color: treeData.matchLabels.final.status === 'live' || treeData.matchLabels.final.isNextUp
-                  ? '#ffffff'
-                  : 'var(--accent)',
-                border: '1px solid rgba(2, 132, 199, 0.35)',
-              }}>
-                Match #{treeData.matchLabels.final.num}
-                {treeData.matchLabels.final.status === 'live' ? ' • LIVE' : treeData.matchLabels.final.isNextUp ? ' • NEXT' : ''}
-              </div>
-            )}
-
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
-              <MatchNodeBox team={treeData.final.teamA} align="center" />
-              <div style={{ fontSize: '10px', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>
-                VS
-              </div>
-              <MatchNodeBox team={treeData.final.teamB} align="center" />
-            </div>
-
-            <div style={{
-              background: treeData.final.isLive
-                ? 'linear-gradient(135deg, #38bdf8, #0284c7)'
-                : (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD')
-                  ? 'linear-gradient(135deg, #f59e0b, #d97706)'
-                  : 'var(--bg-card)',
-              color: (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD') || treeData.final.isLive ? '#fff' : 'var(--text-muted)',
-              border: (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD') || treeData.final.isLive ? 'none' : '1px solid var(--border)',
-              padding: '6px 14px',
-              borderRadius: '20px',
-              fontSize: '11px',
+              fontSize: isFinal ? '10.5px' : '10px',
               fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              maxWidth: '100%',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              lineHeight: 1,
               whiteSpace: 'nowrap',
-              boxShadow: (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD')
-                ? '0 4px 14px rgba(245, 158, 11, 0.35)'
-                : 'none',
-            }}>
-              <span>
-                {treeData.final.isLive
-                  ? 'Live in Progress'
-                  : (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD')
-                    ? treeData.final.champion
-                    : 'To Be Decided'}
-              </span>
-            </div>
-          </div>
+              color: isFinal ? 'var(--accent)' : 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: isFinal ? '0.08em' : '0.06em',
+            });
 
-          {/* ── RIGHT COLUMN 3: SEMI-FINALS (X = 759) ────────────────────────── */}
-          <div style={{ position: 'absolute', left: '759px', top: '83px', zIndex: 2 }}><MatchNodeBox team={treeData.rightSF[0]} align="right" /></div>
-          <div style={{ position: 'absolute', left: '759px', top: '303px', zIndex: 2 }}><MatchNodeBox team={treeData.rightSF[1]} align="right" /></div>
-          {treeData.matchLabels?.sf[1] && <MatchNumberBadge num={treeData.matchLabels.sf[1].num} status={treeData.matchLabels.sf[1].status} isNextUp={treeData.matchLabels.sf[1].isNextUp} left={827} top={210} />}
+            return (
+              /* ── Mathematical Symmetrical Canvas (920px for 8-Team / 1260px for 16-Team) ── */
+              <div
+                style={{
+                  position: 'relative',
+                  width: `${canvasWidth}px`,
+                  minWidth: `${canvasWidth}px`,
+                  height: '425px',
+                  margin: '0 auto',
+                }}
+              >
+                {/* ── EXACT MATHEMATICAL SVG CONNECTOR NETWORK (ZERO MISALIGNMENT) ── */}
+                <svg
+                  width={canvasWidth}
+                  height="425"
+                  style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 1 }}
+                >
+                  {/* ── LEFT: R16 to QF (Only if Round of 16 exists in this tournament) ── */}
+                  {hasR16 && (
+                    <>
+                      <path d={`M ${x(156)} 33 H ${x(173)} V 73 H ${x(156)} M ${x(88)} 53 H ${x(190)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                      <path d={`M ${x(156)} 127 H ${x(173)} V 167 H ${x(156)} M ${x(88)} 147 H ${x(190)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                      <path d={`M ${x(156)} 253 H ${x(173)} V 293 H ${x(156)} M ${x(88)} 273 H ${x(190)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                      <path d={`M ${x(156)} 347 H ${x(173)} V 387 H ${x(156)} M ${x(88)} 367 H ${x(190)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                    </>
+                  )}
 
-          {/* ── RIGHT COLUMN 2: QUARTER-FINALS (X = 934) ─────────────────────── */}
-          <div style={{ position: 'absolute', left: '934px', top: '36px', zIndex: 2 }}><MatchNodeBox team={treeData.rightQF[0][0]} align="right" /></div>
-          <div style={{ position: 'absolute', left: '934px', top: '130px', zIndex: 2 }}><MatchNodeBox team={treeData.rightQF[0][1]} align="right" /></div>
-          {treeData.matchLabels?.qf[2] && <MatchNumberBadge num={treeData.matchLabels.qf[2].num} status={treeData.matchLabels.qf[2].status} isNextUp={treeData.matchLabels.qf[2].isNextUp} left={1002} top={100} />}
+                  {/* ── LEFT: QF to SF (Anchored across match badges directly to SF nodes) ── */}
+                  <path d={`M ${x(326)} 53 H ${x(345)} V 147 H ${x(326)} M ${x(258)} 100 H ${x(365)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                  <path d={`M ${x(326)} 273 H ${x(345)} V 367 H ${x(326)} M ${x(258)} 320 H ${x(365)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
 
-          <div style={{ position: 'absolute', left: '934px', top: '256px', zIndex: 2 }}><MatchNodeBox team={treeData.rightQF[1][0]} align="right" /></div>
-          <div style={{ position: 'absolute', left: '934px', top: '350px', zIndex: 2 }}><MatchNodeBox team={treeData.rightQF[1][1]} align="right" /></div>
-          {treeData.matchLabels?.qf[3] && <MatchNumberBadge num={treeData.matchLabels.qf[3].num} status={treeData.matchLabels.qf[3].status} isNextUp={treeData.matchLabels.qf[3].isNextUp} left={1002} top={320} />}
+                  {/* ── LEFT: SF to Final (Anchored across Match #5 badge directly to Championship Final) ── */}
+                  <path d={`M ${x(501)} 100 H ${x(520)} V 320 H ${x(501)} M ${x(433)} 210 H ${x(540)}`} stroke="var(--border)" strokeWidth="2" fill="none" />
 
-          {/* ── RIGHT COLUMN 1: ROUND OF 16 (X = 1104) (Rendered only if R16 exists) ── */}
-          {treeData.hasR16 && (
-            <>
-              <div style={{ position: 'absolute', left: '1104px', top: '16px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[0][0]} align="right" /></div>
-              <div style={{ position: 'absolute', left: '1104px', top: '56px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[0][1]} align="right" /></div>
-              {treeData.matchLabels?.r16[4] && <MatchNumberBadge num={treeData.matchLabels.r16[4].num} status={treeData.matchLabels.r16[4].status} isNextUp={treeData.matchLabels.r16[4].isNextUp} left={1172} top={53} />}
+                  {/* ── RIGHT: Final to SF (Anchored across Match #6 badge directly to Championship Final) ── */}
+                  <path d={`M ${x(759)} 100 H ${x(740)} V 320 H ${x(759)} M ${x(827)} 210 H ${x(720)}`} stroke="var(--border)" strokeWidth="2" fill="none" />
 
-              <div style={{ position: 'absolute', left: '1104px', top: '110px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[1][0]} align="right" /></div>
-              <div style={{ position: 'absolute', left: '1104px', top: '150px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[1][1]} align="right" /></div>
-              {treeData.matchLabels?.r16[5] && <MatchNumberBadge num={treeData.matchLabels.r16[5].num} status={treeData.matchLabels.r16[5].status} isNextUp={treeData.matchLabels.r16[5].isNextUp} left={1172} top={147} />}
+                  {/* ── RIGHT: SF to QF (Anchored across match badges directly to SF nodes) ── */}
+                  <path d={`M ${x(934)} 53 H ${x(915)} V 147 H ${x(934)} M ${x(1002)} 100 H ${x(895)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                  <path d={`M ${x(934)} 273 H ${x(915)} V 367 H ${x(934)} M ${x(1002)} 320 H ${x(895)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
 
-              <div style={{ position: 'absolute', left: '1104px', top: '236px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[2][0]} align="right" /></div>
-              <div style={{ position: 'absolute', left: '1104px', top: '276px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[2][1]} align="right" /></div>
-              {treeData.matchLabels?.r16[6] && <MatchNumberBadge num={treeData.matchLabels.r16[6].num} status={treeData.matchLabels.r16[6].status} isNextUp={treeData.matchLabels.r16[6].isNextUp} left={1172} top={273} />}
+                  {/* ── RIGHT: QF to R16 (Only if Round of 16 exists in this tournament) ── */}
+                  {hasR16 && (
+                    <>
+                      <path d={`M ${x(1104)} 33 H ${x(1087)} V 73 H ${x(1104)} M ${x(1172)} 53 H ${x(1070)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                      <path d={`M ${x(1104)} 127 H ${x(1087)} V 167 H ${x(1104)} M ${x(1172)} 147 H ${x(1070)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                      <path d={`M ${x(1104)} 253 H ${x(1087)} V 293 H ${x(1104)} M ${x(1172)} 273 H ${x(1070)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                      <path d={`M ${x(1104)} 347 H ${x(1087)} V 387 H ${x(1104)} M ${x(1172)} 367 H ${x(1070)}`} stroke="var(--border)" strokeWidth="1.75" fill="none" />
+                    </>
+                  )}
+                </svg>
 
-              <div style={{ position: 'absolute', left: '1104px', top: '330px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[3][0]} align="right" /></div>
-              <div style={{ position: 'absolute', left: '1104px', top: '370px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[3][1]} align="right" /></div>
-              {treeData.matchLabels?.r16[7] && <MatchNumberBadge num={treeData.matchLabels.r16[7].num} status={treeData.matchLabels.r16[7].status} isNextUp={treeData.matchLabels.r16[7].isNextUp} left={1172} top={367} />}
-            </>
-          )}
+                {/* ── ROUND LABELS BAR (Mathematically aligned to each column's exact horizontal position) ── */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '0px',
+                    left: 0,
+                    width: '100%',
+                    height: '22px',
+                    zIndex: 3,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {hasR16 && <span style={roundLabelStyle(x(20), 136)}>Round of 16</span>}
+                  <span style={roundLabelStyle(x(190), 136)}>Quarter-Finals</span>
+                  <span style={roundLabelStyle(x(365), 136)}>Semi-Finals</span>
+                  <span style={roundLabelStyle(x(540), 180, true)}>Championship Final</span>
+                  <span style={roundLabelStyle(x(759), 136)}>Semi-Finals</span>
+                  <span style={roundLabelStyle(x(934), 136)}>Quarter-Finals</span>
+                  {hasR16 && <span style={roundLabelStyle(x(1104), 136)}>Round of 16</span>}
+                </div>
 
-        </div>
+                {/* ── LEFT COLUMN 1: ROUND OF 16 (Rendered only if R16 exists) ── */}
+                {hasR16 && (
+                  <>
+                    <div style={{ position: 'absolute', left: `${x(20)}px`, top: '16px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[0][0]} /></div>
+                    <div style={{ position: 'absolute', left: `${x(20)}px`, top: '56px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[0][1]} /></div>
+                    {treeData.matchLabels?.r16[0] && <MatchNumberBadge num={treeData.matchLabels.r16[0].num} status={treeData.matchLabels.r16[0].status} isNextUp={treeData.matchLabels.r16[0].isNextUp} left={x(88)} top={53} />}
+
+                    <div style={{ position: 'absolute', left: `${x(20)}px`, top: '110px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[1][0]} /></div>
+                    <div style={{ position: 'absolute', left: `${x(20)}px`, top: '150px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[1][1]} /></div>
+                    {treeData.matchLabels?.r16[1] && <MatchNumberBadge num={treeData.matchLabels.r16[1].num} status={treeData.matchLabels.r16[1].status} isNextUp={treeData.matchLabels.r16[1].isNextUp} left={x(88)} top={147} />}
+
+                    <div style={{ position: 'absolute', left: `${x(20)}px`, top: '236px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[2][0]} /></div>
+                    <div style={{ position: 'absolute', left: `${x(20)}px`, top: '276px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[2][1]} /></div>
+                    {treeData.matchLabels?.r16[2] && <MatchNumberBadge num={treeData.matchLabels.r16[2].num} status={treeData.matchLabels.r16[2].status} isNextUp={treeData.matchLabels.r16[2].isNextUp} left={x(88)} top={273} />}
+
+                    <div style={{ position: 'absolute', left: `${x(20)}px`, top: '330px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[3][0]} /></div>
+                    <div style={{ position: 'absolute', left: `${x(20)}px`, top: '370px', zIndex: 2 }}><MatchNodeBox team={treeData.leftR16[3][1]} /></div>
+                    {treeData.matchLabels?.r16[3] && <MatchNumberBadge num={treeData.matchLabels.r16[3].num} status={treeData.matchLabels.r16[3].status} isNextUp={treeData.matchLabels.r16[3].isNextUp} left={x(88)} top={367} />}
+                  </>
+                )}
+
+                {/* ── LEFT COLUMN 2: QUARTER-FINALS ──────────────────────── */}
+                <div style={{ position: 'absolute', left: `${x(190)}px`, top: '36px', zIndex: 2 }}><MatchNodeBox team={treeData.leftQF[0][0]} /></div>
+                <div style={{ position: 'absolute', left: `${x(190)}px`, top: '130px', zIndex: 2 }}><MatchNodeBox team={treeData.leftQF[0][1]} /></div>
+                {treeData.matchLabels?.qf[0] && <MatchNumberBadge num={treeData.matchLabels.qf[0].num} status={treeData.matchLabels.qf[0].status} isNextUp={treeData.matchLabels.qf[0].isNextUp} left={x(258)} top={100} />}
+
+                <div style={{ position: 'absolute', left: `${x(190)}px`, top: '256px', zIndex: 2 }}><MatchNodeBox team={treeData.leftQF[1][0]} /></div>
+                <div style={{ position: 'absolute', left: `${x(190)}px`, top: '350px', zIndex: 2 }}><MatchNodeBox team={treeData.leftQF[1][1]} /></div>
+                {treeData.matchLabels?.qf[1] && <MatchNumberBadge num={treeData.matchLabels.qf[1].num} status={treeData.matchLabels.qf[1].status} isNextUp={treeData.matchLabels.qf[1].isNextUp} left={x(258)} top={320} />}
+
+                {/* ── LEFT COLUMN 3: SEMI-FINALS ─────────────────────────── */}
+                <div style={{ position: 'absolute', left: `${x(365)}px`, top: '83px', zIndex: 2 }}><MatchNodeBox team={treeData.leftSF[0]} /></div>
+                <div style={{ position: 'absolute', left: `${x(365)}px`, top: '303px', zIndex: 2 }}><MatchNodeBox team={treeData.leftSF[1]} /></div>
+                {treeData.matchLabels?.sf[0] && <MatchNumberBadge num={treeData.matchLabels.sf[0].num} status={treeData.matchLabels.sf[0].status} isNextUp={treeData.matchLabels.sf[0].isNextUp} left={x(433)} top={210} />}
+
+                {/* ── CENTER: CHAMPIONSHIP FINAL & TROPHY ────────────────── */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: `${x(540)}px`,
+                    top: '104px',
+                    width: '180px',
+                    boxSizing: 'border-box',
+                    zIndex: 4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    background: 'var(--bg-elevated)',
+                    padding: '12px 12px',
+                    borderRadius: '14px',
+                    border: '2px solid var(--accent)',
+                    boxShadow: '0 8px 24px rgba(2, 132, 199,0.18)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <TrophyIcon size={16} color="#eab308" />
+                    <span style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Gold Medal Final
+                    </span>
+                  </div>
+
+                  {treeData.matchLabels?.final && (
+                    <div style={{
+                      marginBottom: '6px',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      fontSize: '9.5px',
+                      fontWeight: 900,
+                      background: treeData.matchLabels.final.status === 'live'
+                        ? '#0284c7'
+                        : treeData.matchLabels.final.isNextUp
+                        ? '#0ea5e9'
+                        : 'rgba(2, 132, 199, 0.14)',
+                      color: treeData.matchLabels.final.status === 'live' || treeData.matchLabels.final.isNextUp
+                        ? '#ffffff'
+                        : 'var(--accent)',
+                      border: '1px solid rgba(2, 132, 199, 0.35)',
+                    }}>
+                      Match #{treeData.matchLabels.final.num}
+                      {treeData.matchLabels.final.status === 'live' ? ' • LIVE' : treeData.matchLabels.final.isNextUp ? ' • NEXT' : ''}
+                    </div>
+                  )}
+
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                    <MatchNodeBox team={treeData.final.teamA} align="center" fullWidth />
+                    <div style={{ fontSize: '10px', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.08em', lineHeight: 1 }}>
+                      VS
+                    </div>
+                    <MatchNodeBox team={treeData.final.teamB} align="center" fullWidth />
+                  </div>
+
+                  <div style={{
+                    background: treeData.final.isLive
+                      ? 'linear-gradient(135deg, #38bdf8, #0284c7)'
+                      : (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD')
+                        ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                        : 'var(--bg-card)',
+                    color: (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD') || treeData.final.isLive ? '#fff' : 'var(--text-muted)',
+                    border: (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD') || treeData.final.isLive ? 'none' : '1px solid var(--border)',
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    boxShadow: (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD')
+                      ? '0 4px 14px rgba(245, 158, 11, 0.35)'
+                      : 'none',
+                  }}>
+                    <span>
+                      {treeData.final.isLive
+                        ? 'Live in Progress'
+                        : (treeData.final.champion && treeData.final.champion !== 'To Be Decided' && treeData.final.champion !== 'TBD')
+                          ? treeData.final.champion
+                          : 'To Be Decided'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* ── RIGHT COLUMN 3: SEMI-FINALS ────────────────────────── */}
+                <div style={{ position: 'absolute', left: `${x(759)}px`, top: '83px', zIndex: 2 }}><MatchNodeBox team={treeData.rightSF[0]} align="right" /></div>
+                <div style={{ position: 'absolute', left: `${x(759)}px`, top: '303px', zIndex: 2 }}><MatchNodeBox team={treeData.rightSF[1]} align="right" /></div>
+                {treeData.matchLabels?.sf[1] && <MatchNumberBadge num={treeData.matchLabels.sf[1].num} status={treeData.matchLabels.sf[1].status} isNextUp={treeData.matchLabels.sf[1].isNextUp} left={x(827)} top={210} />}
+
+                {/* ── RIGHT COLUMN 2: QUARTER-FINALS ─────────────────────── */}
+                <div style={{ position: 'absolute', left: `${x(934)}px`, top: '36px', zIndex: 2 }}><MatchNodeBox team={treeData.rightQF[0][0]} align="right" /></div>
+                <div style={{ position: 'absolute', left: `${x(934)}px`, top: '130px', zIndex: 2 }}><MatchNodeBox team={treeData.rightQF[0][1]} align="right" /></div>
+                {treeData.matchLabels?.qf[2] && <MatchNumberBadge num={treeData.matchLabels.qf[2].num} status={treeData.matchLabels.qf[2].status} isNextUp={treeData.matchLabels.qf[2].isNextUp} left={x(1002)} top={100} />}
+
+                <div style={{ position: 'absolute', left: `${x(934)}px`, top: '256px', zIndex: 2 }}><MatchNodeBox team={treeData.rightQF[1][0]} align="right" /></div>
+                <div style={{ position: 'absolute', left: `${x(934)}px`, top: '350px', zIndex: 2 }}><MatchNodeBox team={treeData.rightQF[1][1]} align="right" /></div>
+                {treeData.matchLabels?.qf[3] && <MatchNumberBadge num={treeData.matchLabels.qf[3].num} status={treeData.matchLabels.qf[3].status} isNextUp={treeData.matchLabels.qf[3].isNextUp} left={x(1002)} top={320} />}
+
+                {/* ── RIGHT COLUMN 1: ROUND OF 16 (Rendered only if R16 exists) ── */}
+                {hasR16 && (
+                  <>
+                    <div style={{ position: 'absolute', left: `${x(1104)}px`, top: '16px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[0][0]} align="right" /></div>
+                    <div style={{ position: 'absolute', left: `${x(1104)}px`, top: '56px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[0][1]} align="right" /></div>
+                    {treeData.matchLabels?.r16[4] && <MatchNumberBadge num={treeData.matchLabels.r16[4].num} status={treeData.matchLabels.r16[4].status} isNextUp={treeData.matchLabels.r16[4].isNextUp} left={x(1172)} top={53} />}
+
+                    <div style={{ position: 'absolute', left: `${x(1104)}px`, top: '110px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[1][0]} align="right" /></div>
+                    <div style={{ position: 'absolute', left: `${x(1104)}px`, top: '150px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[1][1]} align="right" /></div>
+                    {treeData.matchLabels?.r16[5] && <MatchNumberBadge num={treeData.matchLabels.r16[5].num} status={treeData.matchLabels.r16[5].status} isNextUp={treeData.matchLabels.r16[5].isNextUp} left={x(1172)} top={147} />}
+
+                    <div style={{ position: 'absolute', left: `${x(1104)}px`, top: '236px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[2][0]} align="right" /></div>
+                    <div style={{ position: 'absolute', left: `${x(1104)}px`, top: '276px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[2][1]} align="right" /></div>
+                    {treeData.matchLabels?.r16[6] && <MatchNumberBadge num={treeData.matchLabels.r16[6].num} status={treeData.matchLabels.r16[6].status} isNextUp={treeData.matchLabels.r16[6].isNextUp} left={x(1172)} top={273} />}
+
+                    <div style={{ position: 'absolute', left: `${x(1104)}px`, top: '330px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[3][0]} align="right" /></div>
+                    <div style={{ position: 'absolute', left: `${x(1104)}px`, top: '370px', zIndex: 2 }}><MatchNodeBox team={treeData.rightR16[3][1]} align="right" /></div>
+                    {treeData.matchLabels?.r16[7] && <MatchNumberBadge num={treeData.matchLabels.r16[7].num} status={treeData.matchLabels.r16[7].status} isNextUp={treeData.matchLabels.r16[7].isNextUp} left={x(1172)} top={367} />}
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Mobile / Narrow Screen Pan Hint directly below bracket */}

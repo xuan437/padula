@@ -1926,6 +1926,7 @@ export default function GuestPublicPage() {
         <TournamentTreeBracket
           initialSportId={filterSport !== 'all' ? filterSport : 's1'}
           showSportSelector={false}
+          isPublicView={true}
         />
       )}
 

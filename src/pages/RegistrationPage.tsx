@@ -13,6 +13,7 @@ import {
   PlusIcon,
   ShieldIcon,
   TrophyIcon,
+  TrashIcon,
 } from '../components/Icons';
 import { SPORTS_CATALOG, getAllSports, getSportName, getSportIcon } from '../lib/sports';
 import { openGmailCompose } from '../lib/emailApi';
@@ -61,6 +62,10 @@ export default function RegistrationPage() {
     emailSendLogs,
     latestInvitation,
     clearLatestInvitation,
+    removeStaffInvitation,
+    clearUndeliveredInvitations,
+    removeEmailSendLog,
+    clearEmailSendLogs,
     respondToInvitation,
     dispatchInvitationViaApi,
     officials,
@@ -619,13 +624,32 @@ export default function RegistrationPage() {
                 Appointments where automatic email delivery did not complete. Click Resend or use Open in Gmail to send manually.
               </div>
             </div>
-            <button
-              type="button"
-              className="btn btn-xs btn-outline"
-              onClick={() => setShowEmailLogs(p => !p)}
-            >
-              {showEmailLogs ? 'Hide Send Attempt Logs' : `View Send Attempt Logs (${emailSendLogs.length})`}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-xs btn-outline"
+                onClick={() => setShowEmailLogs(p => !p)}
+              >
+                {showEmailLogs ? 'Hide Send Attempt Logs' : `View Send Attempt Logs (${emailSendLogs.length})`}
+              </button>
+              {staffInvitations.some(i => i.apiDeliveryStatus !== 'sent') && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline"
+                  onClick={() => {
+                    if (window.confirm('Delete all undelivered appointments from this list?')) {
+                      clearUndeliveredInvitations();
+                      setSuccessBanner('Cleared all undelivered appointments.');
+                      setTimeout(() => setSuccessBanner(null), 4000);
+                    }
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <TrashIcon size={12} />
+                  <span>Delete All</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {staffInvitations.filter(i => i.apiDeliveryStatus !== 'sent').length > 0 && (
@@ -691,6 +715,20 @@ export default function RegistrationPage() {
                             >
                               View Letter
                             </button>
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-outline"
+                              onClick={() => {
+                                removeStaffInvitation(inv.id);
+                                setSuccessBanner(`Deleted appointment record for ${inv.recipientName} (${inv.recipientEmail}).`);
+                                setTimeout(() => setSuccessBanner(null), 4000);
+                              }}
+                              title={`Delete appointment for ${inv.recipientName}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <TrashIcon size={12} />
+                              <span>Delete</span>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -702,8 +740,21 @@ export default function RegistrationPage() {
 
           {showEmailLogs && (
             <div style={{ paddingTop: '10px', borderTop: '1px solid var(--border-light)' }}>
-              <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                Recorded Email Send Attempts ({emailSendLogs.length})
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                  Recorded Email Send Attempts ({emailSendLogs.length})
+                </div>
+                {emailSendLogs.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-ghost"
+                    onClick={() => clearEmailSendLogs()}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <TrashIcon size={11} />
+                    <span>Clear Logs</span>
+                  </button>
+                )}
               </div>
               {emailSendLogs.length === 0 ? (
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No send attempts recorded yet.</div>
@@ -716,6 +767,7 @@ export default function RegistrationPage() {
                         <th style={{ padding: '6px 8px' }}>Recipient</th>
                         <th style={{ padding: '6px 8px' }}>Result</th>
                         <th style={{ padding: '6px 8px' }}>Failure Reason</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'right' }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -732,6 +784,18 @@ export default function RegistrationPage() {
                           </td>
                           <td style={{ padding: '6px 8px', color: 'var(--text-secondary)' }}>
                             {log.failureReason || '—'}
+                          </td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-ghost"
+                              onClick={() => removeEmailSendLog(log.id)}
+                              title="Delete log entry"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                            >
+                              <TrashIcon size={11} />
+                              <span>Delete</span>
+                            </button>
                           </td>
                         </tr>
                       ))}

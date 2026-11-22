@@ -558,10 +558,10 @@ function CoachAvatarSvg({
               pointDirection === 'right'
                 ? 'rotate(180deg)'
                 : pointDirection === 'up'
-                ? 'rotate(90deg)'
-                : pointDirection === 'down'
-                ? 'rotate(-90deg)'
-                : 'none',
+                  ? 'rotate(90deg)'
+                  : pointDirection === 'down'
+                    ? 'rotate(-90deg)'
+                    : 'none',
           }}
         >
           <circle cx="7" cy="34" r="6" fill="#0284c7" stroke="#ffffff" strokeWidth="1.5" />
@@ -666,7 +666,7 @@ export default function MiniGuideAvatar() {
       if (el) {
         try {
           el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        } catch {}
+        } catch { }
         window.setTimeout(() => {
           setTargetRect(el.getBoundingClientRect());
         }, 260);

@@ -140,6 +140,10 @@ interface AppContextType {
   emailSendLogs: EmailSendLog[];
   latestInvitation: StaffInvitation | null;
   clearLatestInvitation: () => void;
+  removeStaffInvitation: (invitationId: string) => void;
+  clearUndeliveredInvitations: () => void;
+  removeEmailSendLog: (logId: string) => void;
+  clearEmailSendLogs: () => void;
   respondToInvitation: (invitationId: string, decision: 'accepted' | 'declined') => StaffInvitation | null;
   dispatchInvitationViaApi: (invitationId: string, customRecipientEmail?: string) => Promise<{ success: boolean; result?: EmailDispatchResult; error?: string }>;
   completePasswordSetupWithToken: (email: string, rawToken: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
@@ -1349,6 +1353,67 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [staffInvitations, latestInvitation, currentUser, addAuditLog]);
 
+  const removeStaffInvitation = useCallback((invitationId: string) => {
+    const target = staffInvitations.find(i => i.id === invitationId);
+    setStaffInvitations(prev => {
+      const updated = prev.filter(i => i.id !== invitationId);
+      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+    if (latestInvitation?.id === invitationId) {
+      setLatestInvitation(null);
+    }
+    supabase.from('staff_invitations').delete().eq('id', invitationId).then();
+    if (target) {
+      addAuditLog(
+        'account_remove',
+        `Deleted appointment invitation for ${target.recipientName} (${target.recipientEmail})`,
+        invitationId,
+        'StaffInvitation'
+      );
+    }
+  }, [staffInvitations, latestInvitation, addAuditLog]);
+
+  const clearUndeliveredInvitations = useCallback(() => {
+    const undeliveredIds = staffInvitations
+      .filter(i => i.apiDeliveryStatus !== 'sent')
+      .map(i => i.id);
+    if (undeliveredIds.length === 0) return;
+
+    setStaffInvitations(prev => {
+      const updated = prev.filter(i => i.apiDeliveryStatus === 'sent');
+      try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+    if (latestInvitation && undeliveredIds.includes(latestInvitation.id)) {
+      setLatestInvitation(null);
+    }
+    for (const id of undeliveredIds) {
+      supabase.from('staff_invitations').delete().eq('id', id).then();
+    }
+    addAuditLog(
+      'account_remove',
+      `Cleared ${undeliveredIds.length} undelivered appointment invitation(s)`,
+      undefined,
+      'StaffInvitation'
+    );
+  }, [staffInvitations, latestInvitation, addAuditLog]);
+
+  const removeEmailSendLog = useCallback((logId: string) => {
+    setEmailSendLogs(prev => {
+      const updated = prev.filter(l => l.id !== logId);
+      try { localStorage.setItem('padula_email_send_logs', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+    supabase.from('email_send_logs').delete().eq('id', logId).then();
+  }, []);
+
+  const clearEmailSendLogs = useCallback(() => {
+    setEmailSendLogs([]);
+    try { localStorage.setItem('padula_email_send_logs', JSON.stringify([])); } catch {}
+    supabase.from('email_send_logs').delete().neq('id', 'keep_none').then();
+  }, []);
+
   const completePasswordSetupWithToken = useCallback(async (
     email: string,
     rawToken: string,
@@ -1531,6 +1596,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         try { localStorage.setItem('padula_officials', JSON.stringify(updated)); } catch { }
         return updated;
       });
+      setStaffInvitations(prev => {
+        const updated = prev.filter(i =>
+          i.id !== target.invitationId &&
+          i.recipientName.toLowerCase() !== target.name.toLowerCase() &&
+          !(target.email && i.recipientEmail.toLowerCase() === target.email.toLowerCase() && i.role === target.role)
+        );
+        try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch { }
+        return updated;
+      });
     }
     supabase.from('users').delete().eq('id', userId).then();
     supabase.from('staff').delete().eq('id', userId).then();
@@ -1577,6 +1651,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             !(s.role === 'scorer' && (s.name.toLowerCase() === target.name.toLowerCase() || (target.contact && s.email.toLowerCase() === target.contact.toLowerCase())))
           );
           try { localStorage.setItem('padula_staff', JSON.stringify(updated)); } catch { }
+          return updated;
+        });
+        setStaffInvitations(prev => {
+          const updated = prev.filter(i =>
+            i.id !== target.invitationId &&
+            !(i.role === 'scorer' && i.recipientName.toLowerCase() === target.name.toLowerCase())
+          );
+          try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch { }
           return updated;
         });
       }
@@ -4429,7 +4511,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppContext.Provider value={{
       currentUser, setCurrentUser,
-      staff, staffInvitations, emailSendLogs, latestInvitation, clearLatestInvitation, respondToInvitation, dispatchInvitationViaApi,
+      staff, staffInvitations, emailSendLogs, latestInvitation, clearLatestInvitation,
+      removeStaffInvitation, clearUndeliveredInvitations, removeEmailSendLog, clearEmailSendLogs,
+      respondToInvitation, dispatchInvitationViaApi,
       completePasswordSetupWithToken, changeOwnPasswordFirstLogin,
       verifyAndSignInStaff,
       addCoordinator, addScorer, deactivateStaff, removeStaff,
