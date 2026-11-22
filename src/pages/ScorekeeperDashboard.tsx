@@ -532,67 +532,101 @@ function MatchPlayerLineupAndFoulsPanel({
         (foulData.breakdown['Fault Card (Red)'] || 0) > 0
       );
       const activeFoulTypes = Object.entries(foulData.breakdown).filter(([, count]) => count > 0);
+      const paddedJersey = String(p.jerseyNumber || '0').padStart(2, '0');
 
       return (
         <div
           key={p.id}
           style={{
-            padding: '8px 10px',
-            borderRadius: '8px',
+            padding: '12px 14px',
+            borderRadius: '12px',
             background: 'var(--bg-surface)',
             border: isFouledOut
               ? '1.5px solid #ef4444'
               : status === 'in_play'
               ? '1px solid rgba(16, 185, 129, 0.35)'
-              : '1px solid var(--border-light)',
+              : '1px solid rgba(245, 158, 11, 0.35)',
+            boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '10px',
+            boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          {/* Row 1: Jersey + Player Name/Position on left | Foul Pill + Move/Sub button on right */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: '1 1 180px' }}>
               <span
                 style={{
-                  fontSize: '10.5px',
-                  fontWeight: 800,
-                  padding: '1px 6px',
-                  borderRadius: '4px',
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
+                  minWidth: '40px',
+                  height: '30px',
+                  padding: '0 8px',
+                  borderRadius: '8px',
+                  background: status === 'in_play' ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-elevated)',
+                  border: status === 'in_play' ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border)',
+                  color: status === 'in_play' ? '#059669' : 'var(--text-primary)',
                   fontFamily: 'monospace',
+                  fontSize: '12px',
+                  fontWeight: 900,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                #{p.jerseyNumber}
+                #{paddedJersey}
               </span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {p.name}
-              </span>
-              {p.position && (
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                  ({p.position})
+              <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                <span
+                  style={{
+                    fontSize: '13.5px',
+                    fontWeight: 800,
+                    color: 'var(--text-primary)',
+                    lineHeight: 1.2,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {p.name}
                 </span>
-              )}
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', lineHeight: 1.2 }}>
+                  {p.position || 'Varsity Athlete'}
+                </span>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
               <span
                 style={{
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  padding: '2px 7px',
+                  height: '26px',
+                  padding: '0 10px',
                   borderRadius: '999px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  whiteSpace: 'nowrap',
                   background: isFouledOut
                     ? 'rgba(239, 68, 68, 0.16)'
                     : foulData.matchTotal > 0
                     ? 'rgba(245, 158, 11, 0.16)'
                     : 'var(--bg-elevated)',
-                  color: isFouledOut ? '#ef4444' : foulData.matchTotal > 0 ? '#f59e0b' : 'var(--text-muted)',
+                  color: isFouledOut ? '#ef4444' : foulData.matchTotal > 0 ? '#d97706' : 'var(--text-muted)',
                   border: isFouledOut
-                    ? '1px solid rgba(239, 68, 68, 0.4)'
+                    ? '1px solid rgba(239, 68, 68, 0.45)'
                     : foulData.matchTotal > 0
-                    ? '1px solid rgba(245, 158, 11, 0.35)'
-                    : '1px solid var(--border-light)',
+                    ? '1px solid rgba(245, 158, 11, 0.4)'
+                    : '1px solid var(--border)',
                 }}
               >
                 {foulData.matchTotal} Foul{foulData.matchTotal === 1 ? '' : 's'}
@@ -602,14 +636,23 @@ function MatchPlayerLineupAndFoulsPanel({
               {!isLocked && canEdit && (
                 <button
                   type="button"
-                  className="btn btn-xs btn-outline"
                   onClick={() => togglePlayerRosterStatus(p.id, status === 'in_play' ? 'reserved' : 'in_play', match.id)}
                   title={status === 'in_play' ? 'Move player to Reserved (Bench)' : 'Substitute player In Play (On Court)'}
                   style={{
-                    fontSize: '10px',
-                    padding: '2px 7px',
-                    color: status === 'in_play' ? '#f59e0b' : '#10b981',
-                    borderColor: status === 'in_play' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)',
+                    height: '26px',
+                    padding: '0 10px',
+                    borderRadius: '7px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    background: status === 'in_play' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.12)',
+                    color: status === 'in_play' ? '#d97706' : '#059669',
+                    border: status === 'in_play' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)',
                   }}
                 >
                   {status === 'in_play' ? '⇄ Move to Reserved' : '⇄ Sub In Play'}
@@ -618,46 +661,70 @@ function MatchPlayerLineupAndFoulsPanel({
             </div>
           </div>
 
-          {/* Breakdown of recorded fouls on this player */}
+          {/* Row 2: Active Recorded Foul Breakdown Chips */}
           {activeFoulTypes.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: '6px',
+                paddingTop: '6px',
+                borderTop: '1px dashed var(--border-light)',
+              }}
+            >
+              <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Recorded:
+              </span>
               {activeFoulTypes.map(([fType, count]) => (
                 <span
                   key={fType}
                   style={{
-                    fontSize: '9.5px',
+                    height: '23px',
+                    padding: '0 8px',
+                    borderRadius: '6px',
+                    fontSize: '10.5px',
                     fontWeight: 700,
-                    padding: '1.5px 6px',
-                    borderRadius: '4px',
                     background: fType.toLowerCase().includes('red')
-                      ? 'rgba(239, 68, 68, 0.16)'
+                      ? 'rgba(239, 68, 68, 0.15)'
                       : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                      ? 'rgba(245, 158, 11, 0.16)'
-                      : 'rgba(56, 189, 248, 0.12)',
+                      ? 'rgba(245, 158, 11, 0.15)'
+                      : 'rgba(14, 165, 233, 0.12)',
                     color: fType.toLowerCase().includes('red')
                       ? '#ef4444'
                       : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                      ? '#f59e0b'
-                      : '#38bdf8',
+                      ? '#d97706'
+                      : '#0284c7',
+                    border: fType.toLowerCase().includes('red')
+                      ? '1px solid rgba(239, 68, 68, 0.35)'
+                      : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
+                      ? '1px solid rgba(245, 158, 11, 0.35)'
+                      : '1px solid rgba(14, 165, 233, 0.3)',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '4px',
+                    gap: '6px',
                   }}
                 >
-                  <span>{fType}: {count}</span>
+                  <span>{fType}: <strong>{count}</strong></span>
                   {!isLocked && canEdit && (
                     <button
                       type="button"
                       onClick={() => recordPlayerFoul(p.id, fType, -1, match.id)}
                       title={`Remove 1 ${fType}`}
                       style={{
-                        background: 'none',
+                        width: '16px',
+                        height: '16px',
+                        borderRadius: '4px',
+                        background: 'rgba(0,0,0,0.08)',
                         border: 'none',
                         color: 'inherit',
                         cursor: 'pointer',
                         fontWeight: 900,
-                        fontSize: '10px',
-                        padding: '0 2px',
+                        fontSize: '11px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
                         lineHeight: 1,
                       }}
                     >
@@ -669,27 +736,55 @@ function MatchPlayerLineupAndFoulsPanel({
             </div>
           )}
 
-          {/* All Foul Buttons for this game's sport */}
+          {/* Row 3: Uniform Equal-Width Grid of Sport Foul Action Buttons */}
           {!isLocked && canEdit && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', paddingTop: '2px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: '6px',
+                paddingTop: activeFoulTypes.length > 0 ? '2px' : '6px',
+                borderTop: activeFoulTypes.length > 0 ? 'none' : '1px dashed var(--border-light)',
+              }}
+            >
               {foulRules.types.map(ft => (
                 <button
                   key={ft.id}
                   type="button"
-                  className="btn btn-xs btn-ghost"
                   onClick={() => recordPlayerFoul(p.id, ft.id, 1, match.id)}
                   title={`Record ${ft.label} on #${p.jerseyNumber} ${p.name}`}
                   style={{
-                    fontSize: '9.5px',
-                    padding: '2px 6px',
-                    borderRadius: '5px',
-                    border: '1px solid var(--border)',
+                    height: '28px',
+                    padding: '0 8px',
+                    borderRadius: '7px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    background:
+                      ft.severity === 'severe'
+                        ? 'rgba(239, 68, 68, 0.08)'
+                        : ft.severity === 'warning'
+                        ? 'rgba(245, 158, 11, 0.08)'
+                        : 'var(--bg-elevated)',
+                    border:
+                      ft.severity === 'severe'
+                        ? '1px solid rgba(239, 68, 68, 0.35)'
+                        : ft.severity === 'warning'
+                        ? '1px solid rgba(245, 158, 11, 0.35)'
+                        : '1px solid var(--border)',
                     color:
                       ft.severity === 'severe'
                         ? '#ef4444'
                         : ft.severity === 'warning'
-                        ? '#f59e0b'
-                        : 'var(--text-secondary)',
+                        ? '#d97706'
+                        : 'var(--text-primary)',
                   }}
                 >
                   +{ft.shortLabel}
@@ -706,20 +801,45 @@ function MatchPlayerLineupAndFoulsPanel({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
+          gap: '12px',
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border)',
-          borderRadius: '10px',
-          padding: '10px',
+          borderRadius: '14px',
+          padding: '14px',
           minWidth: 0,
+          boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px' }}>
-          <div style={{ fontWeight: 800, fontSize: '12px', color: 'var(--text-primary)' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px',
+            flexWrap: 'wrap',
+            borderBottom: '1px solid var(--border)',
+            paddingBottom: '10px',
+          }}
+        >
+          <div style={{ fontWeight: 900, fontSize: '15px', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
             {teamName || `Team ${side}`}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#f59e0b' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                height: '26px',
+                padding: '0 10px',
+                borderRadius: '999px',
+                fontSize: '11.5px',
+                fontWeight: 800,
+                color: '#d97706',
+                background: 'rgba(245, 158, 11, 0.14)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               Team Fouls: {totalTeamFouls}
             </span>
             {!isLocked && canEdit && (
@@ -727,9 +847,18 @@ function MatchPlayerLineupAndFoulsPanel({
                 type="button"
                 className="btn btn-xs btn-outline"
                 onClick={() => setAddingForSide(prev => (prev === side ? null : side))}
-                style={{ fontSize: '10px', padding: '1px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                style={{
+                  height: '26px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '0 10px',
+                  borderRadius: '7px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
               >
-                <PlusIcon size={10} />
+                <PlusIcon size={11} />
                 <span>Player</span>
               </button>
             )}
@@ -737,18 +866,18 @@ function MatchPlayerLineupAndFoulsPanel({
         </div>
 
         {addingForSide === side && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px', borderRadius: '8px', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', borderRadius: '10px', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
               Add Player to {teamName} Roster
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '65px 1fr', gap: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '75px 1fr', gap: '8px' }}>
               <input
                 type="text"
                 className="form-input"
                 placeholder="Jersey #"
                 value={quickJersey}
                 onChange={e => setQuickJersey(e.target.value)}
-                style={{ fontSize: '11px', padding: '4px 6px' }}
+                style={{ fontSize: '12px', padding: '6px 8px' }}
               />
               <input
                 type="text"
@@ -756,23 +885,23 @@ function MatchPlayerLineupAndFoulsPanel({
                 placeholder="Player Full Name"
                 value={quickName}
                 onChange={e => setQuickName(e.target.value)}
-                style={{ fontSize: '11px', padding: '4px 8px' }}
+                style={{ fontSize: '12px', padding: '6px 10px' }}
               />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px' }}>
               <input
                 type="text"
                 className="form-input"
                 placeholder="Position"
                 value={quickPosition}
                 onChange={e => setQuickPosition(e.target.value)}
-                style={{ fontSize: '11px', padding: '4px 8px' }}
+                style={{ fontSize: '12px', padding: '6px 10px' }}
               />
               <select
                 className="form-input"
                 value={quickStatus}
                 onChange={e => setQuickStatus(e.target.value as PlayerRosterStatus)}
-                style={{ fontSize: '11px', padding: '4px 6px' }}
+                style={{ fontSize: '12px', padding: '6px 8px' }}
               >
                 <option value="in_play">In Play (Active)</option>
                 <option value="reserved">Reserved (Bench)</option>
@@ -781,6 +910,7 @@ function MatchPlayerLineupAndFoulsPanel({
                 type="button"
                 className="btn btn-xs btn-primary"
                 onClick={() => handleQuickAddPlayer(side)}
+                style={{ padding: '0 14px', fontWeight: 700 }}
               >
                 Add
               </button>
@@ -789,13 +919,37 @@ function MatchPlayerLineupAndFoulsPanel({
         )}
 
         {/* IN PLAY SECTION */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              fontSize: '11px',
+              fontWeight: 800,
+              color: '#059669',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
             <span>● In Play (On Court / Active)</span>
-            <span>{inPlayPlayers.length}</span>
+            <span
+              style={{
+                padding: '1px 8px',
+                borderRadius: '999px',
+                background: 'rgba(16, 185, 129, 0.2)',
+                fontWeight: 900,
+              }}
+            >
+              {inPlayPlayers.length}
+            </span>
           </div>
           {inPlayPlayers.length === 0 ? (
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--bg-surface)', borderRadius: '6px', textAlign: 'center' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '12px', background: 'var(--bg-surface)', borderRadius: '10px', textAlign: 'center', border: '1px dashed var(--border)' }}>
               No players currently marked In Play.
             </div>
           ) : (
@@ -804,13 +958,37 @@ function MatchPlayerLineupAndFoulsPanel({
         </div>
 
         {/* RESERVED SECTION */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              fontSize: '11px',
+              fontWeight: 800,
+              color: '#d97706',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
             <span>◐ Reserved (Bench / Substitutes)</span>
-            <span>{reservedPlayers.length}</span>
+            <span
+              style={{
+                padding: '1px 8px',
+                borderRadius: '999px',
+                background: 'rgba(245, 158, 11, 0.2)',
+                fontWeight: 900,
+              }}
+            >
+              {reservedPlayers.length}
+            </span>
           </div>
           {reservedPlayers.length === 0 ? (
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--bg-surface)', borderRadius: '6px', textAlign: 'center' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '12px', background: 'var(--bg-surface)', borderRadius: '10px', textAlign: 'center', border: '1px dashed var(--border)' }}>
               No reserved bench players.
             </div>
           ) : (
