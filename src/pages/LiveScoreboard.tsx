@@ -5,6 +5,7 @@ import { isPlaceholder } from '../lib/bracket';
 import { predictMatch } from '../lib/predictionAi';
 import { MapPinIcon, FlameIcon, TrophyIcon, SparklesIcon, XIcon, LiveIcon } from '../components/Icons';
 import AIPredictionModal from '../components/AIPredictionModal';
+import PublicMatchPlayersFoulsPanel from '../components/PublicMatchPlayersFoulsPanel';
 import { PageHeader, SportFilter, Badge, EmptyState } from '../components/ui';
 import type { Match } from '../types';
 
@@ -330,6 +331,11 @@ export default function LiveScoreboard() {
                       Scorer: {m.scorekeeper || 'Official Scorer'}
                     </span>
                   </div>
+
+                  {/* Live Player List (In Play / Reserved) & All Game Fouls */}
+                  <div style={{ marginTop: 8 }}>
+                    <PublicMatchPlayersFoulsPanel match={m} defaultOpen={true} />
+                  </div>
                 </div>
               );
             })}
@@ -408,6 +414,8 @@ export default function LiveScoreboard() {
                     </span>
                     <span>{info.dateStr} · {info.timeStr}</span>
                   </div>
+
+                  <PublicMatchPlayersFoulsPanel match={m} defaultOpen={m.status === 'live'} />
                 </div>
               );
             })}

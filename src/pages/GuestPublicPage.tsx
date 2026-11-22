@@ -22,17 +22,25 @@ import {
   XIcon,
   CheckIcon,
   ClockIcon,
+  UsersIcon,
 } from '../components/Icons';
 import padulaTitleImg from '../assets/padula-title.png';
 import TournamentTreeBracket from '../components/TournamentTreeBracket';
 import AIPredictionModal from '../components/AIPredictionModal';
 import FloatingDepartmentCards from '../components/FloatingDepartmentCards';
 import DigitalLedClock from '../components/DigitalLedClock';
+import PublicMatchPlayersFoulsPanel from '../components/PublicMatchPlayersFoulsPanel';
+import {
+  getSportFoulRules,
+  getPlayerFoulBreakdown,
+  getPlayerTotalFouls,
+  getPlayerRosterStatus,
+} from '../lib/fouls';
 import { SportFilter } from '../components/ui';
 import { predictMatch } from '../lib/predictionAi';
 import type { Match } from '../types';
 
-type PublicTab = 'live' | 'results' | 'standings' | 'brackets' | 'schedule' | 'tally' | 'announcements' | 'predictions';
+type PublicTab = 'live' | 'results' | 'standings' | 'brackets' | 'schedule' | 'tally' | 'announcements' | 'predictions' | 'players';
 
 // ── Real Scannable QR Code Component (ISO/IEC 18004 SVG) ────────────────────
 function QRCodeDisplay({ url, size = 110 }: { url: string; size?: number }) {
@@ -1039,7 +1047,7 @@ export default function GuestPublicPage() {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
       const t = p.get('tab') as PublicTab;
-      if (['live', 'results', 'standings', 'brackets', 'schedule', 'tally', 'announcements', 'predictions'].includes(t)) {
+      if (['live', 'results', 'standings', 'brackets', 'schedule', 'tally', 'announcements', 'predictions', 'players'].includes(t)) {
         return t;
       }
     }
@@ -1454,6 +1462,7 @@ export default function GuestPublicPage() {
         }}>
           {([
             { id: 'live', label: 'Live', icon: <FlameIcon size={14} />, count: liveMatches.length, visible: true },
+            { id: 'players', label: 'Players & Fouls', icon: <UsersIcon size={14} />, count: players.length, visible: true },
             { id: 'results', label: 'Results', icon: <TrophyIcon size={14} />, count: finishedMatches.length, visible: true },
             { id: 'standings', label: 'Standings', icon: <MedalIcon size={14} />, count: undefined, visible: settings?.publicDisplay?.showPublicStandings !== false },
             { id: 'brackets', label: 'Brackets', icon: <BracketsIcon size={14} />, count: undefined, visible: settings?.publicDisplay?.showPublicBrackets !== false },
@@ -1730,6 +1739,9 @@ export default function GuestPublicPage() {
                       <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Active</span>
                     </div>
 
+                    {/* Live Player List (In Play / Reserved) & All Game Fouls */}
+                    <PublicMatchPlayersFoulsPanel match={m} defaultOpen={true} />
+
                     {/* Footer: Officials & Share Action */}
                     <div style={{
                       marginTop: 'auto',
@@ -1759,6 +1771,236 @@ export default function GuestPublicPage() {
               })}
             </div>
           )}
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          TAB 1B: PLAYERS & FOULS (IN PLAY / RESERVED & ALL GAME FOULS)
+         ═══════════════════════════════════════════════════════════════════════ */}
+      {tab === 'players' && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Summary Counters */}
+          {(() => {
+            const visiblePlayers = players.filter(p => {
+              if (filterSport !== 'all' && p.sport !== filterSport && getSportName(p.sport) !== getSportName(filterSport)) return false;
+              if (searchTeam) {
+                const q = searchTeam.toLowerCase();
+                const pTeam = teams.find(t => t.id === p.teamId)?.name || '';
+                const pDept = departments.find(d => d.id === p.department)?.shortName || p.department || '';
+                if (!p.name.toLowerCase().includes(q) && !pTeam.toLowerCase().includes(q) && !pDept.toLowerCase().includes(q)) return false;
+              }
+              return true;
+            });
+            const inPlayList = visiblePlayers.filter(p => getPlayerRosterStatus(p) === 'in_play');
+            const reservedList = visiblePlayers.filter(p => getPlayerRosterStatus(p) === 'reserved');
+            const totalFoulsCount = visiblePlayers.reduce((sum, p) => sum + getPlayerTotalFouls(p), 0);
+
+            return (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div className="glass-card" style={{ padding: '14px 16px', borderLeft: '4px solid var(--accent)' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Listed Players</div>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)', marginTop: '4px' }}>{visiblePlayers.length}</div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Across active tournament teams</div>
+                  </div>
+                  <div className="glass-card" style={{ padding: '14px 16px', borderLeft: '4px solid #10b981' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase' }}>● Players In Play</div>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#10b981', marginTop: '4px' }}>{inPlayList.length}</div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Active on court / field lineup</div>
+                  </div>
+                  <div className="glass-card" style={{ padding: '14px 16px', borderLeft: '4px solid #f59e0b' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase' }}>◐ Reserved Players</div>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#f59e0b', marginTop: '4px' }}>{reservedList.length}</div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Official bench / substitute unit</div>
+                  </div>
+                  <div className="glass-card" style={{ padding: '14px 16px', borderLeft: '4px solid #ef4444' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase' }}>Recorded Game Fouls</div>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#ef4444', marginTop: '4px' }}>{totalFoulsCount}</div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>All sport-specific fouls &amp; cards</div>
+                  </div>
+                </div>
+
+                {/* Live Matches Lineups & Fouls Quick View */}
+                {liveMatches.length > 0 && (
+                  <div className="glass-card" style={{ padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontSize: '13px', fontWeight: 900, color: 'var(--color-live)', textTransform: 'uppercase' }}>
+                      <span className="live-dot" style={{ background: 'var(--color-live)' }} />
+                      <span>Live Court Lineups (In Play vs Reserved) &amp; Match Fouls ({liveMatches.length})</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {liveMatches.map(m => (
+                        <div key={`players-live-${m.id}`} style={{ padding: '12px', borderRadius: '10px', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '14px' }}>
+                              {getSportIcon(m.sport, 15, 'var(--accent)')}
+                              <span>{getSportName(m.sport)}: {m.teamA} ({m.scoreA}) vs {m.teamB} ({m.scoreB})</span>
+                            </div>
+                            <span className="status-badge live"><span className="live-dot" /> LIVE</span>
+                          </div>
+                          <PublicMatchPlayersFoulsPanel match={m} defaultOpen={true} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Complete Player Roster Table with Status (In Play / Reserved) & All Fouls Breakdown */}
+                <div className="glass-card" style={{ overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        Official Player List — Lineup Status (In Play / Reserved) &amp; All Game Fouls
+                      </h3>
+                      <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        Live roster status and complete sport-specific foul breakdown for every registered student-athlete
+                      </p>
+                    </div>
+                    <span className="badge-chip">{visiblePlayers.length} Athletes</span>
+                  </div>
+
+                  {visiblePlayers.length === 0 ? (
+                    <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      No players match the selected sport or team search.
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '720px' }}>
+                        <thead>
+                          <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <th style={{ padding: '10px 14px' }}>Jersey &amp; Athlete</th>
+                            <th style={{ padding: '10px 14px' }}>Team &amp; Dept</th>
+                            <th style={{ padding: '10px 14px' }}>Sport &amp; Position</th>
+                            <th style={{ padding: '10px 14px', textAlign: 'center' }}>Lineup Status</th>
+                            <th style={{ padding: '10px 14px', textAlign: 'center' }}>Total Fouls</th>
+                            <th style={{ padding: '10px 14px' }}>All Game Fouls Breakdown</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {visiblePlayers.map(p => {
+                            const status = getPlayerRosterStatus(p);
+                            const totalFouls = getPlayerTotalFouls(p);
+                            const breakdown = getPlayerFoulBreakdown(p);
+                            const foulEntries = Object.entries(breakdown).filter(([, c]) => c > 0);
+                            const rules = getSportFoulRules(p.sport);
+                            const isFouledOut = Boolean(
+                              (rules.foulOutLimit && totalFouls >= rules.foulOutLimit) ||
+                              (breakdown['Red Card'] || 0) > 0 ||
+                              (breakdown['Red Card Penalty'] || 0) > 0 ||
+                              (breakdown['Fault Card (Red)'] || 0) > 0
+                            );
+                            const teamObj = teams.find(t => t.id === p.teamId);
+                            const deptObj = departments.find(d => d.id === p.department);
+
+                            return (
+                              <tr key={p.id} style={{ borderBottom: '1px solid var(--border-light)', fontSize: '12.5px' }}>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{
+                                      fontSize: '11px',
+                                      fontWeight: 800,
+                                      padding: '2px 7px',
+                                      borderRadius: '5px',
+                                      background: 'var(--bg-elevated)',
+                                      border: '1px solid var(--border)',
+                                      fontFamily: 'monospace',
+                                    }}>
+                                      #{p.jerseyNumber}
+                                    </span>
+                                    <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{p.name}</span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{teamObj?.name || deptObj?.shortName || p.department}</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{deptObj?.name || p.department}</div>
+                                </td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 700 }}>
+                                    {getSportIcon(p.sport, 13, 'var(--accent)')}
+                                    <span>{getSportName(p.sport)}</span>
+                                  </div>
+                                  {p.position && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{p.position}</div>}
+                                </td>
+                                <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                                  <span style={{
+                                    display: 'inline-block',
+                                    fontSize: '10.5px',
+                                    fontWeight: 800,
+                                    padding: '3px 9px',
+                                    borderRadius: '999px',
+                                    background: status === 'in_play' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                    color: status === 'in_play' ? '#10b981' : '#f59e0b',
+                                    border: status === 'in_play' ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
+                                  }}>
+                                    {status === 'in_play' ? '● IN PLAY' : '◐ RESERVED'}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                                  <span style={{
+                                    display: 'inline-block',
+                                    fontSize: '11px',
+                                    fontWeight: 800,
+                                    padding: '3px 9px',
+                                    borderRadius: '999px',
+                                    background: isFouledOut
+                                      ? 'rgba(239, 68, 68, 0.16)'
+                                      : totalFouls > 0
+                                      ? 'rgba(245, 158, 11, 0.16)'
+                                      : 'var(--bg-elevated)',
+                                    color: isFouledOut ? '#ef4444' : totalFouls > 0 ? '#f59e0b' : 'var(--text-muted)',
+                                    border: isFouledOut
+                                      ? '1px solid rgba(239, 68, 68, 0.4)'
+                                      : totalFouls > 0
+                                      ? '1px solid rgba(245, 158, 11, 0.35)'
+                                      : '1px solid var(--border-light)',
+                                  }}>
+                                    {totalFouls} {totalFouls === 1 ? 'Foul' : 'Fouls'}
+                                    {isFouledOut ? ` · ${rules.foulOutLabel || 'FOULED OUT'}` : ''}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  {foulEntries.length > 0 ? (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                      {foulEntries.map(([fType, count]) => (
+                                        <span
+                                          key={fType}
+                                          style={{
+                                            fontSize: '10px',
+                                            fontWeight: 700,
+                                            padding: '2px 7px',
+                                            borderRadius: '5px',
+                                            background: fType.toLowerCase().includes('red')
+                                              ? 'rgba(239, 68, 68, 0.15)'
+                                              : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
+                                              ? 'rgba(245, 158, 11, 0.15)'
+                                              : 'rgba(56, 189, 248, 0.12)',
+                                            color: fType.toLowerCase().includes('red')
+                                              ? '#ef4444'
+                                              : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
+                                              ? '#f59e0b'
+                                              : '#38bdf8',
+                                          }}
+                                        >
+                                          {fType}: {count}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                      Clean record · Possible fouls: {rules.types.map(t => t.shortLabel).join(', ')}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </section>
       )}
 
@@ -1858,6 +2100,11 @@ export default function GuestPublicPage() {
                       >
                         Share Card
                       </button>
+                    </div>
+
+                    {/* Completed Match Player Lineup (In Play / Reserved) & Game Fouls */}
+                    <div style={{ width: '100%', flexBasis: '100%', marginTop: '4px' }}>
+                      <PublicMatchPlayersFoulsPanel match={m} defaultOpen={false} />
                     </div>
                   </div>
                 );
@@ -2409,6 +2656,14 @@ export default function GuestPublicPage() {
         </button>
         <button
           type="button"
+          className={tab === 'players' ? 'active' : ''}
+          onClick={() => setTab('players')}
+        >
+          <UsersIcon size={18} />
+          <span>Players &amp; Fouls</span>
+        </button>
+        <button
+          type="button"
           className={tab === 'results' ? 'active' : ''}
           onClick={() => setTab('results')}
         >
@@ -2430,14 +2685,6 @@ export default function GuestPublicPage() {
         >
           <BracketsIcon size={18} />
           <span>Brackets</span>
-        </button>
-        <button
-          type="button"
-          className={tab === 'schedule' ? 'active' : ''}
-          onClick={() => setTab('schedule')}
-        >
-          <CalendarIcon size={18} />
-          <span>Schedule</span>
         </button>
       </nav>
     </div>
