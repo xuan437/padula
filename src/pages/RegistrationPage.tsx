@@ -16,6 +16,7 @@ import {
   TrashIcon,
 } from '../components/Icons';
 import { SPORTS_CATALOG, getAllSports, getSportName, getSportIcon } from '../lib/sports';
+import { getPlayerTotalFouls, getPlayerRosterStatus } from '../lib/fouls';
 import { openGmailCompose } from '../lib/emailApi';
 import type { StaffInvitation, Team, Player } from '../types';
 
@@ -76,6 +77,7 @@ export default function RegistrationPage() {
     registerPlayer,
     updatePlayer,
     togglePlayerStatus,
+    togglePlayerRosterStatus,
     removePlayer,
     teams,
     registerTeam,
@@ -1154,6 +1156,26 @@ export default function RegistrationPage() {
                                         <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>
                                           #{p.jerseyNumber || '?'}
                                         </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => togglePlayerRosterStatus(p.id)}
+                                          style={{
+                                            fontSize: '9.5px',
+                                            fontWeight: 800,
+                                            padding: '1px 6px',
+                                            borderRadius: '999px',
+                                            cursor: 'pointer',
+                                            background: getPlayerRosterStatus(p) === 'in_play' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
+                                            color: getPlayerRosterStatus(p) === 'in_play' ? '#10b981' : '#f59e0b',
+                                            border: 'none',
+                                          }}
+                                          title="Click to toggle In Play / Reserved"
+                                        >
+                                          {getPlayerRosterStatus(p) === 'in_play' ? 'In Play' : 'Reserved'}
+                                        </button>
+                                        <span style={{ fontSize: '10px', color: getPlayerTotalFouls(p) > 0 ? '#f59e0b' : 'var(--text-muted)', fontWeight: 700 }}>
+                                          {getPlayerTotalFouls(p)}F
+                                        </span>
                                       </span>
                                     ))
                                   )}
@@ -1724,6 +1746,8 @@ export default function RegistrationPage() {
                     <th style={{ padding: '10px 12px' }}>Sport</th>
                     <th style={{ padding: '10px 12px' }}>Team / Squad</th>
                     <th style={{ padding: '10px 12px' }}>Position</th>
+                    <th style={{ padding: '10px 12px' }}>Lineup Role</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'center' }}>Fouls</th>
                     <th style={{ padding: '10px 12px' }}>Clearance</th>
                     <th style={{ padding: '10px 12px' }}>Status</th>
                     <th style={{ padding: '10px 12px', textAlign: 'right' }}>Actions</th>
@@ -1842,6 +1866,33 @@ export default function RegistrationPage() {
                         {/* Position */}
                         <td style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: '12px' }}>
                           {p.position || 'Player'}
+                        </td>
+
+                        {/* Lineup Role (In Play vs Reserved) */}
+                        <td style={{ padding: '12px' }}>
+                          <button
+                            type="button"
+                            onClick={() => togglePlayerRosterStatus(p.id)}
+                            style={{
+                              fontSize: '10.5px',
+                              fontWeight: 800,
+                              padding: '3px 9px',
+                              borderRadius: '999px',
+                              cursor: 'pointer',
+                              background: getPlayerRosterStatus(p) === 'in_play' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
+                              color: getPlayerRosterStatus(p) === 'in_play' ? '#10b981' : '#f59e0b',
+                              border: getPlayerRosterStatus(p) === 'in_play' ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
+                              whiteSpace: 'nowrap',
+                            }}
+                            title="Click to switch between In Play and Reserved"
+                          >
+                            {getPlayerRosterStatus(p) === 'in_play' ? '● In Play' : '◐ Reserved'}
+                          </button>
+                        </td>
+
+                        {/* Fouls */}
+                        <td style={{ padding: '12px', textAlign: 'center', fontWeight: 800, color: getPlayerTotalFouls(p) > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
+                          {getPlayerTotalFouls(p)}
                         </td>
 
                         {/* Clearance */}

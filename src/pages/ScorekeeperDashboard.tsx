@@ -3,8 +3,14 @@ import type { FormEvent, ReactNode } from 'react';
 import { useApp } from '../context/AppContext';
 import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
 import { isPlaceholder } from '../lib/bracket';
-import { MapPinIcon, CheckIcon, FlameIcon, LockIcon, CalendarIcon, AlertTriangleIcon } from '../components/Icons';
-import type { Match, GameOfficial } from '../types';
+import {
+  getSportFoulRules,
+  getPlayerTotalFouls,
+  getPlayerFoulBreakdown,
+  getPlayerRosterStatus,
+} from '../lib/fouls';
+import { MapPinIcon, CheckIcon, FlameIcon, LockIcon, CalendarIcon, AlertTriangleIcon, UsersIcon, PlusIcon } from '../components/Icons';
+import type { Match, GameOfficial, Player, PlayerRosterStatus } from '../types';
 
 // ─────────────────────────────────────────────────────────────
 // OFFLINE QUEUE
@@ -388,6 +394,457 @@ function SportDesk(props: ScoringProps) {
     return <SimpleDesk {...props} label="Esports · Maps won" />;
   }
   return <SimpleDesk {...props} label="Points / Goals" />;
+}
+
+// ─────────────────────────────────────────────────────────────
+// MATCH PLAYER LINEUP (IN PLAY / RESERVED) & ALL FOULS PANEL
+// ─────────────────────────────────────────────────────────────
+function MatchPlayerLineupAndFoulsPanel({
+  match,
+  isLocked,
+  canEdit,
+}: {
+  match: Match;
+  isLocked: boolean;
+  canEdit: boolean;
+}) {
+  const {
+    players,
+    teams,
+    departments,
+    recordPlayerFoul,
+    togglePlayerRosterStatus,
+    registerPlayer,
+  } = useApp();
+
+  const [isOpen, setIsOpen] = useState(match.status === 'live');
+  const [addingForSide, setAddingForSide] = useState<'A' | 'B' | null>(null);
+  const [quickName, setQuickName] = useState('');
+  const [quickJersey, setQuickJersey] = useState('');
+  const [quickPosition, setQuickPosition] = useState('');
+  const [quickStatus, setQuickStatus] = useState<PlayerRosterStatus>('in_play');
+
+  const foulRules = useMemo(() => getSportFoulRules(match.sport), [match.sport]);
+
+  const teamAObj = useMemo(
+    () => teams.find(t => t.name.toLowerCase() === (match.teamA || '').toLowerCase() && (t.sport === match.sport || getSportName(t.sport) === getSportName(match.sport))) ||
+          teams.find(t => t.name.toLowerCase() === (match.teamA || '').toLowerCase()),
+    [teams, match.teamA, match.sport]
+  );
+
+  const teamBObj = useMemo(
+    () => teams.find(t => t.name.toLowerCase() === (match.teamB || '').toLowerCase() && (t.sport === match.sport || getSportName(t.sport) === getSportName(match.sport))) ||
+          teams.find(t => t.name.toLowerCase() === (match.teamB || '').toLowerCase()),
+    [teams, match.teamB, match.sport]
+  );
+
+  const getTeamRoster = useCallback(
+    (teamObj: typeof teamAObj, fallbackName: string): Player[] => {
+      if (!teamObj && isPlaceholder(fallbackName)) return [];
+      return players.filter(p => {
+        if (teamObj && p.teamId === teamObj.id) return true;
+        if (teamObj && (teamObj.players || []).includes(p.id)) return true;
+        return false;
+      });
+    },
+    [players]
+  );
+
+  const rosterA = useMemo(() => getTeamRoster(teamAObj, match.teamA), [getTeamRoster, teamAObj, match.teamA]);
+  const rosterB = useMemo(() => getTeamRoster(teamBObj, match.teamB), [getTeamRoster, teamBObj, match.teamB]);
+
+  const getEffectiveStatus = (p: Player): PlayerRosterStatus => {
+    const matchOverride = match.playerLineupStatus?.[p.id];
+    if (matchOverride) return matchOverride;
+    return getPlayerRosterStatus(p);
+  };
+
+  const getEffectivePlayerFouls = (p: Player) => {
+    const matchFoulRecord = match.playerMatchFouls?.[p.id];
+    const seasonBreakdown = getPlayerFoulBreakdown(p);
+    const seasonTotal = getPlayerTotalFouls(p);
+    if (matchFoulRecord) {
+      return {
+        matchTotal: matchFoulRecord.total,
+        seasonTotal,
+        breakdown: { ...seasonBreakdown, ...matchFoulRecord.breakdown },
+      };
+    }
+    return {
+      matchTotal: seasonTotal,
+      seasonTotal,
+      breakdown: seasonBreakdown,
+    };
+  };
+
+  const totalFoulsTeamA = useMemo(
+    () => rosterA.reduce((sum, p) => sum + getEffectivePlayerFouls(p).matchTotal, 0),
+    [rosterA, match.playerMatchFouls]
+  );
+  const totalFoulsTeamB = useMemo(
+    () => rosterB.reduce((sum, p) => sum + getEffectivePlayerFouls(p).matchTotal, 0),
+    [rosterB, match.playerMatchFouls]
+  );
+
+  const handleQuickAddPlayer = (side: 'A' | 'B') => {
+    const targetTeam = side === 'A' ? teamAObj : teamBObj;
+    if (!quickName.trim()) return;
+    registerPlayer({
+      name: quickName.trim(),
+      studentId: `2026-${Math.floor(100 + Math.random() * 900)}`,
+      department: targetTeam?.department || departments[0]?.id || 'd1',
+      sport: match.sport,
+      teamId: targetTeam?.id,
+      jerseyNumber: quickJersey.trim() || String(Math.floor(1 + Math.random() * 98)),
+      position: quickPosition.trim() || 'Athlete',
+      medicalCleared: true,
+      rosterStatus: quickStatus,
+      fouls: 0,
+      foulBreakdown: {},
+      isActive: true,
+    });
+    setQuickName('');
+    setQuickJersey('');
+    setQuickPosition('');
+    setAddingForSide(null);
+  };
+
+  const renderTeamColumn = (side: 'A' | 'B', teamName: string, roster: Player[], totalTeamFouls: number) => {
+    const inPlayPlayers = roster.filter(p => getEffectiveStatus(p) === 'in_play');
+    const reservedPlayers = roster.filter(p => getEffectiveStatus(p) === 'reserved');
+
+    const renderPlayerCard = (p: Player, status: PlayerRosterStatus) => {
+      const foulData = getEffectivePlayerFouls(p);
+      const isFouledOut = Boolean(
+        (foulRules.foulOutLimit && foulData.matchTotal >= foulRules.foulOutLimit) ||
+        (foulData.breakdown['Red Card'] || 0) > 0 ||
+        (foulData.breakdown['Red Card Penalty'] || 0) > 0 ||
+        (foulData.breakdown['Fault Card (Red)'] || 0) > 0
+      );
+      const activeFoulTypes = Object.entries(foulData.breakdown).filter(([, count]) => count > 0);
+
+      return (
+        <div
+          key={p.id}
+          style={{
+            padding: '8px 10px',
+            borderRadius: '8px',
+            background: 'var(--bg-surface)',
+            border: isFouledOut
+              ? '1.5px solid #ef4444'
+              : status === 'in_play'
+              ? '1px solid rgba(16, 185, 129, 0.35)'
+              : '1px solid var(--border-light)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <span
+                style={{
+                  fontSize: '10.5px',
+                  fontWeight: 800,
+                  padding: '1px 6px',
+                  borderRadius: '4px',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  fontFamily: 'monospace',
+                }}
+              >
+                #{p.jerseyNumber}
+              </span>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {p.name}
+              </span>
+              {p.position && (
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                  ({p.position})
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  padding: '2px 7px',
+                  borderRadius: '999px',
+                  background: isFouledOut
+                    ? 'rgba(239, 68, 68, 0.16)'
+                    : foulData.matchTotal > 0
+                    ? 'rgba(245, 158, 11, 0.16)'
+                    : 'var(--bg-elevated)',
+                  color: isFouledOut ? '#ef4444' : foulData.matchTotal > 0 ? '#f59e0b' : 'var(--text-muted)',
+                  border: isFouledOut
+                    ? '1px solid rgba(239, 68, 68, 0.4)'
+                    : foulData.matchTotal > 0
+                    ? '1px solid rgba(245, 158, 11, 0.35)'
+                    : '1px solid var(--border-light)',
+                }}
+              >
+                {foulData.matchTotal} Foul{foulData.matchTotal === 1 ? '' : 's'}
+                {isFouledOut ? ` · ${foulRules.foulOutLabel || 'FOULED OUT'}` : ''}
+              </span>
+
+              {!isLocked && canEdit && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline"
+                  onClick={() => togglePlayerRosterStatus(p.id, status === 'in_play' ? 'reserved' : 'in_play', match.id)}
+                  title={status === 'in_play' ? 'Move player to Reserved (Bench)' : 'Substitute player In Play (On Court)'}
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 7px',
+                    color: status === 'in_play' ? '#f59e0b' : '#10b981',
+                    borderColor: status === 'in_play' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)',
+                  }}
+                >
+                  {status === 'in_play' ? '⇄ Move to Reserved' : '⇄ Sub In Play'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Breakdown of recorded fouls on this player */}
+          {activeFoulTypes.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+              {activeFoulTypes.map(([fType, count]) => (
+                <span
+                  key={fType}
+                  style={{
+                    fontSize: '9.5px',
+                    fontWeight: 700,
+                    padding: '1.5px 6px',
+                    borderRadius: '4px',
+                    background: fType.toLowerCase().includes('red')
+                      ? 'rgba(239, 68, 68, 0.16)'
+                      : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
+                      ? 'rgba(245, 158, 11, 0.16)'
+                      : 'rgba(56, 189, 248, 0.12)',
+                    color: fType.toLowerCase().includes('red')
+                      ? '#ef4444'
+                      : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
+                      ? '#f59e0b'
+                      : '#38bdf8',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>{fType}: {count}</span>
+                  {!isLocked && canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => recordPlayerFoul(p.id, fType, -1, match.id)}
+                      title={`Remove 1 ${fType}`}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'inherit',
+                        cursor: 'pointer',
+                        fontWeight: 900,
+                        fontSize: '10px',
+                        padding: '0 2px',
+                        lineHeight: 1,
+                      }}
+                    >
+                      −
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* All Foul Buttons for this game's sport */}
+          {!isLocked && canEdit && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', paddingTop: '2px' }}>
+              {foulRules.types.map(ft => (
+                <button
+                  key={ft.id}
+                  type="button"
+                  className="btn btn-xs btn-ghost"
+                  onClick={() => recordPlayerFoul(p.id, ft.id, 1, match.id)}
+                  title={`Record ${ft.label} on #${p.jerseyNumber} ${p.name}`}
+                  style={{
+                    fontSize: '9.5px',
+                    padding: '2px 6px',
+                    borderRadius: '5px',
+                    border: '1px solid var(--border)',
+                    color:
+                      ft.severity === 'severe'
+                        ? '#ef4444'
+                        : ft.severity === 'warning'
+                        ? '#f59e0b'
+                        : 'var(--text-secondary)',
+                  }}
+                >
+                  +{ft.shortLabel}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: '10px',
+          padding: '10px',
+          minWidth: 0,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px' }}>
+          <div style={{ fontWeight: 800, fontSize: '12px', color: 'var(--text-primary)' }}>
+            {teamName || `Team ${side}`}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#f59e0b' }}>
+              Team Fouls: {totalTeamFouls}
+            </span>
+            {!isLocked && canEdit && (
+              <button
+                type="button"
+                className="btn btn-xs btn-outline"
+                onClick={() => setAddingForSide(prev => (prev === side ? null : side))}
+                style={{ fontSize: '10px', padding: '1px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+              >
+                <PlusIcon size={10} />
+                <span>Player</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {addingForSide === side && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px', borderRadius: '8px', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+              Add Player to {teamName} Roster
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '65px 1fr', gap: '6px' }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Jersey #"
+                value={quickJersey}
+                onChange={e => setQuickJersey(e.target.value)}
+                style={{ fontSize: '11px', padding: '4px 6px' }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Player Full Name"
+                value={quickName}
+                onChange={e => setQuickName(e.target.value)}
+                style={{ fontSize: '11px', padding: '4px 8px' }}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '6px' }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Position"
+                value={quickPosition}
+                onChange={e => setQuickPosition(e.target.value)}
+                style={{ fontSize: '11px', padding: '4px 8px' }}
+              />
+              <select
+                className="form-input"
+                value={quickStatus}
+                onChange={e => setQuickStatus(e.target.value as PlayerRosterStatus)}
+                style={{ fontSize: '11px', padding: '4px 6px' }}
+              >
+                <option value="in_play">In Play (Active)</option>
+                <option value="reserved">Reserved (Bench)</option>
+              </select>
+              <button
+                type="button"
+                className="btn btn-xs btn-primary"
+                onClick={() => handleQuickAddPlayer(side)}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* IN PLAY SECTION */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span>● In Play (On Court / Active)</span>
+            <span>{inPlayPlayers.length}</span>
+          </div>
+          {inPlayPlayers.length === 0 ? (
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--bg-surface)', borderRadius: '6px', textAlign: 'center' }}>
+              No players currently marked In Play.
+            </div>
+          ) : (
+            inPlayPlayers.map(p => renderPlayerCard(p, 'in_play'))
+          )}
+        </div>
+
+        {/* RESERVED SECTION */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span>◐ Reserved (Bench / Substitutes)</span>
+            <span>{reservedPlayers.length}</span>
+          </div>
+          {reservedPlayers.length === 0 ? (
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '6px 8px', background: 'var(--bg-surface)', borderRadius: '6px', textAlign: 'center' }}>
+              No reserved bench players.
+            </div>
+          ) : (
+            reservedPlayers.map(p => renderPlayerCard(p, 'reserved'))
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <button
+        type="button"
+        className="btn btn-xs btn-outline"
+        onClick={() => setIsOpen(o => !o)}
+        style={{
+          width: '100%',
+          justifyContent: 'space-between',
+          padding: '7px 12px',
+          fontSize: '11.5px',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          borderRadius: '8px',
+        }}
+      >
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <UsersIcon size={13} color="var(--accent)" />
+          <span>
+            Players In Play / Reserved &amp; All Game Fouls ({rosterA.length + rosterB.length} Athletes · Fouls: {totalFoulsTeamA}–{totalFoulsTeamB})
+          </span>
+        </span>
+        <span>{isOpen ? 'Hide ▴' : 'Manage Lineup & Fouls ▾'}</span>
+      </button>
+
+      {isOpen && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
+          {renderTeamColumn('A', match.teamA, rosterA, totalFoulsTeamA)}
+          {renderTeamColumn('B', match.teamB, rosterB, totalFoulsTeamB)}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -790,6 +1247,15 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
           onQuickSave={commit}
         />
       ) : null}
+
+      {/* Per-Player Lineup (In Play vs Reserved) & All Game Fouls Desk */}
+      {!isTBD && (
+        <MatchPlayerLineupAndFoulsPanel
+          match={match}
+          isLocked={isLocked}
+          canEdit={canEdit || canManageMatch}
+        />
+      )}
 
       {/* Scorekeeper Advancement Target Selector (Decide which next-round slot the winner advances to) */}
       {(match.status === 'live' || (isLocked && match.winner)) && candidateTargets.length > 0 && canManageMatch && (

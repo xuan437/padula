@@ -1,6 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { CheckIcon } from '../components/Icons';
+import { getSportName } from '../lib/sports';
+import {
+  getSportFoulRules,
+  getPlayerTotalFouls,
+  getPlayerFoulBreakdown,
+  getPlayerRosterStatus,
+} from '../lib/fouls';
 import type { Player } from '../types';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -152,8 +159,20 @@ function SeasonGauge({ total, tournament, exhibition }: { total: number; tournam
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function PlayerStatsDashboard({ playerId }: { playerId?: string }) {
-  const { players, departments, teams, setActiveView, currentUser } = useApp();
+  const {
+    players,
+    departments,
+    teams,
+    setActiveView,
+    currentUser,
+    recordPlayerFoul,
+    togglePlayerRosterStatus,
+  } = useApp();
   const isPlayer = currentUser?.role === 'player';
+  const canEditLineupAndFouls =
+    currentUser?.role === 'director' ||
+    currentUser?.role === 'coordinator' ||
+    currentUser?.role === 'scorer';
 
   const defaultPlayer = players.find(p => p.id === 'p1') || players[0];
   const [selectedId, setSelectedId] = useState(playerId || defaultPlayer?.id || '');
@@ -177,6 +196,27 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
 
   const careerHistory = activePlayer.careerHistory || [];
   const matchStats = activePlayer.matchStats || [];
+  const totalFouls = getPlayerTotalFouls(activePlayer);
+  const foulBreakdown = getPlayerFoulBreakdown(activePlayer);
+  const foulRules = getSportFoulRules(activePlayer.sport);
+  const activeRosterStatus = getPlayerRosterStatus(activePlayer);
+
+  const teamOrSportRoster = useMemo(() => {
+    const teamPlayers = activePlayer.teamId
+      ? players.filter(p => p.teamId === activePlayer.teamId)
+      : [];
+    if (teamPlayers.length > 0) return teamPlayers;
+    return players.filter(p => p.sport === activePlayer.sport);
+  }, [players, activePlayer.teamId, activePlayer.sport]);
+
+  const inPlayRoster = useMemo(
+    () => teamOrSportRoster.filter(p => getPlayerRosterStatus(p) === 'in_play'),
+    [teamOrSportRoster]
+  );
+  const reservedRoster = useMemo(
+    () => teamOrSportRoster.filter(p => getPlayerRosterStatus(p) === 'reserved'),
+    [teamOrSportRoster]
+  );
 
   const topScorers = useMemo(() => {
     return players
@@ -275,25 +315,262 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
                   <CheckIcon size={11} color={C.green} /> ELIGIBLE
                 </span>
               )}
+              <button
+                type="button"
+                disabled={!canEditLineupAndFouls}
+                onClick={() => canEditLineupAndFouls && togglePlayerRosterStatus(activePlayer.id)}
+                style={{
+                  background: activeRosterStatus === 'in_play' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
+                  border: activeRosterStatus === 'in_play' ? '1px solid rgba(16,185,129,0.45)' : '1px solid rgba(245,158,11,0.45)',
+                  color: activeRosterStatus === 'in_play' ? C.green : '#f59e0b',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  cursor: canEditLineupAndFouls ? 'pointer' : 'default',
+                }}
+              >
+                {activeRosterStatus === 'in_play' ? '● IN PLAY (Active Lineup)' : '◐ RESERVED (Bench)'}
+              </button>
             </div>
             <div style={{ fontSize: '13px', color: C.accent, fontWeight: 700, marginTop: '4px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {activePlayer.position || 'Athlete'}
+              {activePlayer.position || 'Athlete'} · {getSportName(activePlayer.sport)}
             </div>
             <div style={{ fontSize: '12.5px', color: C.textS, display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
               <span>Student ID: <strong style={{ color: C.textP }}>{activePlayer.studentId}</strong></span>
-              <span>GWA: <strong style={{ color: C.textP }}>1.76</strong></span>
+              <span>GWA: <strong style={{ color: C.textP }}>{activePlayer.gwa?.toFixed(2) || '1.76'}</strong></span>
               {team && <span>Team: <strong style={{ color: C.textP }}>{team.name}</strong></span>}
+              <span>Total Fouls: <strong style={{ color: totalFouls > 0 ? '#f59e0b' : C.textP }}>{totalFouls}</strong></span>
             </div>
           </div>
 
           {/* Info boxes grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', flexShrink: 0, minWidth: '260px' }}>
-            <InfoBox title="Date of Birth"   value={activePlayer.dateOfBirth || '2003-07-15'} />
+            <InfoBox title="Lineup Status"   value={activeRosterStatus === 'in_play' ? 'In Play (Active)' : 'Reserved (Bench)'} />
             <InfoBox title="Position"        value={activePlayer.position    || 'Small Forward'} />
             <InfoBox title="Matches Played"  value={String(matchStats.length)} />
-            <InfoBox title="Hometown"        value={activePlayer.placeOfBirth || 'Dumaguete, PH'} />
+            <InfoBox title="Total Fouls"     value={`${totalFouls} Foul${totalFouls === 1 ? '' : 's'}`} />
             <InfoBox title="Sports Director" value="Mr. John Eric Samane" />
             <InfoBox title="Season Points"   value={String(currentSeasonGoals)} />
+          </div>
+        </div>
+
+        {/* ── ROW: All Game Fouls Breakdown | Team Roster List (In Play vs Reserved) ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
+          {/* All Game Fouls & Discipline Breakdown */}
+          <div style={card()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: C.textP }}>
+                  All Game Fouls &amp; Violations ({getSportName(activePlayer.sport)})
+                </div>
+                <div style={{ fontSize: '11px', color: C.textM }}>
+                  Per-player foul tracking across all {getSportName(activePlayer.sport)} foul types
+                </div>
+              </div>
+              <span style={{
+                fontSize: '11.5px',
+                fontWeight: 800,
+                padding: '3px 10px',
+                borderRadius: '999px',
+                background: totalFouls > 0 ? 'rgba(245, 158, 11, 0.16)' : 'rgba(255,255,255,0.05)',
+                color: totalFouls > 0 ? '#f59e0b' : C.textM,
+                border: `1px solid ${C.border}`,
+              }}>
+                {totalFouls} Total Foul{totalFouls === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))', gap: '8px' }}>
+              {foulRules.types.map(ft => {
+                const count = foulBreakdown[ft.id] || 0;
+                return (
+                  <div
+                    key={ft.id}
+                    style={{
+                      padding: '9px 11px',
+                      borderRadius: '10px',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: count > 0 ? '1px solid rgba(245, 158, 11, 0.4)' : `1px solid ${C.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '6px',
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '11.5px', fontWeight: 700, color: C.textP, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={ft.label}>
+                        {ft.shortLabel}
+                      </div>
+                      <div style={{ fontSize: '9.5px', color: C.textM, textTransform: 'uppercase' }}>
+                        {ft.category}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {canEditLineupAndFouls && (
+                        <button
+                          type="button"
+                          className="btn btn-xs btn-ghost"
+                          disabled={count === 0}
+                          onClick={() => recordPlayerFoul(activePlayer.id, ft.id, -1)}
+                          style={{ padding: '1px 5px', fontSize: '11px' }}
+                        >
+                          −
+                        </button>
+                      )}
+                      <span style={{ fontSize: '13.5px', fontWeight: 800, color: count > 0 ? '#f59e0b' : C.textM, minWidth: '18px', textAlign: 'center' }}>
+                        {count}
+                      </span>
+                      {canEditLineupAndFouls && (
+                        <button
+                          type="button"
+                          className="btn btn-xs btn-outline"
+                          onClick={() => recordPlayerFoul(activePlayer.id, ft.id, 1)}
+                          style={{ padding: '1px 5px', fontSize: '11px' }}
+                        >
+                          +
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Player List: In Play vs Reserved */}
+          <div style={card()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: C.textP }}>
+                  Player List: In Play &amp; Reserved ({team?.name || getSportName(activePlayer.sport)})
+                </div>
+                <div style={{ fontSize: '11px', color: C.textM }}>
+                  Active court lineup vs reserved bench rotation
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '6px', fontSize: '10.5px', fontWeight: 800 }}>
+                <span style={{ color: C.green, background: 'rgba(16,185,129,0.14)', padding: '2px 8px', borderRadius: '999px' }}>
+                  In Play: {inPlayRoster.length}
+                </span>
+                <span style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.14)', padding: '2px 8px', borderRadius: '999px' }}>
+                  Reserved: {reservedRoster.length}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {/* IN PLAY COLUMN */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontSize: '10.5px', fontWeight: 800, color: C.green, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  ● In Play ({inPlayRoster.length})
+                </div>
+                {inPlayRoster.length === 0 ? (
+                  <div style={{ fontSize: '11px', color: C.textM, padding: '10px', borderRadius: '8px', border: `1px solid ${C.border}`, textAlign: 'center' }}>
+                    No players marked In Play
+                  </div>
+                ) : (
+                  inPlayRoster.map(p => {
+                    const pFouls = getPlayerTotalFouls(p);
+                    return (
+                      <div
+                        key={p.id}
+                        style={{
+                          padding: '7px 9px',
+                          borderRadius: '8px',
+                          background: p.id === activePlayer.id ? C.accentDim : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${p.id === activePlayer.id ? C.accent : 'rgba(16,185,129,0.35)'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '6px',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(p.id)}
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', color: C.textP, minWidth: 0, flex: 1 }}
+                        >
+                          <div style={{ fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            #{p.jerseyNumber} {p.name}
+                          </div>
+                          <div style={{ fontSize: '10px', color: C.textM }}>
+                            {p.position || 'Athlete'} · <span style={{ color: pFouls > 0 ? '#f59e0b' : C.textM }}>{pFouls} fouls</span>
+                          </div>
+                        </button>
+                        {canEditLineupAndFouls && (
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-outline"
+                            onClick={() => togglePlayerRosterStatus(p.id, 'reserved')}
+                            style={{ fontSize: '9.5px', padding: '1px 6px' }}
+                            title="Move to Reserved"
+                          >
+                            → Reserve
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* RESERVED COLUMN */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  ◐ Reserved ({reservedRoster.length})
+                </div>
+                {reservedRoster.length === 0 ? (
+                  <div style={{ fontSize: '11px', color: C.textM, padding: '10px', borderRadius: '8px', border: `1px solid ${C.border}`, textAlign: 'center' }}>
+                    No reserved players
+                  </div>
+                ) : (
+                  reservedRoster.map(p => {
+                    const pFouls = getPlayerTotalFouls(p);
+                    return (
+                      <div
+                        key={p.id}
+                        style={{
+                          padding: '7px 9px',
+                          borderRadius: '8px',
+                          background: p.id === activePlayer.id ? C.accentDim : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${p.id === activePlayer.id ? C.accent : 'rgba(245,158,11,0.35)'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '6px',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(p.id)}
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', color: C.textP, minWidth: 0, flex: 1 }}
+                        >
+                          <div style={{ fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            #{p.jerseyNumber} {p.name}
+                          </div>
+                          <div style={{ fontSize: '10px', color: C.textM }}>
+                            {p.position || 'Athlete'} · <span style={{ color: pFouls > 0 ? '#f59e0b' : C.textM }}>{pFouls} fouls</span>
+                          </div>
+                        </button>
+                        {canEditLineupAndFouls && (
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-outline"
+                            onClick={() => togglePlayerRosterStatus(p.id, 'in_play')}
+                            style={{ fontSize: '9.5px', padding: '1px 6px' }}
+                            title="Substitute In Play"
+                          >
+                            ← In Play
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -369,7 +646,7 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
                   <tr>
-                    {['Matchday','Venue','For','Against','Result','Pts','Ast','Reb','Mins'].map(h => (
+                    {['Matchday','Venue','For','Against','Result','Pts','Ast','Reb','Fouls','Mins'].map(h => (
                       <th key={h} style={{ padding: '6px 8px', textAlign: h === 'Matchday' ? 'left' : 'center', color: C.textM, fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: `1px solid ${C.border}` }}>
                         {h}
                       </th>
@@ -379,7 +656,7 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
                 <tbody>
                   {matchStats.length === 0 ? (
                     <tr>
-                      <td colSpan={9} style={{ padding: '24px 8px', textAlign: 'center', color: C.textM }}>
+                      <td colSpan={10} style={{ padding: '24px 8px', textAlign: 'center', color: C.textM }}>
                         No official matches recorded yet for this athlete.
                       </td>
                     </tr>
@@ -394,6 +671,7 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
                         <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: C.textP }}>{m.points}</td>
                         <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textS }}>{m.assists}</td>
                         <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textS }}>{m.rebounds}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: (m.fouls ?? 0) > 0 ? '#f59e0b' : C.textM }}>{m.fouls ?? 0}</td>
                         <td style={{ padding: '10px 8px', textAlign: 'center', color: C.textM }}>{m.mins || m.minutes + "'"}</td>
                       </tr>
                     ))

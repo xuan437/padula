@@ -205,6 +205,17 @@ export interface PlayerCareerHistory {
   goals: number;
 }
 
+export type PlayerRosterStatus = 'in_play' | 'reserved';
+
+export interface PlayerFoulLog {
+  id: string;
+  matchId?: string;
+  matchLabel?: string;
+  foulType: string;
+  period?: string;
+  timestamp: string;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -221,6 +232,10 @@ export interface Player {
   email?: string;          // Gmail address
   gmailVerified?: boolean;
   isActive?: boolean;
+  rosterStatus?: PlayerRosterStatus; // 'in_play' (Active / On Court) or 'reserved' (Bench / Substitute)
+  fouls?: number;
+  foulBreakdown?: Record<string, number>;
+  foulLogs?: PlayerFoulLog[];
 
   // Rich Player Statistics & Profile attributes
   dateOfBirth?: string;
@@ -342,6 +357,8 @@ export interface Match {
   // Sports Analytics enrichments
   periodScores?: MatchPeriodScore[];
   timeline?: MatchTimelineEvent[];
+  playerMatchFouls?: Record<string, { total: number; breakdown: Record<string, number> }>;
+  playerLineupStatus?: Record<string, PlayerRosterStatus>;
   playerOfTheMatch?: {
     playerId?: string;
     name: string;

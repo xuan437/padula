@@ -27,13 +27,14 @@ function formatTime12h(timeStr?: string): string {
 }
 import type {
   User, UserRole, TournamentEvent, TournamentFormat, Match, GameOfficial,
-  Player, Team, Department, Division, Venue,
+  Player, PlayerRosterStatus, Team, Department, Division, Venue,
   AuditLog, AuditAction, Announcement,
   StandingsRow, MedalTallyRow,
   StaffMember, StaffRole, StaffStatus,
   StaffInvitation, InvitationStatus,
   AccessRequest, EmailSendLog,
 } from '../types';
+import { getPlayerFoulBreakdown, getPlayerRosterStatus } from '../lib/fouls';
 
 function generateOfficialPassword(role: 'coordinator' | 'scorer'): string {
   const prefix = role === 'coordinator' ? 'CO' : 'SK';
@@ -257,6 +258,8 @@ interface AppContextType {
   registerPlayer: (player: Omit<Player, 'id'>) => string;
   updatePlayer: (id: string, updates: Partial<Player>) => void;
   removePlayer: (id: string) => void;
+  recordPlayerFoul: (playerId: string, foulType: string, delta?: number, matchId?: string, period?: string) => void;
+  togglePlayerRosterStatus: (playerId: string, nextStatus?: PlayerRosterStatus, matchId?: string) => void;
 
   // Setup entities
   addDepartment: (dept: Omit<Department, 'id'>) => void;
@@ -4259,13 +4262,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [teams, matches, officials]);
 
   const registerPlayer = useCallback((playerData: Omit<Player, 'id'>) => {
-    if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator')) {
-      console.warn('Security: Only Director/Coordinator can register players.');
+    if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator' && currentUser.role !== 'scorer')) {
+      console.warn('Security: Only Director/Coordinator/Scorer can register players.');
       return '';
     }
     const id = uid('p');
-    const newPlayer: Player = { ...playerData, id };
-    setPlayers(prev => [...prev, newPlayer]);
+    const newPlayer: Player = {
+      rosterStatus: 'in_play',
+      fouls: 0,
+      foulBreakdown: {},
+      ...playerData,
+      id,
+    };
+    setPlayers(prev => {
+      const updated = [...prev, newPlayer];
+      try { localStorage.setItem('padula_players', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
     if (playerData.teamId) {
       setTeams(prev => prev.map(t =>
         t.id === playerData.teamId ? { ...t, players: [...t.players, id] } : t
@@ -4292,11 +4305,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser, addAuditLog]);
 
   const updatePlayer = useCallback((id: string, updates: Partial<Player>) => {
-    if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator')) {
-      console.warn('Security: Only Director/Coordinator can update player records.');
+    if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator' && currentUser.role !== 'scorer')) {
+      console.warn('Security: Only Director/Coordinator/Scorer can update player records.');
       return;
     }
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    setPlayers(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, ...updates } : p);
+      try { localStorage.setItem('padula_players', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
     if (updates.teamId !== undefined) {
       setTeams(prev => prev.map(t => {
         const hasPid = (t.players || []).includes(id);
@@ -4332,6 +4349,166 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addAuditLog('player_register', `Removed player: ${target?.name || id}`, id, 'Player');
     supabase.from('players').delete().eq('id', id).then();
   }, [currentUser, players, addAuditLog]);
+
+  const recordPlayerFoul = useCallback((
+    playerId: string,
+    foulType: string,
+    delta: number = 1,
+    matchId?: string,
+    period?: string
+  ) => {
+    if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator' && currentUser.role !== 'scorer')) {
+      return;
+    }
+    const targetPlayer = players.find(p => p.id === playerId);
+    const targetMatch = matchId ? matches.find(m => m.id === matchId) : undefined;
+    const nowIso = new Date().toISOString();
+
+    setPlayers(prev => {
+      const updated = prev.map(p => {
+        if (p.id !== playerId) return p;
+        const currentBreakdown = { ...getPlayerFoulBreakdown(p) };
+        const prevTypeCount = currentBreakdown[foulType] || 0;
+        const nextTypeCount = Math.max(0, prevTypeCount + delta);
+        if (nextTypeCount === prevTypeCount && delta < 0) return p;
+        currentBreakdown[foulType] = nextTypeCount;
+        const nextTotal = Math.max(0, Object.values(currentBreakdown).reduce((a, b) => a + b, 0));
+
+        const nextLogs = delta > 0
+          ? [
+              {
+                id: `foul-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                matchId,
+                matchLabel: targetMatch ? `${targetMatch.teamA} vs ${targetMatch.teamB}` : undefined,
+                foulType,
+                period,
+                timestamp: nowIso,
+              },
+              ...(p.foulLogs || []),
+            ].slice(0, 50)
+          : (p.foulLogs || []).slice(1);
+
+        const nextMatchStats = (p.matchStats && p.matchStats.length > 0)
+          ? p.matchStats.map((ms, idx) =>
+              (matchId && ms.matchId === matchId) || (!matchId && idx === 0)
+                ? { ...ms, fouls: Math.max(0, (ms.fouls || 0) + delta) }
+                : ms
+            )
+          : p.matchStats;
+
+        return {
+          ...p,
+          fouls: nextTotal,
+          foulBreakdown: currentBreakdown,
+          foulLogs: nextLogs,
+          sportStats: {
+            ...(p.sportStats || {}),
+            fouls: nextTotal,
+          },
+          matchStats: nextMatchStats,
+        };
+      });
+      try { localStorage.setItem('padula_players', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    if (matchId) {
+      setMatches(prev => prev.map(m => {
+        if (m.id !== matchId) return m;
+        const existingMap = { ...(m.playerMatchFouls || {}) };
+        const entry = existingMap[playerId] || { total: 0, breakdown: {} };
+        const prevCount = entry.breakdown[foulType] || 0;
+        const nextCount = Math.max(0, prevCount + delta);
+        const nextBreakdown = { ...entry.breakdown, [foulType]: nextCount };
+        const nextTotal = Math.max(0, Object.values(nextBreakdown).reduce((a, b) => a + b, 0));
+        existingMap[playerId] = { total: nextTotal, breakdown: nextBreakdown };
+
+        const teamObj = targetPlayer ? teams.find(t => t.id === targetPlayer.teamId) : undefined;
+        const teamSide: 'A' | 'B' = teamObj?.name === m.teamB ? 'B' : 'A';
+        const nextTimeline = delta > 0 && targetPlayer
+          ? [
+              ...(m.timeline || []),
+              {
+                id: `tl-foul-${Date.now()}`,
+                time: period || m.round || 'LIVE',
+                team: teamSide,
+                player: targetPlayer.name,
+                type: 'foul' as const,
+                description: `${foulType} recorded on #${targetPlayer.jerseyNumber} ${targetPlayer.name} (${nextTotal} match foul${nextTotal === 1 ? '' : 's'})`,
+                scoreSnapshot: `${m.scoreA} - ${m.scoreB}`,
+              },
+            ]
+          : m.timeline;
+
+        return {
+          ...m,
+          playerMatchFouls: existingMap,
+          timeline: nextTimeline,
+        };
+      }));
+    }
+
+    if (targetPlayer && delta > 0) {
+      addAuditLog(
+        'score_update',
+        `Recorded ${foulType} on #${targetPlayer.jerseyNumber} ${targetPlayer.name}${targetMatch ? ` in ${targetMatch.teamA} vs ${targetMatch.teamB}` : ''}`,
+        playerId,
+        'Player'
+      );
+    }
+  }, [currentUser, players, matches, teams, addAuditLog]);
+
+  const togglePlayerRosterStatus = useCallback((
+    playerId: string,
+    nextStatus?: PlayerRosterStatus,
+    matchId?: string
+  ) => {
+    if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator' && currentUser.role !== 'scorer')) {
+      return;
+    }
+    const targetPlayer = players.find(p => p.id === playerId);
+    if (!targetPlayer) return;
+    const currentStatus = getPlayerRosterStatus(targetPlayer);
+    const resolvedStatus: PlayerRosterStatus = nextStatus || (currentStatus === 'in_play' ? 'reserved' : 'in_play');
+
+    setPlayers(prev => {
+      const updated = prev.map(p => (p.id === playerId ? { ...p, rosterStatus: resolvedStatus } : p));
+      try { localStorage.setItem('padula_players', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    if (matchId) {
+      setMatches(prev => prev.map(m => {
+        if (m.id !== matchId) return m;
+        const nextLineup = { ...(m.playerLineupStatus || {}), [playerId]: resolvedStatus };
+        const teamObj = teams.find(t => t.id === targetPlayer.teamId);
+        const teamSide: 'A' | 'B' = teamObj?.name === m.teamB ? 'B' : 'A';
+        return {
+          ...m,
+          playerLineupStatus: nextLineup,
+          timeline: [
+            ...(m.timeline || []),
+            {
+              id: `tl-sub-${Date.now()}`,
+              time: m.round || 'LIVE',
+              team: teamSide,
+              player: targetPlayer.name,
+              type: 'substitution' as const,
+              description: `#${targetPlayer.jerseyNumber} ${targetPlayer.name} moved to ${resolvedStatus === 'in_play' ? 'IN PLAY (Active Lineup)' : 'RESERVED (Bench)'}`,
+              scoreSnapshot: `${m.scoreA} - ${m.scoreB}`,
+            },
+          ],
+        };
+      }));
+    }
+
+    addAuditLog(
+      'player_register',
+      `Set lineup status for #${targetPlayer.jerseyNumber} ${targetPlayer.name} to ${resolvedStatus === 'in_play' ? 'In Play (Active)' : 'Reserved (Bench)'}`,
+      playerId,
+      'Player'
+    );
+  }, [currentUser, players, teams, addAuditLog]);
 
   // ── Setup entities ─────────────────────────────────────────────────────────
   const addDepartment = useCallback((dept: Omit<Department, 'id'>) => {
@@ -4533,6 +4710,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       createEvent, updateEvent, publishEvent, startEvent, archiveEvent, deleteEvent, deleteBracket, generateBracket,
       advanceGroupToElimination, swapBracketTeams, toggleMatchBye,
       registerTeam, registerPlayer, updatePlayer, removePlayer,
+      recordPlayerFoul, togglePlayerRosterStatus,
       addDepartment, removeDepartment,
       addDivision, removeDivision,
       addVenue, removeVenue,

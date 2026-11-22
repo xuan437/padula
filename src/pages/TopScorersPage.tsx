@@ -1,6 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { getSportName, getSportIcon } from '../lib/sports';
+import {
+  getSportFoulRules,
+  getPlayerTotalFouls,
+  getPlayerFoulBreakdown,
+  getPlayerRosterStatus,
+} from '../lib/fouls';
 import { SportFilter } from '../components/ui';
 import { TrophyIcon, SearchIcon, XIcon } from '../components/Icons';
 import type { Player } from '../types';
@@ -8,6 +14,7 @@ import type { Player } from '../types';
 export default function TopScorersPage() {
   const { players, teams, departments, setActiveView } = useApp();
   const [selectedSport, setSelectedSport] = useState<string>('all');
+  const [rosterFilter, setRosterFilter] = useState<'all' | 'in_play' | 'reserved'>('all');
   const [search, setSearch] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
@@ -24,6 +31,7 @@ export default function TopScorersPage() {
     return players
       .filter(p => {
         if (selectedSport !== 'all' && p.sport !== selectedSport) return false;
+        if (rosterFilter !== 'all' && getPlayerRosterStatus(p) !== rosterFilter) return false;
         if (search.trim()) {
           const q = search.toLowerCase();
           const matchName = p.name.toLowerCase().includes(q);
@@ -37,16 +45,20 @@ export default function TopScorersPage() {
         const dept = departments.find(d => d.id === p.department);
         const points = p.currentSeasonGoals ?? p.intGoals ?? 0;
         const matchesPlayed = p.intMatches ?? p.matchStats?.length ?? 0;
+        const fouls = getPlayerTotalFouls(p);
+        const rosterStatus = getPlayerRosterStatus(p);
         return {
           player: p,
           teamName: team?.name || 'Independent Athlete',
           deptName: dept?.shortName || dept?.name || 'Padula',
           points,
           matchesPlayed,
+          fouls,
+          rosterStatus,
         };
       })
       .sort((a, b) => b.points - a.points);
-  }, [players, teams, departments, selectedSport, search]);
+  }, [players, teams, departments, selectedSport, rosterFilter, search]);
 
   return (
     <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -73,9 +85,9 @@ export default function TopScorersPage() {
         />
       </div>
 
-      {/* Search Bar */}
-      <div className="glass-card" style={{ padding: '12px 18px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
+      {/* Search & Lineup Filter Bar */}
+      <div className="glass-card" style={{ padding: '12px 18px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: '2 1 240px', position: 'relative' }}>
           <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
             <SearchIcon size={14} />
           </div>
@@ -87,13 +99,30 @@ export default function TopScorersPage() {
             style={{ paddingLeft: '34px', fontSize: '13px' }}
           />
         </div>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {([
+            { id: 'all', label: 'All Lineup' },
+            { id: 'in_play', label: '● In Play' },
+            { id: 'reserved', label: '◐ Reserved' },
+          ] as const).map(f => (
+            <button
+              key={f.id}
+              type="button"
+              className={`btn btn-sm ${rosterFilter === f.id ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setRosterFilter(f.id)}
+              style={{ fontSize: '12px' }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Leaderboard Table */}
-      <div className="glass-card" style={{ overflow: 'hidden' }}>
+      <div className="glass-card" style={{ overflowX: 'auto' }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '70px 2fr 1.5fr 1.2fr 100px 90px 100px',
+          gridTemplateColumns: '65px 2fr 1.4fr 1.1fr 110px 95px 80px 80px 100px',
           padding: '12px 16px',
           fontSize: '11px',
           fontWeight: 700,
@@ -103,12 +132,15 @@ export default function TopScorersPage() {
           borderBottom: '1px solid var(--border)',
           background: 'var(--bg-elevated)',
           alignItems: 'center',
+          minWidth: '940px',
         }}>
           <span>Rank</span>
           <span>Athlete</span>
           <span>Team</span>
           <span>Sport</span>
+          <span style={{ textAlign: 'center' }}>Lineup Role</span>
           <span style={{ textAlign: 'right' }}>Score / Pts</span>
+          <span style={{ textAlign: 'center' }}>Fouls</span>
           <span style={{ textAlign: 'center' }}>Matches</span>
           <span style={{ textAlign: 'right' }}>Profile</span>
         </div>
@@ -135,12 +167,13 @@ export default function TopScorersPage() {
                 key={item.player.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '70px 2fr 1.5fr 1.2fr 100px 90px 100px',
+                  gridTemplateColumns: '65px 2fr 1.4fr 1.1fr 110px 95px 80px 80px 100px',
                   padding: '14px 16px',
                   borderBottom: '1px solid var(--border-light)',
                   alignItems: 'center',
                   fontSize: '13px',
                   transition: 'background var(--transition)',
+                  minWidth: '940px',
                 }}
                 className="leaderboard-row"
               >
@@ -226,9 +259,30 @@ export default function TopScorersPage() {
                   <span>{getSportName(item.player.sport)}</span>
                 </div>
 
+                {/* Lineup Role */}
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{
+                    fontSize: '10.5px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    background: item.rosterStatus === 'in_play' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
+                    color: item.rosterStatus === 'in_play' ? '#10b981' : '#f59e0b',
+                    border: item.rosterStatus === 'in_play' ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {item.rosterStatus === 'in_play' ? '● In Play' : '◐ Reserved'}
+                  </span>
+                </div>
+
                 {/* Points */}
                 <div style={{ textAlign: 'right', fontWeight: 800, fontSize: '15px', color: 'var(--accent)' }}>
                   {item.points}
+                </div>
+
+                {/* Fouls */}
+                <div style={{ textAlign: 'center', fontWeight: 700, color: item.fouls > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
+                  {item.fouls}
                 </div>
 
                 {/* Matches Played */}
@@ -322,20 +376,59 @@ export default function TopScorersPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '18px' }}>
               <div style={{ background: 'var(--bg-elevated)', padding: '12px', borderRadius: '8px' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Season Points / Goals</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Season Points</div>
                 <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--accent)', marginTop: '4px' }}>
                   {selectedPlayer.currentSeasonGoals ?? selectedPlayer.intGoals ?? 0}
                 </div>
               </div>
               <div style={{ background: 'var(--bg-elevated)', padding: '12px', borderRadius: '8px' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Matches Played</div>
-                <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '4px' }}>
-                  {selectedPlayer.intMatches ?? selectedPlayer.matchStats?.length ?? 0}
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Lineup Status</div>
+                <div style={{ fontSize: '13.5px', fontWeight: 800, color: getPlayerRosterStatus(selectedPlayer) === 'in_play' ? '#10b981' : '#f59e0b', marginTop: '6px' }}>
+                  {getPlayerRosterStatus(selectedPlayer) === 'in_play' ? '● In Play' : '◐ Reserved'}
+                </div>
+              </div>
+              <div style={{ background: 'var(--bg-elevated)', padding: '12px', borderRadius: '8px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Fouls</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: getPlayerTotalFouls(selectedPlayer) > 0 ? '#f59e0b' : 'var(--text-primary)', marginTop: '4px' }}>
+                  {getPlayerTotalFouls(selectedPlayer)}
                 </div>
               </div>
             </div>
+
+            {(() => {
+              const rules = getSportFoulRules(selectedPlayer.sport);
+              const breakdown = getPlayerFoulBreakdown(selectedPlayer);
+              return (
+                <div style={{ marginBottom: '18px', background: 'var(--bg-elevated)', padding: '12px', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    All Game Fouls Breakdown ({getSportName(selectedPlayer.sport)})
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {rules.types.map(ft => {
+                      const count = breakdown[ft.id] || 0;
+                      return (
+                        <span
+                          key={ft.id}
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            background: count > 0 ? 'rgba(245, 158, 11, 0.14)' : 'var(--bg-card)',
+                            color: count > 0 ? '#f59e0b' : 'var(--text-muted)',
+                            border: '1px solid var(--border)',
+                          }}
+                        >
+                          {ft.shortLabel}: {count}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {selectedPlayer.careerHistory && selectedPlayer.careerHistory.length > 0 && (
               <div style={{ marginBottom: '20px' }}>

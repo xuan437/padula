@@ -1,6 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { getSportName, getSportIcon } from '../lib/sports';
+import {
+  getSportFoulRules,
+  getPlayerTotalFouls,
+  getPlayerFoulBreakdown,
+  getPlayerRosterStatus,
+} from '../lib/fouls';
 import { SportFilter } from '../components/ui';
 import {
   UsersIcon,
@@ -9,7 +15,7 @@ import {
   CheckIcon,
   XIcon,
 } from '../components/Icons';
-import type { Player } from '../types';
+import type { Player, PlayerRosterStatus } from '../types';
 
 export default function PlayerDashboard() {
   const {
@@ -20,6 +26,8 @@ export default function PlayerDashboard() {
     setActiveView,
     updatePlayer,
     removePlayer,
+    recordPlayerFoul,
+    togglePlayerRosterStatus,
     officials,
   } = useApp();
 
@@ -28,6 +36,7 @@ export default function PlayerDashboard() {
   const isCoordinator = currentUser?.role === 'coordinator';
   const canManage = isDirector || isCoordinator;
   const isScorer = currentUser?.role === 'scorer';
+  const canEditLineupAndFouls = canManage || isScorer;
   const isGuest = !currentUser || currentUser?.role === 'guest';
   const isPlayer = currentUser?.role === 'player';
 
@@ -58,7 +67,8 @@ export default function PlayerDashboard() {
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedDept, setSelectedDept] = useState<string>('all');
   const [eligibilityFilter, setEligibilityFilter] = useState<'all' | 'cleared' | 'pending'>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'team' | 'jersey' | 'points'>('name');
+  const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'in_play' | 'reserved'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'team' | 'jersey' | 'points' | 'fouls'>('name');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   // Modal States
@@ -72,7 +82,14 @@ export default function PlayerDashboard() {
     jerseyNumber: '',
     position: '',
     medicalCleared: true,
+    rosterStatus: 'in_play' as PlayerRosterStatus,
   });
+
+  // Always read live player state for the profile modal so foul/lineup changes reflect immediately
+  const liveProfilePlayer = useMemo(
+    () => (activeProfilePlayer ? players.find(p => p.id === activeProfilePlayer.id) || activeProfilePlayer : null),
+    [activeProfilePlayer, players]
+  );
 
   const sportCounts = useMemo(() => {
     const acc: Record<string, number> = {};
@@ -80,6 +97,13 @@ export default function PlayerDashboard() {
       acc[p.sport] = (acc[p.sport] || 0) + 1;
     }
     return acc;
+  }, [players]);
+
+  const rosterSummary = useMemo(() => {
+    const inPlayCount = players.filter(p => getPlayerRosterStatus(p) === 'in_play').length;
+    const reservedCount = players.filter(p => getPlayerRosterStatus(p) === 'reserved').length;
+    const totalFouls = players.reduce((sum, p) => sum + getPlayerTotalFouls(p), 0);
+    return { inPlayCount, reservedCount, totalFouls };
   }, [players]);
 
   // Filtered & Sorted Players
@@ -103,6 +127,9 @@ export default function PlayerDashboard() {
 
         // Department filter
         if (selectedDept !== 'all' && p.department !== selectedDept) return false;
+
+        // Lineup Status filter (In Play vs Reserved)
+        if (rosterStatusFilter !== 'all' && getPlayerRosterStatus(p) !== rosterStatusFilter) return false;
 
         // Eligibility filter
         if (eligibilityFilter === 'cleared' && !p.medicalCleared) return false;
@@ -128,6 +155,9 @@ export default function PlayerDashboard() {
           const ptsB = b.currentSeasonGoals ?? b.intGoals ?? 0;
           return ptsB - ptsA;
         }
+        if (sortBy === 'fouls') {
+          return getPlayerTotalFouls(b) - getPlayerTotalFouls(a);
+        }
         if (sortBy === 'team') {
           const teamA = teams.find(t => t.id === a.teamId)?.name || '';
           const teamB = teams.find(t => t.id === b.teamId)?.name || '';
@@ -135,7 +165,7 @@ export default function PlayerDashboard() {
         }
         return 0;
       });
-  }, [players, selectedSport, selectedTeam, selectedDept, eligibilityFilter, searchQuery, sortBy, isScorer, myOfficial, isGuest, teams]);
+  }, [players, selectedSport, selectedTeam, selectedDept, rosterStatusFilter, eligibilityFilter, searchQuery, sortBy, isScorer, myOfficial, isGuest, teams]);
 
   const handleOpenEdit = (p: Player) => {
     setEditingPlayer(p);
@@ -144,6 +174,7 @@ export default function PlayerDashboard() {
       jerseyNumber: p.jerseyNumber,
       position: p.position || '',
       medicalCleared: p.medicalCleared,
+      rosterStatus: getPlayerRosterStatus(p),
     });
   };
 
@@ -155,6 +186,7 @@ export default function PlayerDashboard() {
       jerseyNumber: editForm.jerseyNumber,
       position: editForm.position,
       medicalCleared: editForm.medicalCleared,
+      rosterStatus: editForm.rosterStatus,
     });
     setEditingPlayer(null);
   };
@@ -295,6 +327,85 @@ export default function PlayerDashboard() {
         />
       </div>
 
+      {/* ── Players In Play vs Reserved & Game Fouls Summary Strip ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+        <button
+          type="button"
+          className="glass-card"
+          onClick={() => setRosterStatusFilter(prev => (prev === 'in_play' ? 'all' : 'in_play'))}
+          style={{
+            padding: '14px 18px',
+            textAlign: 'left',
+            cursor: 'pointer',
+            border: rosterStatusFilter === 'in_play' ? '1.5px solid #10b981' : '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              ● Players In Play (On Court)
+            </div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Active starters currently in play
+            </div>
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 900, color: '#10b981' }}>
+            {rosterSummary.inPlayCount}
+          </div>
+        </button>
+
+        <button
+          type="button"
+          className="glass-card"
+          onClick={() => setRosterStatusFilter(prev => (prev === 'reserved' ? 'all' : 'reserved'))}
+          style={{
+            padding: '14px 18px',
+            textAlign: 'left',
+            cursor: 'pointer',
+            border: rosterStatusFilter === 'reserved' ? '1.5px solid #f59e0b' : '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              ◐ Reserved Players (Bench)
+            </div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Substitutes &amp; reserve rotation
+            </div>
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 900, color: '#f59e0b' }}>
+            {rosterSummary.reservedCount}
+          </div>
+        </button>
+
+        <div
+          className="glass-card"
+          style={{
+            padding: '14px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Total Recorded Game Fouls
+            </div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Personal, technical, cards &amp; faults
+            </div>
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--accent)' }}>
+            {rosterSummary.totalFouls}
+          </div>
+        </div>
+      </div>
+
 
       {/* ── Search & Filter Controls ── */}
       <div className="glass-card" style={{ padding: '16px 20px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -346,6 +457,20 @@ export default function PlayerDashboard() {
         </div>
 
 
+        {/* Lineup Role filter (In Play vs Reserved) */}
+        <div style={{ flex: '1 1 155px' }}>
+          <select
+            className="form-input"
+            value={rosterStatusFilter}
+            onChange={e => setRosterStatusFilter(e.target.value as 'all' | 'in_play' | 'reserved')}
+            style={{ fontSize: '12.5px' }}
+          >
+            <option value="all">All Lineup Status</option>
+            <option value="in_play">● In Play (Active)</option>
+            <option value="reserved">◐ Reserved (Bench)</option>
+          </select>
+        </div>
+
         {/* Eligibility filter */}
         {!isGuest && (
           <div style={{ flex: '1 1 140px' }}>
@@ -355,7 +480,7 @@ export default function PlayerDashboard() {
               onChange={e => setEligibilityFilter(e.target.value as any)}
               style={{ fontSize: '12.5px' }}
             >
-              <option value="all">All Status</option>
+              <option value="all">All Eligibility</option>
               <option value="cleared">Cleared / Eligible</option>
               <option value="pending">Pending Clearance</option>
             </select>
@@ -375,6 +500,7 @@ export default function PlayerDashboard() {
             <option value="team">Sort by Team</option>
             <option value="jersey">Sort by Jersey #</option>
             <option value="points">Sort by Points</option>
+            <option value="fouls">Sort by Fouls</option>
           </select>
         </div>
 
@@ -430,8 +556,8 @@ export default function PlayerDashboard() {
           <div style={{
             display: 'grid',
             gridTemplateColumns: canManage
-              ? '75px 2fr 1.4fr 1.2fr 1.1fr 80px 95px 75px 75px 130px'
-              : '75px 2fr 1.4fr 1.2fr 1.1fr 80px 95px 75px 75px',
+              ? '70px 1.9fr 1.3fr 1.1fr 1fr 75px 115px 90px 70px 85px 65px 130px'
+              : '70px 1.9fr 1.3fr 1.1fr 1fr 75px 115px 90px 70px 85px 65px',
             padding: '12px 16px',
             fontSize: '11px',
             fontWeight: 800,
@@ -440,7 +566,7 @@ export default function PlayerDashboard() {
             letterSpacing: '0.05em',
             borderBottom: '1px solid var(--border)',
             background: 'var(--bg-elevated)',
-            minWidth: '950px',
+            minWidth: '1100px',
             alignItems: 'center',
           }}>
             <span style={{ textAlign: 'center' }}>Jersey #</span>
@@ -449,19 +575,28 @@ export default function PlayerDashboard() {
             <span>Sport</span>
             <span>Position</span>
             <span style={{ textAlign: 'center' }}>College</span>
+            <span style={{ textAlign: 'center' }}>Lineup Role</span>
             <span style={{ textAlign: 'center' }}>Status</span>
             <span style={{ textAlign: 'center' }}>Points</span>
+            <span style={{ textAlign: 'center' }}>Fouls</span>
             <span style={{ textAlign: 'center' }}>Matches</span>
             {canManage && <span style={{ textAlign: 'right' }}>Actions</span>}
           </div>
 
 
-          <div style={{ minWidth: '950px' }}>
+          <div style={{ minWidth: '1100px' }}>
             {filteredPlayers.map(p => {
               const team = teams.find(t => t.id === p.teamId);
               const dept = departments.find(d => d.id === p.department || d.shortName?.toUpperCase() === p.department?.toUpperCase() || d.name?.toLowerCase() === p.department?.toLowerCase());
               const points = p.currentSeasonGoals ?? p.intGoals ?? 0;
               const matches = p.intMatches ?? p.matchStats?.length ?? 0;
+              const totalFouls = getPlayerTotalFouls(p);
+              const breakdown = getPlayerFoulBreakdown(p);
+              const activeFoulSummary = Object.entries(breakdown)
+                .filter(([, count]) => count > 0)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(' · ');
+              const rosterRole = getPlayerRosterStatus(p);
 
               return (
                 <div
@@ -469,8 +604,8 @@ export default function PlayerDashboard() {
                   style={{
                     display: 'grid',
                     gridTemplateColumns: canManage
-                      ? '75px 2fr 1.4fr 1.2fr 1.1fr 80px 95px 75px 75px 130px'
-                      : '75px 2fr 1.4fr 1.2fr 1.1fr 80px 95px 75px 75px',
+                      ? '70px 1.9fr 1.3fr 1.1fr 1fr 75px 115px 90px 70px 85px 65px 130px'
+                      : '70px 1.9fr 1.3fr 1.1fr 1fr 75px 115px 90px 70px 85px 65px',
                     padding: '12px 16px',
                     borderBottom: '1px solid var(--border-light)',
                     alignItems: 'center',
@@ -575,6 +710,35 @@ export default function PlayerDashboard() {
                     </span>
                   </div>
 
+                  {/* Lineup Role (In Play vs Reserved) */}
+                  <div style={{ textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      disabled={!canEditLineupAndFouls}
+                      onClick={() => canEditLineupAndFouls && togglePlayerRosterStatus(p.id)}
+                      title={
+                        canEditLineupAndFouls
+                          ? `Click to switch ${p.name} to ${rosterRole === 'in_play' ? 'Reserved (Bench)' : 'In Play (Active)'}`
+                          : rosterRole === 'in_play'
+                          ? 'In Play (Active Lineup)'
+                          : 'Reserved (Bench)'
+                      }
+                      style={{
+                        fontSize: '10.5px',
+                        fontWeight: 800,
+                        padding: '3px 8px',
+                        borderRadius: '999px',
+                        cursor: canEditLineupAndFouls ? 'pointer' : 'default',
+                        background: rosterRole === 'in_play' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
+                        color: rosterRole === 'in_play' ? '#10b981' : '#f59e0b',
+                        border: rosterRole === 'in_play' ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {rosterRole === 'in_play' ? '● In Play' : '◐ Reserved'}
+                    </button>
+                  </div>
+
 
                   {/* Status */}
                   <div style={{ textAlign: 'center' }}>
@@ -587,6 +751,29 @@ export default function PlayerDashboard() {
                   {/* Points */}
                   <div style={{ textAlign: 'center', fontWeight: 700, color: 'var(--accent)' }}>
                     {points}
+                  </div>
+
+                  {/* Fouls */}
+                  <div
+                    style={{ textAlign: 'center' }}
+                    title={activeFoulSummary || 'No fouls recorded'}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setActiveProfilePlayer(p)}
+                      style={{
+                        background: totalFouls > 0 ? 'rgba(245, 158, 11, 0.14)' : 'var(--bg-elevated)',
+                        color: totalFouls > 0 ? '#f59e0b' : 'var(--text-muted)',
+                        border: totalFouls > 0 ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid var(--border-light)',
+                        borderRadius: '999px',
+                        padding: '2px 8px',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {totalFouls} {totalFouls === 1 ? 'Foul' : 'Fouls'}
+                    </button>
                   </div>
 
 
@@ -637,6 +824,8 @@ export default function PlayerDashboard() {
             const deptColor = dept?.color || '#0f2d5c';
             const points = p.currentSeasonGoals ?? p.intGoals ?? 0;
             const matchesCount = p.intMatches ?? p.matchStats?.length ?? 0;
+            const totalFouls = getPlayerTotalFouls(p);
+            const rosterRole = getPlayerRosterStatus(p);
             const initials = p.name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'A';
 
             return (
@@ -671,7 +860,7 @@ export default function PlayerDashboard() {
 
                 <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                   {/* Top Badges Row */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{
                         background: '#0f2d5c',
@@ -698,19 +887,42 @@ export default function PlayerDashboard() {
                       </span>
                     </div>
 
-                    <span style={{
-                      fontSize: '10px',
-                      fontWeight: 800,
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      background: p.medicalCleared ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
-                      color: p.medicalCleared ? '#10b981' : '#f59e0b',
-                      border: p.medicalCleared ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)',
-                    }}>
-                      {p.medicalCleared ? '✓ Eligible' : 'Pending'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <button
+                        type="button"
+                        disabled={!canEditLineupAndFouls}
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (canEditLineupAndFouls) togglePlayerRosterStatus(p.id);
+                        }}
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          cursor: canEditLineupAndFouls ? 'pointer' : 'default',
+                          background: rosterRole === 'in_play' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
+                          color: rosterRole === 'in_play' ? '#10b981' : '#f59e0b',
+                          border: rosterRole === 'in_play' ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
+                        }}
+                      >
+                        {rosterRole === 'in_play' ? '● In Play' : '◐ Reserved'}
+                      </button>
+
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        background: p.medicalCleared ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
+                        color: p.medicalCleared ? '#10b981' : '#f59e0b',
+                        border: p.medicalCleared ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)',
+                      }}>
+                        {p.medicalCleared ? '✓ Eligible' : 'Pending'}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Athlete Identity */}
@@ -769,8 +981,8 @@ export default function PlayerDashboard() {
                   {/* Mini Stat Strip */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: '1.6fr 0.7fr 0.7fr',
-                    gap: '8px',
+                    gridTemplateColumns: '1.4fr 0.6fr 0.6fr 0.6fr',
+                    gap: '6px',
                     background: 'var(--bg-elevated)',
                     border: '1px solid var(--border-light)',
                     borderRadius: '6px',
@@ -790,6 +1002,10 @@ export default function PlayerDashboard() {
                     <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-light)', paddingLeft: '6px' }}>
                       <div style={{ fontSize: '9.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pts</div>
                       <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--accent)' }}>{points}</div>
+                    </div>
+                    <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-light)', paddingLeft: '6px' }}>
+                      <div style={{ fontSize: '9.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Fouls</div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 800, color: totalFouls > 0 ? '#f59e0b' : 'var(--text-secondary)' }}>{totalFouls}</div>
                     </div>
                   </div>
 
@@ -836,7 +1052,7 @@ export default function PlayerDashboard() {
       )}
 
       {/* ── PLAYER PROFILE MODAL / DRAWER ── */}
-      {activeProfilePlayer && (
+      {liveProfilePlayer && (
         <div style={{
           position: 'fixed',
           inset: 0,
@@ -850,7 +1066,7 @@ export default function PlayerDashboard() {
         }}>
           <div className="glass-card" style={{
             width: '100%',
-            maxWidth: '560px',
+            maxWidth: '600px',
             maxHeight: '90vh',
             overflowY: 'auto',
             padding: '24px',
@@ -877,7 +1093,7 @@ export default function PlayerDashboard() {
             </button>
 
             {/* Profile Header */}
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -891,85 +1107,183 @@ export default function PlayerDashboard() {
                 justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                {activeProfilePlayer.name[0]}
+                {liveProfilePlayer.name[0]}
               </div>
 
-              <div>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 4px', color: 'var(--text-primary)' }}>
-                  {activeProfilePlayer.name}
-                </h2>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>#{activeProfilePlayer.jerseyNumber}</span>
-                  <span>·</span>
-                  <span>{activeProfilePlayer.position || 'Athlete'}</span>
-                  <span>·</span>
-                  <span>{getSportName(activeProfilePlayer.sport)}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                    {liveProfilePlayer.name}
+                  </h2>
+                  <button
+                    type="button"
+                    disabled={!canEditLineupAndFouls}
+                    onClick={() => canEditLineupAndFouls && togglePlayerRosterStatus(liveProfilePlayer.id)}
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: 800,
+                      padding: '2px 9px',
+                      borderRadius: '999px',
+                      cursor: canEditLineupAndFouls ? 'pointer' : 'default',
+                      background: getPlayerRosterStatus(liveProfilePlayer) === 'in_play' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.14)',
+                      color: getPlayerRosterStatus(liveProfilePlayer) === 'in_play' ? '#10b981' : '#f59e0b',
+                      border: getPlayerRosterStatus(liveProfilePlayer) === 'in_play' ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
+                    }}
+                  >
+                    {getPlayerRosterStatus(liveProfilePlayer) === 'in_play' ? '● IN PLAY (Active Lineup)' : '◐ RESERVED (Bench)'}
+                  </button>
                 </div>
-
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span>#{liveProfilePlayer.jerseyNumber}</span>
+                  <span>·</span>
+                  <span>{liveProfilePlayer.position || 'Athlete'}</span>
+                  <span>·</span>
+                  <span>{getSportName(liveProfilePlayer.sport)}</span>
+                </div>
               </div>
-
             </div>
 
-
             {/* Eligibility & Details Info */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '18px' }}>
               <div style={{ background: 'var(--bg-elevated)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Eligibility Status</div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: activeProfilePlayer.medicalCleared ? '#10b981' : '#f59e0b', marginTop: '2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {activeProfilePlayer.medicalCleared ? <><CheckIcon size={12} color="#10b981" /> Medically Cleared</> : 'Pending Physical Exam'}
+                <div style={{ fontSize: '13px', fontWeight: 700, color: liveProfilePlayer.medicalCleared ? '#10b981' : '#f59e0b', marginTop: '2px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {liveProfilePlayer.medicalCleared ? <><CheckIcon size={12} color="#10b981" /> Medically Cleared</> : 'Pending Physical Exam'}
                 </div>
-
               </div>
-
 
               <div style={{ background: 'var(--bg-elevated)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Team Affiliation</div>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
-                  {teams.find(t => t.id === activeProfilePlayer.teamId)?.name || 'Unassigned'}
+                  {teams.find(t => t.id === liveProfilePlayer.teamId)?.name || 'Unassigned'}
                 </div>
-
               </div>
-
 
               {!isGuest && (
                 <>
                   <div style={{ background: 'var(--bg-elevated)', padding: '10px 14px', borderRadius: '8px' }}>
                     <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Student ID</div>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
-                      {activeProfilePlayer.studentId}
+                      {liveProfilePlayer.studentId}
                     </div>
-
                   </div>
-
 
                   <div style={{ background: 'var(--bg-elevated)', padding: '10px 14px', borderRadius: '8px' }}>
                     <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Academic GWA</div>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
-                      {activeProfilePlayer.gwa?.toFixed(2) || '1.75'}
+                      {liveProfilePlayer.gwa?.toFixed(2) || '1.75'}
                     </div>
-
                   </div>
-
                 </>
               )}
             </div>
 
+            {/* All Game Fouls & Discipline Breakdown */}
+            {(() => {
+              const rules = getSportFoulRules(liveProfilePlayer.sport);
+              const breakdown = getPlayerFoulBreakdown(liveProfilePlayer);
+              const totalFouls = getPlayerTotalFouls(liveProfilePlayer);
+              return (
+                <div style={{ marginBottom: '18px', background: 'var(--bg-elevated)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        All Game Fouls &amp; Violations ({getSportName(liveProfilePlayer.sport)})
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Complete breakdown of all fouls recorded for this athlete
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '11.5px',
+                        fontWeight: 800,
+                        padding: '3px 10px',
+                        borderRadius: '999px',
+                        background: totalFouls > 0 ? 'rgba(245, 158, 11, 0.16)' : 'var(--bg-surface)',
+                        color: totalFouls > 0 ? '#f59e0b' : 'var(--text-muted)',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      Total: {totalFouls} Foul{totalFouls === 1 ? '' : 's'}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '8px' }}>
+                    {rules.types.map(ft => {
+                      const count = breakdown[ft.id] || 0;
+                      return (
+                        <div
+                          key={ft.id}
+                          style={{
+                            padding: '8px 10px',
+                            borderRadius: '8px',
+                            background: 'var(--bg-surface)',
+                            border: count > 0 ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid var(--border-light)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '6px',
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={ft.label}>
+                              {ft.shortLabel}
+                            </div>
+                            <div style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>
+                              {ft.category.toUpperCase()}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {canEditLineupAndFouls && (
+                              <button
+                                type="button"
+                                className="btn btn-xs btn-ghost"
+                                disabled={count === 0}
+                                onClick={() => recordPlayerFoul(liveProfilePlayer.id, ft.id, -1)}
+                                style={{ padding: '1px 5px', fontSize: '11px' }}
+                              >
+                                −
+                              </button>
+                            )}
+                            <span style={{ fontSize: '13px', fontWeight: 800, color: count > 0 ? '#f59e0b' : 'var(--text-muted)', minWidth: '16px', textAlign: 'center' }}>
+                              {count}
+                            </span>
+                            {canEditLineupAndFouls && (
+                              <button
+                                type="button"
+                                className="btn btn-xs btn-outline"
+                                onClick={() => recordPlayerFoul(liveProfilePlayer.id, ft.id, 1)}
+                                style={{ padding: '1px 5px', fontSize: '11px' }}
+                              >
+                                +
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Match Stats History */}
-            {activeProfilePlayer.matchStats && activeProfilePlayer.matchStats.length > 0 && (
+            {liveProfilePlayer.matchStats && liveProfilePlayer.matchStats.length > 0 && (
               <div style={{ marginBottom: '20px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-primary)' }}>
-                  Recent Match Results & Performance
+                  Recent Match Results &amp; Performance
                 </h4>
                 <div style={{ background: 'var(--bg-elevated)', borderRadius: '8px', overflow: 'hidden' }}>
-                  {activeProfilePlayer.matchStats.map((ms, idx) => (
+                  {liveProfilePlayer.matchStats.map((ms, idx) => (
                     <div key={idx} style={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '8px 12px',
                       fontSize: '12px',
-                      borderBottom: idx < (activeProfilePlayer.matchStats?.length || 0) - 1 ? '1px solid var(--border)' : 'none',
+                      borderBottom: idx < (liveProfilePlayer.matchStats?.length || 0) - 1 ? '1px solid var(--border)' : 'none',
                     }}>
                       <div>
                         <span style={{ fontWeight: 700 }}>{ms.matchday}</span> vs <span>{ms.opponent}</span>
@@ -979,6 +1293,9 @@ export default function PlayerDashboard() {
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <span style={{ fontWeight: 700 }}>{ms.result}</span>
                         <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{ms.points} pts</span>
+                        <span style={{ color: (ms.fouls || 0) > 0 ? '#f59e0b' : 'var(--text-muted)', fontWeight: 700 }}>
+                          {ms.fouls || 0} fouls
+                        </span>
                       </div>
 
                     </div>
@@ -1001,7 +1318,7 @@ export default function PlayerDashboard() {
                 <button
                   className="btn btn-primary"
                   onClick={() => {
-                    handleOpenEdit(activeProfilePlayer);
+                    handleOpenEdit(liveProfilePlayer);
                     setActiveProfilePlayer(null);
                   }}
                 >
@@ -1085,6 +1402,20 @@ export default function PlayerDashboard() {
 
               </div>
 
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  Lineup Role (In Play vs Reserved)
+                </label>
+                <select
+                  className="form-input"
+                  value={editForm.rosterStatus}
+                  onChange={e => setEditForm(prev => ({ ...prev, rosterStatus: e.target.value as PlayerRosterStatus }))}
+                >
+                  <option value="in_play">● In Play (Active / Starter On Court)</option>
+                  <option value="reserved">◐ Reserved (Bench / Substitute)</option>
+                </select>
+              </div>
 
               <div>
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
