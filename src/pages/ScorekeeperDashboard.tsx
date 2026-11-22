@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { FormEvent, ReactNode } from 'react';
 import { useApp } from '../context/AppContext';
 import { SPORTS_CATALOG, getSportName, getSportIcon } from '../lib/sports';
@@ -9,7 +10,7 @@ import {
   getPlayerFoulBreakdown,
   getPlayerRosterStatus,
 } from '../lib/fouls';
-import { MapPinIcon, CheckIcon, FlameIcon, LockIcon, CalendarIcon, AlertTriangleIcon, UsersIcon, PlusIcon } from '../components/Icons';
+import { MapPinIcon, CheckIcon, FlameIcon, LockIcon, CalendarIcon, AlertTriangleIcon, UsersIcon, PlusIcon, XIcon } from '../components/Icons';
 import type { Match, GameOfficial, Player, PlayerRosterStatus } from '../types';
 
 // ─────────────────────────────────────────────────────────────
@@ -417,12 +418,21 @@ function MatchPlayerLineupAndFoulsPanel({
     registerPlayer,
   } = useApp();
 
-  const [isOpen, setIsOpen] = useState(match.status === 'live');
+  const [isOpen, setIsOpen] = useState(false);
   const [addingForSide, setAddingForSide] = useState<'A' | 'B' | null>(null);
   const [quickName, setQuickName] = useState('');
   const [quickJersey, setQuickJersey] = useState('');
   const [quickPosition, setQuickPosition] = useState('');
   const [quickStatus, setQuickStatus] = useState<PlayerRosterStatus>('in_play');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isOpen]);
 
   const foulRules = useMemo(() => getSportFoulRules(match.sport), [match.sport]);
 
@@ -811,38 +821,178 @@ function MatchPlayerLineupAndFoulsPanel({
     );
   };
 
+  const modalContent = isOpen ? (
+    <div
+      onClick={() => setIsOpen(false)}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'rgba(6, 11, 25, 0.72)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+      }}
+    >
+      <div
+        className="glass-card"
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: '900px',
+          maxHeight: '88vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '16px',
+          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Modal Header */}
+        <div
+          style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--bg-elevated)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <span
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '10px',
+                background: 'rgba(2, 132, 199, 0.14)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {getSportIcon(match.sport, 18, 'var(--accent)')}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {getSportName(match.sport)} · {match.round}
+                </span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    background: 'rgba(56, 189, 248, 0.14)',
+                    color: '#38bdf8',
+                  }}
+                >
+                  {rosterA.length + rosterB.length} Athletes · Fouls {totalFoulsTeamA}–{totalFoulsTeamB}
+                </span>
+              </div>
+              <h3 style={{ margin: '2px 0 0', fontSize: '16px', fontWeight: 900, color: 'var(--text-primary)' }}>
+                {match.teamA} ({match.scoreA}) vs {match.teamB} ({match.scoreB}) — Lineup (In Play / Reserved) &amp; Game Fouls
+              </h3>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close Player List Popup"
+            style={{ padding: '6px 10px', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 700 }}
+          >
+            <XIcon size={15} />
+            <span>Close</span>
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div
+          style={{
+            padding: '18px 20px',
+            overflowY: 'auto',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '16px',
+          }}
+        >
+          {renderTeamColumn('A', match.teamA, rosterA, totalFoulsTeamA)}
+          {renderTeamColumn('B', match.teamB, rosterB, totalFoulsTeamB)}
+        </div>
+
+        {/* Modal Footer */}
+        <div
+          style={{
+            padding: '12px 20px',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg-elevated)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+            fontSize: '11.5px',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <span>
+            Sport Foul Categories: <strong>{foulRules.types.map(t => t.shortLabel).join(' · ')}</strong>
+          </span>
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={() => setIsOpen(false)}
+            style={{ fontWeight: 700 }}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
-    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '10px', width: '100%', marginTop: 'auto' }}>
       <button
         type="button"
         className="btn btn-xs btn-outline"
-        onClick={() => setIsOpen(o => !o)}
+        onClick={() => setIsOpen(true)}
         style={{
           width: '100%',
           justifyContent: 'space-between',
-          padding: '7px 12px',
+          padding: '8px 12px',
           fontSize: '11.5px',
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
+          gap: '8px',
           borderRadius: '8px',
+          boxSizing: 'border-box',
+          minWidth: 0,
         }}
       >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
           <UsersIcon size={13} color="var(--accent)" />
-          <span>
-            Players In Play / Reserved &amp; All Game Fouls ({rosterA.length + rosterB.length} Athletes · Fouls: {totalFoulsTeamA}–{totalFoulsTeamB})
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            Player List &amp; Game Fouls ({rosterA.length + rosterB.length} Athletes · Fouls: {totalFoulsTeamA}–{totalFoulsTeamB})
           </span>
         </span>
-        <span>{isOpen ? 'Hide ▴' : 'Manage Lineup & Fouls ▾'}</span>
+        <span style={{ flexShrink: 0, color: 'var(--accent)', fontWeight: 800, fontSize: '11px', whiteSpace: 'nowrap' }}>
+          Manage List ↗
+        </span>
       </button>
 
-      {isOpen && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
-          {renderTeamColumn('A', match.teamA, rosterA, totalFoulsTeamA)}
-          {renderTeamColumn('B', match.teamB, rosterB, totalFoulsTeamB)}
-        </div>
-      )}
+      {typeof document !== 'undefined' && modalContent ? createPortal(modalContent, document.body) : modalContent}
     </div>
   );
 }
@@ -1248,14 +1398,12 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
         />
       ) : null}
 
-      {/* Per-Player Lineup (In Play vs Reserved) & All Game Fouls Desk */}
-      {!isTBD && (
-        <MatchPlayerLineupAndFoulsPanel
-          match={match}
-          isLocked={isLocked}
-          canEdit={canEdit || canManageMatch}
-        />
-      )}
+      {/* Per-Player Lineup (In Play vs Reserved) & All Game Fouls Popup Desk */}
+      <MatchPlayerLineupAndFoulsPanel
+        match={match}
+        isLocked={isLocked}
+        canEdit={canEdit || canManageMatch}
+      />
 
       {/* Scorekeeper Advancement Target Selector (Decide which next-round slot the winner advances to) */}
       {(match.status === 'live' || (isLocked && match.winner)) && candidateTargets.length > 0 && canManageMatch && (
@@ -1323,7 +1471,7 @@ function MatchCard({ match, queue, enqueue, onAssignScorer, canAssign }: {
       )}
 
       {/* Actions */}
-      <div className="match-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', paddingTop: '10px', marginTop: 'auto', borderTop: '1px solid var(--border)' }}>
+      <div className="match-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
         {match.status === 'scheduled' && (
           <button
             className="btn btn-sm btn-primary"

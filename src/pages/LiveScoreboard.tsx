@@ -356,7 +356,7 @@ export default function LiveScoreboard() {
             description="Try selecting All Sports or seed demo tournament data from the top bar."
           />
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14, alignItems: 'stretch' }}>
             {filteredMatches.map(m => {
               const teamAName = isPlaceholder(m.teamA) ? 'TBD' : m.teamA;
               const teamBName = isPlaceholder(m.teamB) ? 'TBD' : m.teamB;
@@ -371,6 +371,8 @@ export default function LiveScoreboard() {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 12,
+                    height: '100%',
+                    boxSizing: 'border-box',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
@@ -392,30 +394,31 @@ export default function LiveScoreboard() {
                       alignItems: 'center',
                       gap: 10,
                       padding: '10px 12px',
+                      minHeight: 54,
                       borderRadius: 10,
                       background: 'var(--bg-elevated)',
                       border: '1px solid var(--border)',
                     }}
                   >
-                    <div style={{ fontWeight: m.winner === m.teamA ? 800 : 600, color: m.winner === m.teamA ? 'var(--color-success)' : 'var(--text-primary)', fontSize: 13.5 }}>
+                    <div style={{ fontWeight: m.winner === m.teamA ? 800 : 600, color: m.winner === m.teamA ? 'var(--color-success)' : 'var(--text-primary)', fontSize: 13.5, lineHeight: 1.25 }}>
                       {teamAName}
                     </div>
-                    <div style={{ fontWeight: 900, fontSize: 16, color: m.status === 'live' ? 'var(--color-live)' : 'var(--text-primary)', padding: '2px 10px' }}>
+                    <div style={{ fontWeight: 900, fontSize: 16, color: m.status === 'live' ? 'var(--color-live)' : 'var(--text-primary)', padding: '2px 10px', whiteSpace: 'nowrap' }}>
                       {m.status === 'scheduled' ? 'VS' : `${m.scoreA} – ${m.scoreB}`}
                     </div>
-                    <div style={{ textAlign: 'right', fontWeight: m.winner === m.teamB ? 800 : 600, color: m.winner === m.teamB ? 'var(--color-success)' : 'var(--text-primary)', fontSize: 13.5 }}>
+                    <div style={{ textAlign: 'right', fontWeight: m.winner === m.teamB ? 800 : 600, color: m.winner === m.teamB ? 'var(--color-success)' : 'var(--text-primary)', fontSize: 13.5, lineHeight: 1.25 }}>
                       {teamBName}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-muted)', marginTop: 'auto' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--text-secondary)', fontWeight: 600 }}>
                       <MapPinIcon size={12} color="var(--accent)" /> {info.venueName}
                     </span>
                     <span>{info.dateStr} · {info.timeStr}</span>
                   </div>
 
-                  <PublicMatchPlayersFoulsPanel match={m} defaultOpen={m.status === 'live'} />
+                  <PublicMatchPlayersFoulsPanel match={m} />
                 </div>
               );
             })}

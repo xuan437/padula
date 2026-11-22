@@ -938,6 +938,7 @@ input, select, textarea {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+  align-items: stretch;
 }
 
 .scoreboard-card {
@@ -949,6 +950,8 @@ input, select, textarea {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--border);
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .scoreboard-card::before {
@@ -1050,8 +1053,9 @@ input, select, textarea {
    ============================================================ */
 .match-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
+  align-items: stretch;
 }
 
 .match-card {
@@ -1064,6 +1068,9 @@ input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  height: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .match-header {

@@ -1705,12 +1705,13 @@ export default function GuestPublicPage() {
                       <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Active</span>
                     </div>
 
-                    {/* Live Player List (In Play / Reserved) & All Game Fouls */}
-                    <PublicMatchPlayersFoulsPanel match={m} defaultOpen={true} />
+                    {/* Live Player List (In Play / Reserved) & All Game Fouls Popup Trigger */}
+                    <div style={{ marginTop: 'auto', marginBottom: '10px' }}>
+                      <PublicMatchPlayersFoulsPanel match={m} />
+                    </div>
 
                     {/* Footer: Officials & Share Action */}
                     <div style={{
-                      marginTop: 'auto',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',

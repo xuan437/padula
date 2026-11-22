@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
-import { getSportName } from '../lib/sports';
+import { getSportName, getSportIcon } from '../lib/sports';
 import { isPlaceholder } from '../lib/bracket';
 import {
   getSportFoulRules,
@@ -8,7 +9,7 @@ import {
   getPlayerTotalFouls,
   getPlayerRosterStatus,
 } from '../lib/fouls';
-import { UsersIcon } from './Icons';
+import { UsersIcon, XIcon } from './Icons';
 import type { Match, Player, PlayerRosterStatus } from '../types';
 
 export default function PublicMatchPlayersFoulsPanel({
@@ -19,7 +20,19 @@ export default function PublicMatchPlayersFoulsPanel({
   defaultOpen?: boolean;
 }) {
   const { players, teams } = useApp();
-  const [isOpen, setIsOpen] = useState<boolean>(defaultOpen);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  // Keep defaultOpen prop accepted for compatibility while ensuring trigger opens as a modal popup
+  void defaultOpen;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isOpen]);
 
   const foulRules = useMemo(() => getSportFoulRules(match.sport), [match.sport]);
 
@@ -109,7 +122,7 @@ export default function PublicMatchPlayersFoulsPanel({
         <div
           key={p.id}
           style={{
-            padding: '7px 10px',
+            padding: '8px 11px',
             borderRadius: '8px',
             background: 'var(--bg-surface)',
             border: isFouledOut
@@ -119,10 +132,10 @@ export default function PublicMatchPlayersFoulsPanel({
               : '1px solid var(--border-light)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '5px',
+            gap: '6px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
               <span
                 style={{
@@ -139,7 +152,7 @@ export default function PublicMatchPlayersFoulsPanel({
               </span>
               <span
                 style={{
-                  fontSize: '12px',
+                  fontSize: '12.5px',
                   fontWeight: 700,
                   color: 'var(--text-primary)',
                   overflow: 'hidden',
@@ -150,7 +163,7 @@ export default function PublicMatchPlayersFoulsPanel({
                 {p.name}
               </span>
               {p.position && (
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>({p.position})</span>
+                <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>({p.position})</span>
               )}
             </div>
 
@@ -200,9 +213,9 @@ export default function PublicMatchPlayersFoulsPanel({
                 <span
                   key={fType}
                   style={{
-                    fontSize: '9.5px',
+                    fontSize: '10px',
                     fontWeight: 700,
-                    padding: '1.5px 6px',
+                    padding: '2px 7px',
                     borderRadius: '4px',
                     background: fType.toLowerCase().includes('red')
                       ? 'rgba(239, 68, 68, 0.16)'
@@ -230,11 +243,11 @@ export default function PublicMatchPlayersFoulsPanel({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
+          gap: '10px',
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border)',
-          borderRadius: '10px',
-          padding: '10px',
+          borderRadius: '12px',
+          padding: '14px',
           minWidth: 0,
         }}
       >
@@ -243,28 +256,38 @@ export default function PublicMatchPlayersFoulsPanel({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '6px',
+            gap: '8px',
             flexWrap: 'wrap',
             borderBottom: '1px solid var(--border-light)',
-            paddingBottom: '6px',
+            paddingBottom: '8px',
           }}
         >
-          <div style={{ fontWeight: 800, fontSize: '12px', color: 'var(--text-primary)' }}>
+          <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text-primary)' }}>
             {teamName || `Team ${side}`}
           </div>
-          <span style={{ fontSize: '10.5px', fontWeight: 800, color: '#f59e0b' }}>
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              color: '#f59e0b',
+              padding: '2px 8px',
+              borderRadius: '999px',
+              background: 'rgba(245, 158, 11, 0.14)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+            }}
+          >
             Team Fouls: {totalTeamFouls}
           </span>
         </div>
 
         {/* IN PLAY SECTION */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              fontSize: '10.5px',
+              fontSize: '11px',
               fontWeight: 800,
               color: '#10b981',
               textTransform: 'uppercase',
@@ -277,11 +300,11 @@ export default function PublicMatchPlayersFoulsPanel({
           {inPlayPlayers.length === 0 ? (
             <div
               style={{
-                fontSize: '11px',
+                fontSize: '11.5px',
                 color: 'var(--text-muted)',
-                padding: '6px 8px',
+                padding: '8px 10px',
                 background: 'var(--bg-surface)',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 textAlign: 'center',
               }}
             >
@@ -293,13 +316,13 @@ export default function PublicMatchPlayersFoulsPanel({
         </div>
 
         {/* RESERVED SECTION */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '4px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              fontSize: '10.5px',
+              fontSize: '11px',
               fontWeight: 800,
               color: '#f59e0b',
               textTransform: 'uppercase',
@@ -312,11 +335,11 @@ export default function PublicMatchPlayersFoulsPanel({
           {reservedPlayers.length === 0 ? (
             <div
               style={{
-                fontSize: '11px',
+                fontSize: '11.5px',
                 color: 'var(--text-muted)',
-                padding: '6px 8px',
+                padding: '8px 10px',
                 background: 'var(--bg-surface)',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 textAlign: 'center',
               }}
             >
@@ -330,38 +353,200 @@ export default function PublicMatchPlayersFoulsPanel({
     );
   };
 
+  const modalContent = isOpen ? (
+    <div
+      onClick={() => setIsOpen(false)}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'rgba(6, 11, 25, 0.72)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+      }}
+    >
+      <div
+        className="glass-card"
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: '860px',
+          maxHeight: '88vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '16px',
+          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Modal Header */}
+        <div
+          style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--bg-elevated)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <span
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '10px',
+                background: 'rgba(2, 132, 199, 0.14)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {getSportIcon(match.sport, 18, 'var(--accent)')}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {getSportName(match.sport)} · {match.round}
+                </span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    background: 'rgba(56, 189, 248, 0.14)',
+                    color: '#38bdf8',
+                  }}
+                >
+                  {rosterA.length + rosterB.length} Athletes · Fouls {totalFoulsTeamA}–{totalFoulsTeamB}
+                </span>
+              </div>
+              <h3 style={{ margin: '2px 0 0', fontSize: '16px', fontWeight: 900, color: 'var(--text-primary)' }}>
+                {match.teamA} ({match.scoreA}) vs {match.teamB} ({match.scoreB}) — Player List &amp; Game Fouls
+              </h3>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close Player List Popup"
+            style={{ padding: '6px 10px', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 700 }}
+          >
+            <XIcon size={15} />
+            <span>Close</span>
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div
+          style={{
+            padding: '18px 20px',
+            overflowY: 'auto',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '16px',
+          }}
+        >
+          {renderTeamColumn('A', match.teamA, rosterA, totalFoulsTeamA)}
+          {renderTeamColumn('B', match.teamB, rosterB, totalFoulsTeamB)}
+        </div>
+
+        {/* Modal Footer */}
+        <div
+          style={{
+            padding: '12px 20px',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg-elevated)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+            fontSize: '11.5px',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <span>
+            Sport Foul Categories: <strong>{foulRules.types.map(t => t.shortLabel).join(' · ')}</strong>
+          </span>
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={() => setIsOpen(false)}
+            style={{ fontWeight: 700 }}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
+    <div style={{ width: '100%', marginTop: 'auto', paddingTop: '6px' }}>
       <button
         type="button"
         className="btn btn-xs btn-outline"
-        onClick={() => setIsOpen(o => !o)}
+        onClick={() => setIsOpen(true)}
         style={{
           width: '100%',
           justifyContent: 'space-between',
-          padding: '7px 12px',
+          padding: '8px 12px',
           fontSize: '11.5px',
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
+          gap: '8px',
           borderRadius: '8px',
+          boxSizing: 'border-box',
+          minWidth: 0,
         }}
       >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            minWidth: 0,
+            overflow: 'hidden',
+          }}
+        >
           <UsersIcon size={13} color="var(--accent)" />
-          <span>
-            Player List (In Play / Reserved) &amp; Game Fouls ({rosterA.length + rosterB.length} Athletes · Fouls: {totalFoulsTeamA}–{totalFoulsTeamB})
+          <span
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Player List &amp; Game Fouls ({rosterA.length + rosterB.length} Athletes · Fouls: {totalFoulsTeamA}–{totalFoulsTeamB})
           </span>
         </span>
-        <span>{isOpen ? 'Hide ▴' : 'View Lineup & Fouls ▾'}</span>
+        <span
+          style={{
+            flexShrink: 0,
+            color: 'var(--accent)',
+            fontWeight: 800,
+            fontSize: '11px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          View List ↗
+        </span>
       </button>
 
-      {isOpen && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
-          {renderTeamColumn('A', match.teamA, rosterA, totalFoulsTeamA)}
-          {renderTeamColumn('B', match.teamB, rosterB, totalFoulsTeamB)}
-        </div>
-      )}
+      {typeof document !== 'undefined' && modalContent ? createPortal(modalContent, document.body) : modalContent}
     </div>
   );
 }
