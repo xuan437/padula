@@ -438,13 +438,13 @@ function MatchPlayerLineupAndFoulsPanel({
 
   const teamAObj = useMemo(
     () => teams.find(t => t.name.toLowerCase() === (match.teamA || '').toLowerCase() && (t.sport === match.sport || getSportName(t.sport) === getSportName(match.sport))) ||
-          teams.find(t => t.name.toLowerCase() === (match.teamA || '').toLowerCase()),
+      teams.find(t => t.name.toLowerCase() === (match.teamA || '').toLowerCase()),
     [teams, match.teamA, match.sport]
   );
 
   const teamBObj = useMemo(
     () => teams.find(t => t.name.toLowerCase() === (match.teamB || '').toLowerCase() && (t.sport === match.sport || getSportName(t.sport) === getSportName(match.sport))) ||
-          teams.find(t => t.name.toLowerCase() === (match.teamB || '').toLowerCase()),
+      teams.find(t => t.name.toLowerCase() === (match.teamB || '').toLowerCase()),
     [teams, match.teamB, match.sport]
   );
 
@@ -544,8 +544,8 @@ function MatchPlayerLineupAndFoulsPanel({
             border: isFouledOut
               ? '1.5px solid #ef4444'
               : status === 'in_play'
-              ? '1px solid rgba(16, 185, 129, 0.35)'
-              : '1px solid rgba(245, 158, 11, 0.35)',
+                ? '1px solid rgba(16, 185, 129, 0.35)'
+                : '1px solid rgba(245, 158, 11, 0.35)',
             boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
             display: 'flex',
             flexDirection: 'column',
@@ -619,14 +619,14 @@ function MatchPlayerLineupAndFoulsPanel({
                   background: isFouledOut
                     ? 'rgba(239, 68, 68, 0.16)'
                     : foulData.matchTotal > 0
-                    ? 'rgba(245, 158, 11, 0.16)'
-                    : 'var(--bg-elevated)',
+                      ? 'rgba(245, 158, 11, 0.16)'
+                      : 'var(--bg-elevated)',
                   color: isFouledOut ? '#ef4444' : foulData.matchTotal > 0 ? '#d97706' : 'var(--text-muted)',
                   border: isFouledOut
                     ? '1px solid rgba(239, 68, 68, 0.45)'
                     : foulData.matchTotal > 0
-                    ? '1px solid rgba(245, 158, 11, 0.4)'
-                    : '1px solid var(--border)',
+                      ? '1px solid rgba(245, 158, 11, 0.4)'
+                      : '1px solid var(--border)',
                 }}
               >
                 {foulData.matchTotal} Foul{foulData.matchTotal === 1 ? '' : 's'}
@@ -688,18 +688,18 @@ function MatchPlayerLineupAndFoulsPanel({
                     background: fType.toLowerCase().includes('red')
                       ? 'rgba(239, 68, 68, 0.15)'
                       : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                      ? 'rgba(245, 158, 11, 0.15)'
-                      : 'rgba(14, 165, 233, 0.12)',
+                        ? 'rgba(245, 158, 11, 0.15)'
+                        : 'rgba(14, 165, 233, 0.12)',
                     color: fType.toLowerCase().includes('red')
                       ? '#ef4444'
                       : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                      ? '#d97706'
-                      : '#0284c7',
+                        ? '#d97706'
+                        : '#0284c7',
                     border: fType.toLowerCase().includes('red')
                       ? '1px solid rgba(239, 68, 68, 0.35)'
                       : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                      ? '1px solid rgba(245, 158, 11, 0.35)'
-                      : '1px solid rgba(14, 165, 233, 0.3)',
+                        ? '1px solid rgba(245, 158, 11, 0.35)'
+                        : '1px solid rgba(14, 165, 233, 0.3)',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
@@ -771,20 +771,20 @@ function MatchPlayerLineupAndFoulsPanel({
                       ft.severity === 'severe'
                         ? 'rgba(239, 68, 68, 0.08)'
                         : ft.severity === 'warning'
-                        ? 'rgba(245, 158, 11, 0.08)'
-                        : 'var(--bg-elevated)',
+                          ? 'rgba(245, 158, 11, 0.08)'
+                          : 'var(--bg-elevated)',
                     border:
                       ft.severity === 'severe'
                         ? '1px solid rgba(239, 68, 68, 0.35)'
                         : ft.severity === 'warning'
-                        ? '1px solid rgba(245, 158, 11, 0.35)'
-                        : '1px solid var(--border)',
+                          ? '1px solid rgba(245, 158, 11, 0.35)'
+                          : '1px solid var(--border)',
                     color:
                       ft.severity === 'severe'
                         ? '#ef4444'
                         : ft.severity === 'warning'
-                        ? '#d97706'
-                        : 'var(--text-primary)',
+                          ? '#d97706'
+                          : 'var(--text-primary)',
                   }}
                 >
                   +{ft.shortLabel}
@@ -1843,12 +1843,12 @@ export default function ScorekeeperDashboard() {
 
   const isAllowedScorerDesk = Boolean(
     currentUser &&
-      (currentUser.role === 'scorer' ||
-        currentUser.role === 'director' ||
-        currentUser.role === 'coordinator' ||
-        currentUser.isMock ||
-        currentUser.email?.toLowerCase().startsWith('demo.') ||
-        settings.security.permissionsMatrix[currentUser.role]?.canEnterScores)
+    (currentUser.role === 'scorer' ||
+      currentUser.role === 'director' ||
+      currentUser.role === 'coordinator' ||
+      currentUser.isMock ||
+      currentUser.email?.toLowerCase().startsWith('demo.') ||
+      settings.security.permissionsMatrix[currentUser.role]?.canEnterScores)
   );
 
   if (!isAllowedScorerDesk) {

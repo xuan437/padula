@@ -145,8 +145,8 @@ export default function RegistrationPage() {
       XLSX.writeFile(wb, 'padula_teams_template.xlsx');
     } else {
       const ws = XLSX.utils.aoa_to_sheet([
-        ['Last Name', 'First Name', 'Middle Initial', 'Student ID', 'Department', 'Sport', 'Team', 'Jersey Number', 'Position', 'Gmail', 'Medical Cleared'],
-        ['Santos', 'Maria', 'C', '2026-0001', 'BAA', 'Basketball', 'BAA Falcons', '10', 'Point Guard', 'maria.santos@asiancollege.edu.ph', 'Yes'],
+        ['Last Name', 'First Name', 'Middle Initial', 'Student ID', 'Department', 'Sport', 'Team', 'Jersey Number', 'Position', 'Medical Cleared'],
+        ['Santos', 'Maria', 'C', '2026-0001', 'BAA', 'Basketball', 'BAA Falcons', '10', 'Point Guard', 'Yes'],
       ]);
       XLSX.utils.book_append_sheet(wb, ws, 'Players');
       XLSX.writeFile(wb, 'padula_players_template.xlsx');
@@ -236,8 +236,6 @@ export default function RegistrationPage() {
 
           const jersey = pickField(row, ['jerseynumber', 'jersey', 'number', 'no']) || '00';
           const position = pickField(row, ['position', 'role', 'pos']) || 'Player';
-          const emailRaw = pickField(row, ['gmail', 'email', 'institutionalgmail']);
-          const cleanEmail = emailRaw ? emailRaw.toLowerCase() : `${studentId.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.asiancollege.edu.ph`;
           const medRaw = pickField(row, ['medicalcleared', 'medical', 'cleared', 'eligible']).toLowerCase();
           const medicalCleared = medRaw ? !['no', 'false', '0', 'pending'].includes(medRaw) : true;
 
@@ -250,7 +248,6 @@ export default function RegistrationPage() {
             teamId: matchedTeam?.id,
             jerseyNumber: jersey,
             position,
-            email: cleanEmail,
             medicalCleared,
             isActive: true,
             currentSeasonGoals: 0,
@@ -294,7 +291,7 @@ export default function RegistrationPage() {
 
   // Form states
   const [teamForm, setTeamForm] = useState({ name: '', sport: 's1', department: 'd1', division: 'div1', color: '#3b82f6' });
-  const [playerForm, setPlayerForm] = useState({ lastName: '', firstName: '', middleInitial: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', email: '', medicalCleared: true });
+  const [playerForm, setPlayerForm] = useState({ lastName: '', firstName: '', middleInitial: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', medicalCleared: true });
   const [officialForm, setOfficialForm] = useState({ name: '', sport: 'Basketball', affiliation: '', licenseId: '', contact: '' });
   const [coordForm, setCoordForm] = useState({ name: '', email: '', department: 'd1' });
 
@@ -327,7 +324,6 @@ export default function RegistrationPage() {
       ? `${cleanFirst} ${cleanMI.toUpperCase()}. ${cleanLast}`
       : `${cleanFirst} ${cleanLast}`;
     const cleanStudentId = playerForm.studentId.trim();
-    const cleanEmail = playerForm.email.trim().toLowerCase() || `${cleanStudentId.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.asiancollege.edu.ph`;
 
     // Register player entity (no player login account)
     registerPlayer({
@@ -338,7 +334,6 @@ export default function RegistrationPage() {
       teamId: playerForm.teamId || undefined,
       jerseyNumber: playerForm.jerseyNumber.trim() || '00',
       position: playerForm.position.trim() || 'Player',
-      email: cleanEmail,
       medicalCleared: playerForm.medicalCleared,
       isActive: true,
       currentSeasonGoals: 0,
@@ -348,7 +343,7 @@ export default function RegistrationPage() {
     const teamNotice = assignedTeam ? ` and assigned to team "${assignedTeam.name}"` : '';
     setSuccessBanner(`Athlete "${fullName}" (${cleanStudentId}) registered successfully${teamNotice}.`);
     setRegisteredPlayerNotice(true);
-    setPlayerForm({ lastName: '', firstName: '', middleInitial: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', email: '', medicalCleared: true });
+    setPlayerForm({ lastName: '', firstName: '', middleInitial: '', studentId: '', department: 'd1', sport: 's1', teamId: '', jerseyNumber: '', position: '', medicalCleared: true });
     setTimeout(() => {
       setRegisteredPlayerNotice(false);
       setSuccessBanner(null);
@@ -1396,22 +1391,7 @@ export default function RegistrationPage() {
                   />
                 </div>
 
-                {/* 3. Gmail Address */}
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                    <MailIcon size={13} color="var(--accent)" />
-                    Institutional Gmail
-                  </label>
-                  <input
-                    type="email"
-                    value={playerForm.email}
-                    onChange={e => setPlayerForm(p => ({ ...p, email: e.target.value }))}
-                    className="form-input"
-                    style={{ height: '42px', borderRadius: '8px', fontSize: '13px' }}
-                  />
-                </div>
-
-                {/* 4. Department */}
+                {/* 3. Department */}
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     <TrophyIcon size={13} color="var(--accent)" />
@@ -1703,7 +1683,6 @@ export default function RegistrationPage() {
                     teamId: '',
                     jerseyNumber: '',
                     position: '',
-                    email: '',
                     medicalCleared: true,
                   })}
                   style={{ padding: '12px 20px', fontSize: '13px' }}

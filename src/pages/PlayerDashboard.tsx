@@ -38,17 +38,6 @@ export default function PlayerDashboard() {
   const isScorer = currentUser?.role === 'scorer';
   const canEditLineupAndFouls = canManage || isScorer;
   const isGuest = !currentUser || currentUser?.role === 'guest';
-  const isPlayer = currentUser?.role === 'player';
-
-  // Find my athlete profile if logged in as player
-  const myPlayerProfile = useMemo(() => {
-    if (!isPlayer) return null;
-    return players.find(p =>
-      (p.email && currentUser?.email && p.email.toLowerCase() === currentUser.email.toLowerCase()) ||
-      p.studentId.toLowerCase() === currentUser?.username.toLowerCase() ||
-      p.name.toLowerCase() === currentUser?.name.toLowerCase()
-    );
-  }, [isPlayer, players, currentUser]);
 
   // Find official assigned sport if current user is scorer
   const myOfficial = useMemo(() => {
@@ -239,83 +228,6 @@ export default function PlayerDashboard() {
           )}
         </div>
       </div>
-
-      {/* ── Athlete Profile Hero (Shown when logged in as a Player) ── */}
-      {isPlayer && myPlayerProfile && (
-        <div
-          className="glass-card"
-          style={{
-            padding: '20px 24px',
-            background: 'linear-gradient(135deg, rgba(2, 132, 199,0.12) 0%, rgba(15,23,42,0.85) 100%)',
-            border: '1.5px solid var(--accent)',
-            borderRadius: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '14px',
-              background: 'var(--accent)',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: 'var(--font-sports)',
-              fontWeight: 900,
-              fontSize: '22px',
-              boxShadow: '0 4px 14px rgba(2, 132, 199,0.3)',
-            }}>
-              #{myPlayerProfile.jerseyNumber || '00'}
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Student Athlete Portal
-                </span>
-                <span style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: myPlayerProfile.medicalCleared ? '#10b981' : '#38bdf8',
-                  background: myPlayerProfile.medicalCleared ? 'rgba(16,185,129,0.12)' : 'rgba(56, 189, 248,0.12)',
-                  padding: '2px 8px',
-                  borderRadius: '20px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 3,
-                }}>
-                  {myPlayerProfile.medicalCleared ? <><CheckIcon size={11} color="#10b981" /> Cleared</> : 'Medical Pending'}
-                </span>
-              </div>
-              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                Welcome, {myPlayerProfile.name}
-              </h2>
-              <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <span>ID: <strong style={{ color: 'var(--text-primary)' }}>{myPlayerProfile.studentId}</strong></span>
-                <span>Department: <strong style={{ color: 'var(--text-primary)' }}>{departments.find(d => d.id === myPlayerProfile.department || d.shortName?.toUpperCase() === myPlayerProfile.department?.toUpperCase())?.name || myPlayerProfile.department || 'Unassigned'}</strong></span>
-                <span>Team: <strong style={{ color: 'var(--accent)' }}>{teams.find(t => t.id === myPlayerProfile.teamId)?.name || 'Unassigned'}</strong></span>
-                <span>Sport: <strong style={{ color: 'var(--text-primary)' }}>{getSportName(myPlayerProfile.sport)}</strong></span>
-                <span>Position: <strong style={{ color: 'var(--text-primary)' }}>{myPlayerProfile.position || 'Athlete'}</strong></span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              className="btn btn-primary"
-              onClick={() => setActiveProfilePlayer(myPlayerProfile)}
-              style={{ fontWeight: 700, padding: '8px 18px' }}
-            >
-              View My Match Stats & Profile
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Sport Filter Tabs ── */}
       <div className="glass-card" style={{ padding: '12px 16px' }}>

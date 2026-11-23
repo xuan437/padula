@@ -3,7 +3,7 @@
 // ============================================================
 
 // ── Roles ────────────────────────────────────────────────────────────────────
-export type UserRole = 'director' | 'coordinator' | 'scorer' | 'player' | 'guest';
+export type UserRole = 'director' | 'coordinator' | 'scorer' | 'guest';
 
 export type StaffRole = 'director' | 'coordinator' | 'scorer';
 export type StaffStatus = 'active' | 'pending' | 'disabled';

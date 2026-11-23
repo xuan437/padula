@@ -20,7 +20,6 @@ export function useRoleGuard(allowedRoles: UserRole[]) {
       // Redirect based on actual role
       switch (currentUser.role) {
         case 'scorer':      setActiveView('scorekeeper'); break;
-        case 'player':      setActiveView('player');      break;
         case 'guest':       setActiveView('public');      break;
         default:            setActiveView('admin');       break;
       }

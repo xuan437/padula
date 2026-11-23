@@ -466,8 +466,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (stored) {
         const parsed: User[] = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Remove mock/legacy director accounts and ensure the official Director & Demo Accounts are present
-          const cleaned = parsed.filter(u =>
+          // Remove mock/legacy/player accounts and ensure only Director, Coordinator, and Scorer accounts are present
+          const cleaned = parsed.filter((u: any) =>
+            u.role !== 'player' &&
             !u.isMock &&
             !u.email?.includes('mock.') &&
             !u.email?.includes('demo.director@') &&
@@ -821,8 +822,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             isActive: u.is_active, isDefaultPassword: u.is_default_password,
           }));
           const mergedUsers = [...INITIAL_USERS];
-          fromDb.forEach(u => {
-            if (!u.email?.includes('mock.') && !mergedUsers.some(m => m.email.toLowerCase() === u.email?.toLowerCase())) {
+          fromDb.forEach((u: any) => {
+            if (u.role !== 'player' && !u.email?.includes('mock.') && !mergedUsers.some(m => m.email.toLowerCase() === u.email?.toLowerCase())) {
               mergedUsers.push(u);
             }
           });
@@ -2778,9 +2779,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // ── Scoring ─────────────────────────────────────────────────────────────
   const updateMatchScore = useCallback((matchId: string, scoreA: number, scoreB: number, details?: any) => {
-    // 1. Role permission check: guests and players are strictly read-only
-    if (!currentUser || currentUser.role === 'guest' || currentUser.role === 'player') {
-      console.warn('Security: Unauthorized score edit rejected. Guests and athletes are read-only.');
+    // 1. Role permission check: guests are strictly read-only
+    if (!currentUser || currentUser.role === 'guest') {
+      console.warn('Security: Unauthorized score edit rejected. Guests are read-only.');
       return;
     }
 

@@ -13,7 +13,6 @@ const ROLE_META: Record<UserRole, { label: string; color: string }> = {
   director:    { label: 'Sports Director',    color: '#0284c7' },
   coordinator: { label: 'Sports Coordinator', color: '#2563eb' },
   scorer:      { label: 'Scorer',             color: '#059669' },
-  player:      { label: 'Varsity Athlete',    color: '#d97706' },
   guest:       { label: 'Public Spectator',   color: '#64748b' },
 };
 

@@ -15,7 +15,7 @@ interface Props {
   onChange: (updated: SecuritySettings) => void;
 }
 
-const ROLES_ORDER: UserRole[] = ['director', 'coordinator', 'scorer', 'player', 'guest'];
+const ROLES_ORDER: UserRole[] = ['director', 'coordinator', 'scorer', 'guest'];
 
 export default function UsersSecuritySection({
   settings,

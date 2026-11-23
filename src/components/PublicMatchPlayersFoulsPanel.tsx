@@ -112,9 +112,9 @@ export default function PublicMatchPlayersFoulsPanel({
       const foulData = getEffectivePlayerFouls(p);
       const isFouledOut = Boolean(
         (foulRules.foulOutLimit && foulData.matchTotal >= foulRules.foulOutLimit) ||
-          (foulData.breakdown['Red Card'] || 0) > 0 ||
-          (foulData.breakdown['Red Card Penalty'] || 0) > 0 ||
-          (foulData.breakdown['Fault Card (Red)'] || 0) > 0
+        (foulData.breakdown['Red Card'] || 0) > 0 ||
+        (foulData.breakdown['Red Card Penalty'] || 0) > 0 ||
+        (foulData.breakdown['Fault Card (Red)'] || 0) > 0
       );
       const activeFoulTypes = Object.entries(foulData.breakdown).filter(([, count]) => count > 0);
       const paddedJersey = String(p.jerseyNumber || '0').padStart(2, '0');
@@ -129,8 +129,8 @@ export default function PublicMatchPlayersFoulsPanel({
             border: isFouledOut
               ? '1.5px solid #ef4444'
               : status === 'in_play'
-              ? '1px solid rgba(16, 185, 129, 0.35)'
-              : '1px solid rgba(245, 158, 11, 0.35)',
+                ? '1px solid rgba(16, 185, 129, 0.35)'
+                : '1px solid rgba(245, 158, 11, 0.35)',
             boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
             display: 'flex',
             flexDirection: 'column',
@@ -213,14 +213,14 @@ export default function PublicMatchPlayersFoulsPanel({
                   background: isFouledOut
                     ? 'rgba(239, 68, 68, 0.16)'
                     : foulData.matchTotal > 0
-                    ? 'rgba(245, 158, 11, 0.16)'
-                    : 'var(--bg-elevated)',
+                      ? 'rgba(245, 158, 11, 0.16)'
+                      : 'var(--bg-elevated)',
                   color: isFouledOut ? '#ef4444' : foulData.matchTotal > 0 ? '#d97706' : 'var(--text-muted)',
                   border: isFouledOut
                     ? '1px solid rgba(239, 68, 68, 0.45)'
                     : foulData.matchTotal > 0
-                    ? '1px solid rgba(245, 158, 11, 0.4)'
-                    : '1px solid var(--border)',
+                      ? '1px solid rgba(245, 158, 11, 0.4)'
+                      : '1px solid var(--border)',
                 }}
               >
                 {foulData.matchTotal} Foul{foulData.matchTotal === 1 ? '' : 's'}
@@ -256,18 +256,18 @@ export default function PublicMatchPlayersFoulsPanel({
                     background: fType.toLowerCase().includes('red')
                       ? 'rgba(239, 68, 68, 0.15)'
                       : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                      ? 'rgba(245, 158, 11, 0.15)'
-                      : 'rgba(14, 165, 233, 0.12)',
+                        ? 'rgba(245, 158, 11, 0.15)'
+                        : 'rgba(14, 165, 233, 0.12)',
                     color: fType.toLowerCase().includes('red')
                       ? '#ef4444'
                       : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                      ? '#d97706'
-                      : '#0284c7',
+                        ? '#d97706'
+                        : '#0284c7',
                     border: fType.toLowerCase().includes('red')
                       ? '1px solid rgba(239, 68, 68, 0.35)'
                       : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                      ? '1px solid rgba(245, 158, 11, 0.35)'
-                      : '1px solid rgba(14, 165, 233, 0.3)',
+                        ? '1px solid rgba(245, 158, 11, 0.35)'
+                        : '1px solid rgba(14, 165, 233, 0.3)',
                     display: 'inline-flex',
                     alignItems: 'center',
                   }}

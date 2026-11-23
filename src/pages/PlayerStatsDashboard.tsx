@@ -168,7 +168,6 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
     recordPlayerFoul,
     togglePlayerRosterStatus,
   } = useApp();
-  const isPlayer = currentUser?.role === 'player';
   const canEditLineupAndFouls =
     currentUser?.role === 'director' ||
     currentUser?.role === 'coordinator' ||
@@ -243,8 +242,7 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
   return (
     <div style={{ background: C.bg, minHeight: '100vh', fontFamily: 'inherit', color: C.textP }}>
 
-      {/* ── Top navigation bar — hidden for players ─────────────────────────── */}
-      {!isPlayer && (
+      {/* ── Top navigation bar ─────────────────────────── */}
       <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
@@ -274,7 +272,6 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
           </select>
         </div>
       </div>
-      )}
 
       {/* ── Main content ───────────────────────────────────────────────────── */}
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1280px', margin: '0 auto' }}>
@@ -575,10 +572,9 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
         </div>
 
         {/* ── ROW: Performance chart | Career history | Season gauge ───────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isPlayer ? '1fr 1fr' : '1fr 1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
 
-          {/* Performance & Scoring Index — hidden for players */}
-          {!isPlayer && (
+          {/* Performance & Scoring Index */}
           <div style={card()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div style={label()}>Performance & Scoring Index</div>
@@ -588,7 +584,6 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
             </div>
             <PerformanceChart currentPts={currentSeasonGoals} />
           </div>
-          )}
 
           {/* Collegiate Career History */}
           <div style={card()}>

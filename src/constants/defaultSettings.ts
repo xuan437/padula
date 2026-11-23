@@ -513,16 +513,6 @@ export const DEFAULT_SECURITY: SecuritySettings = {
       canManageUsers: false,
       canAccessSettings: false, // Strictly blocked
     },
-    player: {
-      role: 'player',
-      canViewMatches: true,
-      canEnterScores: false,
-      canEditFinalScores: false,
-      canApproveRosters: false,
-      canManageSchedules: false,
-      canManageUsers: false,
-      canAccessSettings: false,
-    },
     guest: {
       role: 'guest',
       canViewMatches: true,
@@ -541,7 +531,6 @@ export const DEFAULT_DASHBOARDS: DashboardSettings = {
     director: 'admin',
     coordinator: 'admin',
     scorer: 'scorekeeper',
-    player: 'public',
     guest: 'public',
   },
   defaultSportFilter: 'all',

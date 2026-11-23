@@ -14,7 +14,6 @@ import {
   ShieldIcon,
   HomeIcon,
   LiveIcon,
-  BarChartIcon,
   AlertTriangleIcon,
   PlusIcon,
   ArrowRightIcon,
@@ -190,7 +189,6 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
   const role = currentUser?.role ?? 'guest';
   const isDirector = role === 'director';
   const isScorer = role === 'scorer';
-  const isPlayer = role === 'player';
 
   // ── Derived Data ─────────────────────────────────────────────────────────────
   // Combined scorekeepers list (reads both accredited officials and registered scorekeeper accounts)
@@ -374,32 +372,6 @@ export default function AdminDashboard({ initialFocus: _initialFocus }: { initia
             ))}
           </div>
         )}
-      </div>
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PLAYER DASHBOARD — their matches & personal info
-  // ═══════════════════════════════════════════════════════════════════════════
-  if (isPlayer) {
-    return (
-      <div className="dashboard-content">
-        <div className="page-header">
-          <div>
-            <div className="brand-pill-tag">Athlete Portal</div>
-            <h1 className="page-title">My Schedule</h1>
-            <p className="page-desc">Your upcoming matches, results, and personal performance data.</p>
-          </div>
-          <button className="btn btn-primary" onClick={() => setActiveView('player-stats')} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <BarChartIcon size={16} /> My Stats
-          </button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 14 }}>
-          {matches.slice(0, 6).map(m => (
-            <LiveMatchCard key={m.id} match={m} onOpen={() => setActiveView('live')} />
-          ))}
-        </div>
       </div>
     );
   }

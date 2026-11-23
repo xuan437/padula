@@ -51,7 +51,6 @@ const ROLE_COLOR: Record<string, string> = {
   director:    '#38bdf8',
   coordinator: '#3b82f6',
   scorer:      '#10b981',
-  player:      '#f97316',
   guest:       '#64748b',
 };
 
@@ -109,7 +108,6 @@ export default function AuditLogPage() {
             <option value="director">Sports Director</option>
             <option value="coordinator">Sports Coordinator</option>
             <option value="scorer">Official Scorer</option>
-            <option value="player">Student Athlete</option>
           </select>
         </div>
 
