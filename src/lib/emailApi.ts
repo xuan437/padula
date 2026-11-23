@@ -176,6 +176,67 @@ export async function sendEmailViaOfficialApi(payload: EmailPayload): Promise<Em
 
   const failureReasons: string[] = [];
 
+  // 0. Local Resend Backend Server (POST /api/send-email on VITE_API_URL or http://localhost:3001)
+  const resendServerBaseUrl = (
+    (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3001'
+  ).replace(/\/+$/, '');
+
+  const resendCandidateUrls = [
+    `${resendServerBaseUrl}/api/send-email`,
+    '/api/send-email',
+  ];
+
+  for (const endpointUrl of resendCandidateUrls) {
+    try {
+      const resendRes = await fetch(endpointUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          to: cleanTo,
+          subject: payload.subject.slice(0, 200),
+          message: payload.body.slice(0, 5000),
+        }),
+      });
+
+      const resendData = await resendRes.json().catch(() => null);
+      if (resendRes.ok && resendData?.ok) {
+        const resendTxId = resendData.id ? `RESEND-${resendData.id}` : txId;
+        const successResult: EmailSendResult = {
+          ok: true,
+          success: true,
+          transactionId: resendTxId,
+          provider: 'Resend',
+          recipient: cleanTo,
+          sender: `${payload.fromName} <${cleanFrom}>`,
+          timestamp: nowIso,
+          message: `Sent to ${cleanTo} via Resend.`,
+          webComposeUrl,
+        };
+        await logEmailSendAttempt({
+          id: `elog-${Date.now()}-${txSuffix}`,
+          invitationId: payload.invitationId,
+          recipientEmail: cleanTo,
+          recipientName: payload.toName,
+          roleTitle: payload.roleTitle,
+          timestamp: nowIso,
+          result: 'sent',
+          provider: 'Resend',
+        });
+        return successResult;
+      }
+
+      if (resendData?.error) {
+        failureReasons.push(`Resend API: ${resendData.error}`);
+        break;
+      }
+    } catch {
+      // Server not reachable on this URL candidate; try next candidate
+    }
+  }
+
   // 1. Direct Google Gmail REST endpoint (if token is configured)
   let gmailAccessToken: string | null = null;
   try {
