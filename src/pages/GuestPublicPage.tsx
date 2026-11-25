@@ -24,7 +24,7 @@ import {
   UsersIcon,
 } from '../components/Icons';
 import padulaTitleImg from '../assets/padula-title.png';
-import TournamentTreeBracket from '../components/TournamentTreeBracket';
+import FlexibleBracketView from '../components/FlexibleBracketView';
 import AIPredictionModal from '../components/AIPredictionModal';
 import FloatingDepartmentCards from '../components/FloatingDepartmentCards';
 import DigitalLedClock from '../components/DigitalLedClock';
@@ -39,7 +39,7 @@ import { SportFilter } from '../components/ui';
 import { predictMatch } from '../lib/predictionAi';
 import type { Match } from '../types';
 
-type PublicTab = 'live' | 'results' | 'standings' | 'brackets' | 'schedule' | 'tally' | 'announcements' | 'predictions' | 'players';
+type PublicTab = 'live' | 'elimination' | 'results' | 'standings' | 'brackets' | 'schedule' | 'tally' | 'announcements' | 'predictions' | 'players';
 
 // ── Real Scannable QR Code Component (ISO/IEC 18004 SVG) ────────────────────
 function QRCodeDisplay({ url, size = 110 }: { url: string; size?: number }) {
@@ -202,7 +202,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
 
   const stopBroadcastRecording = () => {
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      try { recorderRef.current.stop(); } catch {}
+      try { recorderRef.current.stop(); } catch { }
     }
     recorderRef.current = null;
     setIsBroadcasting(false);
@@ -249,7 +249,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
-          videoRef.current.play().catch(() => {});
+          videoRef.current.play().catch(() => { });
         }
       }, 30);
     } catch (err: any) {
@@ -280,7 +280,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
   useEffect(() => {
     if (cameraActive && videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     }
   }, [cameraActive]);
 
@@ -351,7 +351,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
   useEffect(() => {
     return () => {
       if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-        try { recorderRef.current.stop(); } catch {}
+        try { recorderRef.current.stop(); } catch { }
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
@@ -418,7 +418,7 @@ function ShareMatchModal({ match, onClose }: { match: any; onClose: () => void }
   const copyText = (notice?: string, customValue?: string) => {
     const payload = customValue ?? text;
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(payload).catch(() => {});
+      navigator.clipboard.writeText(payload).catch(() => { });
       setCopied(true);
     }
     if (notice) setPlatformNotice(notice);
@@ -1046,7 +1046,7 @@ export default function GuestPublicPage() {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
       const t = p.get('tab') as PublicTab;
-      if (['live', 'results', 'standings', 'brackets', 'schedule', 'tally', 'announcements', 'predictions', 'players'].includes(t)) {
+      if (['live', 'elimination', 'results', 'standings', 'brackets', 'schedule', 'tally', 'announcements', 'predictions', 'players'].includes(t)) {
         return t;
       }
     }
@@ -1461,7 +1461,16 @@ export default function GuestPublicPage() {
         }}>
           {([
             { id: 'live', label: 'Live', icon: <FlameIcon size={14} />, count: liveMatches.length, visible: true },
-            { id: 'players', label: 'Players & Fouls', icon: <UsersIcon size={14} />, count: players.length, visible: true },
+            {
+              id: 'elimination',
+              label: 'Elimination Round',
+              icon: <TrophyIcon size={14} />,
+              count: undefined,
+              visible:
+                settings?.sportsCompetition?.eliminationRound?.enabled !== false &&
+                settings?.sportsCompetition?.eliminationRound?.showInPublicView !== false,
+            },
+            { id: 'players', label: 'Players & Fouls', icon: <UsersIcon size={14} />, count: players.length, visible: settings?.publicDisplay?.showPublicPlayerStats !== false },
             { id: 'results', label: 'Results', icon: <TrophyIcon size={14} />, count: finishedMatches.length, visible: true },
             { id: 'standings', label: 'Standings', icon: <MedalIcon size={14} />, count: undefined, visible: settings?.publicDisplay?.showPublicStandings !== false },
             { id: 'brackets', label: 'Brackets', icon: <BracketsIcon size={14} />, count: undefined, visible: settings?.publicDisplay?.showPublicBrackets !== false },
@@ -1911,14 +1920,14 @@ export default function GuestPublicPage() {
                                     background: isFouledOut
                                       ? 'rgba(239, 68, 68, 0.16)'
                                       : totalFouls > 0
-                                      ? 'rgba(245, 158, 11, 0.16)'
-                                      : 'var(--bg-elevated)',
+                                        ? 'rgba(245, 158, 11, 0.16)'
+                                        : 'var(--bg-elevated)',
                                     color: isFouledOut ? '#ef4444' : totalFouls > 0 ? '#f59e0b' : 'var(--text-muted)',
                                     border: isFouledOut
                                       ? '1px solid rgba(239, 68, 68, 0.4)'
                                       : totalFouls > 0
-                                      ? '1px solid rgba(245, 158, 11, 0.35)'
-                                      : '1px solid var(--border-light)',
+                                        ? '1px solid rgba(245, 158, 11, 0.35)'
+                                        : '1px solid var(--border-light)',
                                   }}>
                                     {totalFouls} {totalFouls === 1 ? 'Foul' : 'Fouls'}
                                     {isFouledOut ? ` · ${rules.foulOutLabel || 'FOULED OUT'}` : ''}
@@ -1938,13 +1947,13 @@ export default function GuestPublicPage() {
                                             background: fType.toLowerCase().includes('red')
                                               ? 'rgba(239, 68, 68, 0.15)'
                                               : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                                              ? 'rgba(245, 158, 11, 0.15)'
-                                              : 'rgba(56, 189, 248, 0.12)',
+                                                ? 'rgba(245, 158, 11, 0.15)'
+                                                : 'rgba(56, 189, 248, 0.12)',
                                             color: fType.toLowerCase().includes('red')
                                               ? '#ef4444'
                                               : fType.toLowerCase().includes('yellow') || fType.toLowerCase().includes('technical')
-                                              ? '#f59e0b'
-                                              : '#38bdf8',
+                                                ? '#f59e0b'
+                                                : '#38bdf8',
                                           }}
                                         >
                                           {fType}: {count}
@@ -1970,6 +1979,199 @@ export default function GuestPublicPage() {
           })()}
         </section>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          TAB 1B: ELIMINATION ROUND (Bracket, Game Style & Participating Players)
+         ═══════════════════════════════════════════════════════════════════════ */}
+      {tab === 'elimination' && (() => {
+        const activeSportId = filterSport !== 'all' ? filterSport : 's1';
+        const activeSportName = getSportName(activeSportId);
+        const elimMatches = matches.filter(
+          m =>
+            !m.isBye &&
+            (filterSport === 'all' || m.sport === filterSport || getSportName(m.sport).toLowerCase() === activeSportName.toLowerCase())
+        );
+        const elimEvent = events.find(
+          e => !e.archived && (e.sport === activeSportId || getSportName(e.sport).toLowerCase() === activeSportName.toLowerCase())
+        );
+        const elimFormat = elimEvent?.format || elimMatches[0]?.format || settings?.sportsCompetition?.eliminationRound?.defaultGameStyle || 'single_elimination';
+        const formatDisplay =
+          elimFormat === 'double_elimination'
+            ? 'Double Elimination'
+            : elimFormat === 'round_robin'
+              ? 'Round Robin'
+              : elimFormat === 'point_system'
+                ? 'Point System'
+                : elimFormat === 'combined_rr_elim'
+                  ? 'Round Robin → Elimination'
+                  : elimFormat === 'combined_pts_elim'
+                    ? 'Point System → Elimination'
+                    : 'Single Elimination';
+
+        const participatingTeamNames = new Set<string>();
+        elimMatches.forEach(m => {
+          if (!isPlaceholder(m.teamA)) participatingTeamNames.add(m.teamA.toLowerCase());
+          if (!isPlaceholder(m.teamB)) participatingTeamNames.add(m.teamB.toLowerCase());
+        });
+        const participatingTeams = teams.filter(
+          t =>
+            t.isActive !== false &&
+            (filterSport === 'all' || t.sport === activeSportId || getSportName(t.sport).toLowerCase() === activeSportName.toLowerCase()) &&
+            (participatingTeamNames.size === 0 || participatingTeamNames.has(t.name.toLowerCase()))
+        );
+        const showPublicRoster = settings?.sportsCompetition?.eliminationRound?.showPlayerListInPublicView !== false;
+
+        return (
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="glass-card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Official Elimination Round
+                </div>
+                <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {filterSport === 'all' ? 'All Sports' : activeSportName} — Elimination Round &amp; Rosters
+                </h2>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span className="badge-chip" style={{ fontWeight: 800, color: 'var(--accent)' }}>
+                  Game Style: {formatDisplay} · Best of {settings?.sportsCompetition?.eliminationRound?.defaultBestOf || 1}
+                </span>
+                <span className="badge-chip">
+                  {participatingTeams.length} Participating Teams · {elimMatches.length} Games
+                </span>
+              </div>
+            </div>
+
+            {elimMatches.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                {elimMatches.map((m, idx) => {
+                  const ctx = getMatchContext(m);
+                  const seriesLabel = `Best of ${m.bestOf || settings?.sportsCompetition?.eliminationRound?.defaultBestOf || 1}`;
+                  return (
+                    <div key={m.id} className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase' }}>
+                          {getSportName(m.sport)} · Game #{m.matchNumber || idx + 1} · {seriesLabel}
+                        </span>
+                        <span className={`status-badge ${m.status}`}>
+                          {m.status === 'live' && <span className="live-dot" />}
+                          {m.status.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--bg-elevated)' }}>
+                        <span style={{ flex: 1, fontWeight: m.winner === m.teamA ? 800 : 600, color: m.winner === m.teamA ? 'var(--accent)' : 'var(--text-primary)' }}>
+                          {isPlaceholder(m.teamA) ? 'TBD' : m.teamA}
+                        </span>
+                        <span style={{ fontWeight: 900, fontSize: 18, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                          {m.scoreA} – {m.scoreB}
+                        </span>
+                        <span style={{ flex: 1, textAlign: 'right', fontWeight: m.winner === m.teamB ? 800 : 600, color: m.winner === m.teamB ? 'var(--accent)' : 'var(--text-primary)' }}>
+                          {isPlaceholder(m.teamB) ? 'TBD' : m.teamB}
+                        </span>
+                      </div>
+
+                      {m.winner && !isPlaceholder(m.winner) && (
+                        <div style={{
+                          padding: '6px 10px',
+                          borderRadius: 8,
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          color: '#10b981',
+                          fontSize: 12,
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}>
+                          <TrophyIcon size={13} color="#10b981" />
+                          <span>Winner: {m.winner}</span>
+                        </div>
+                      )}
+
+                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+                        <span>{ctx.venueName}</span>
+                        <span>{ctx.formatLabel}</span>
+                      </div>
+
+                      <PublicMatchPlayersFoulsPanel match={m} defaultOpen={false} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {showPublicRoster && (
+              <div className="glass-card" style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>
+                      Participating Teams &amp; Player List
+                    </h3>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                      Active (In Play) and Reserved players registered by the Sports Director &amp; Coordinators
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+                  {participatingTeams.map(team => {
+                    const teamPlayers = players.filter(
+                      p => p.teamId === team.id || (team.players || []).includes(p.id)
+                    );
+                    const dept = departments.find(d => d.id === team.department);
+                    return (
+                      <div key={team.id} style={{ padding: '14px', borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{team.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                              {dept?.shortName || team.department} · {getSportName(team.sport)}
+                            </div>
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>
+                            {teamPlayers.length} Players
+                          </span>
+                        </div>
+
+                        {teamPlayers.length === 0 ? (
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No players assigned yet.</div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {teamPlayers.map(p => {
+                              const status = getPlayerRosterStatus(p);
+                              const fouls = getPlayerTotalFouls(p);
+                              return (
+                                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12, padding: '6px 8px', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--border-light)' }}>
+                                  <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontWeight: 800, color: 'var(--accent)' }}>#{String(p.jerseyNumber || '0').padStart(2, '0')}</span>
+                                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                                    {p.position && <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>({p.position})</span>}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: status === 'in_play' ? '#10b981' : '#f59e0b' }}>
+                                      {status === 'in_play' ? 'In Play' : 'Reserved'}
+                                    </span>
+                                    {fouls > 0 && (
+                                      <span style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b' }}>
+                                        {fouls}F
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+        );
+      })()}
 
       {/* ═══════════════════════════════════════════════════════════════════════
           TAB 2: MATCH RESULTS
@@ -2124,7 +2326,7 @@ export default function GuestPublicPage() {
                     <td style={{ padding: '12px 16px', textAlign: 'center' }}>{row.played}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 700, color: '#10b981' }}>{row.won}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>{row.lost}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 900, color: 'var(--accent)' }}>{row.won * 2}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 900, color: 'var(--accent)' }}>{row.points ?? row.won * 2}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2137,9 +2339,8 @@ export default function GuestPublicPage() {
           TAB 4: BRACKETS
          ═══════════════════════════════════════════════════════════════════════ */}
       {tab === 'brackets' && (
-        <TournamentTreeBracket
-          initialSportId={filterSport !== 'all' ? filterSport : 's1'}
-          showSportSelector={false}
+        <FlexibleBracketView
+          sportId={filterSport !== 'all' ? filterSport : 's1'}
           isPublicView={true}
         />
       )}
@@ -2275,7 +2476,7 @@ export default function GuestPublicPage() {
                   <th style={{ padding: '10px 16px' }}>Department / College</th>
                   <th style={{ padding: '10px 16px', textAlign: 'center', color: '#eab308' }}>Gold</th>
                   <th style={{ padding: '10px 16px', textAlign: 'center', color: '#94a3b8' }}>Silver</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'center', color: '#b45309' }}>Bronze</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'center', color: 'var(--badge-warn-text)' }}>Bronze</th>
                   <th style={{ padding: '10px 16px', textAlign: 'center' }}>Total</th>
                 </tr>
               </thead>
@@ -2284,7 +2485,7 @@ export default function GuestPublicPage() {
                   const dept = departments.find(d => d.id === row.departmentId);
                   return (
                     <tr key={row.departmentId} style={{ borderBottom: '1px solid var(--border-light)', fontSize: '13px' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 800, color: idx === 0 ? '#eab308' : idx === 1 ? '#94a3b8' : idx === 2 ? '#b45309' : 'var(--text-muted)' }}>
+                      <td style={{ padding: '12px 16px', fontWeight: 800, color: idx === 0 ? '#eab308' : idx === 1 ? '#94a3b8' : idx === 2 ? 'var(--badge-warn-text)' : 'var(--text-muted)' }}>
                         #{idx + 1}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
@@ -2296,7 +2497,7 @@ export default function GuestPublicPage() {
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 800, color: '#eab308' }}>{row.gold}</td>
                       <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 800, color: '#94a3b8' }}>{row.silver}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 800, color: '#b45309' }}>{row.bronze}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 800, color: 'var(--badge-warn-text)' }}>{row.bronze}</td>
                       <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 900, color: 'var(--text-primary)' }}>{row.total}</td>
                     </tr>
                   );
@@ -2621,14 +2822,16 @@ export default function GuestPublicPage() {
           <FlameIcon size={18} />
           <span>Live {liveMatches.length > 0 ? `(${liveMatches.length})` : ''}</span>
         </button>
-        <button
-          type="button"
-          className={tab === 'players' ? 'active' : ''}
-          onClick={() => setTab('players')}
-        >
-          <UsersIcon size={18} />
-          <span>Players &amp; Fouls</span>
-        </button>
+        {settings?.publicDisplay?.showPublicPlayerStats !== false && (
+          <button
+            type="button"
+            className={tab === 'players' ? 'active' : ''}
+            onClick={() => setTab('players')}
+          >
+            <UsersIcon size={18} />
+            <span>Players</span>
+          </button>
+        )}
         <button
           type="button"
           className={tab === 'results' ? 'active' : ''}

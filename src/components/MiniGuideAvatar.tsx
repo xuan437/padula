@@ -1087,6 +1087,7 @@ export default function MiniGuideAvatar() {
 
       {/* ── Floating Bottom-Right Mini Avatar Launcher ── */}
       <div
+        className="mini-guide-launcher"
         style={{
           position: 'fixed',
           bottom: '18px',

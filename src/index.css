@@ -36,6 +36,7 @@
 /* ── LIGHT MODE tokens (WCAG AA Contrast) ── */
 :root,
 [data-theme='light'] {
+  color-scheme: light;
   --bg-app:       #f4f6fa;
   --bg-surface:   #ffffff;
   --bg-elevated:  #edf2f9;
@@ -79,6 +80,7 @@
 
 /* ── DARK MODE tokens (WCAG AA Contrast) ── */
 [data-theme='dark'] {
+  color-scheme: dark;
   --bg-app:       #080d1a;
   --bg-surface:   #0f182c;
   --bg-elevated:  #16223d;
@@ -130,6 +132,7 @@
 /* ── OS-preference fallback (before JS/localStorage runs) ── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
+    color-scheme: dark;
     --bg-app:       #080d1a;
     --bg-surface:   #0f182c;
     --bg-elevated:  #16223d;
@@ -139,13 +142,18 @@
     --text-primary:  #f8fafc;
     --text-secondary:#cbd5e1;
     --text-muted:    #94a3b8;
+    --text-inverse:  #ffffff;
 
     --border:       #1e3152;
     --border-light: #16243d;
     --border-hover: #2d4673;
 
-    --accent-light:  rgba(2, 132, 199,0.15);
-    --accent-border: rgba(2, 132, 199,0.35);
+    --accent:        #38bdf8;
+    --accent-hover:  #0ea5e9;
+    --accent-sub:    #7dd3fc;
+    --accent-light:  rgba(56, 189, 248, 0.14);
+    --accent-border: rgba(56, 189, 248, 0.35);
+    --accent-subtle: rgba(56, 189, 248, 0.08);
 
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
@@ -267,6 +275,16 @@ input, select, textarea {
   font-family: inherit;
   font-size: 14px;
   letter-spacing: -0.005em;
+  color: var(--text-primary);
+}
+
+a {
+  color: var(--accent);
+}
+
+::placeholder {
+  color: var(--text-muted);
+  opacity: 0.85;
 }
 
 /* ============================================================
@@ -555,6 +573,24 @@ input, select, textarea {
 .nav-item.active .nav-icon,
 .nav-btn.active .nav-icon {
   color: var(--accent);
+}
+
+[data-theme='dark'] .nav-item.active,
+[data-theme='dark'] .nav-btn.active {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.42);
+}
+
+[data-theme='dark'] .nav-item.active .nav-icon,
+[data-theme='dark'] .nav-btn.active .nav-icon {
+  color: #38bdf8;
+}
+
+.nav-item:focus-visible,
+.nav-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .nav-item:hover .nav-icon,
@@ -1013,6 +1049,11 @@ input, select, textarea {
   font-weight: 900;
   color: var(--accent);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme='dark'] .sb-team-score {
+  color: #7dd3fc;
 }
 
 .sb-vs-col {
@@ -1138,10 +1179,23 @@ input, select, textarea {
   font-size: 24px;
   font-weight: 800;
   font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
+}
+
+[data-theme='dark'] .score-input {
+  background: var(--bg-elevated);
+  border-color: var(--border-hover);
+  color: #f8fafc;
+}
+
+[data-theme='dark'] .score-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
 }
 
 /* Large Easy-to-Tap Quick Points Buttons for Phones */
@@ -1176,6 +1230,11 @@ input, select, textarea {
   font-weight: 800;
   color: var(--text-primary);
   font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme='dark'] .score-display {
+  color: #f8fafc;
 }
 
 .vs-divider {
@@ -1354,6 +1413,7 @@ input, select, textarea {
 }
 
 /* Select Option Light/Dark support */
+select option,
 select.form-input option {
   background: var(--bg-surface);
   color: var(--text-primary);
@@ -2382,44 +2442,99 @@ select.form-input option {
 }
 
 @media (max-width: 868px) {
+  html,
+  body,
+  #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
   .mobile-bottom-nav {
     display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
     background: var(--bg-surface);
     border-top: 1px solid var(--border);
     z-index: 95;
-    align-items: stretch;
+    align-items: center;
     justify-content: space-around;
-    padding: 4px 8px;
+    padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+    gap: 2px;
   }
 
   .mobile-bottom-nav button {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     min-height: 48px;
-    min-width: 48px;
+    height: 52px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 3px;
+    padding: 4px 2px;
     background: transparent;
     border: none;
     border-radius: 10px;
     color: var(--text-muted);
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
+  .mobile-bottom-nav button span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .mobile-bottom-nav button.active {
-    color: var(--accent);
-    background: var(--accent-light);
+    color: #7dd3fc;
+    background: rgba(56, 189, 248, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+  }
+
+  [data-theme='light'] .mobile-bottom-nav button.active {
+    color: #0284c7;
+    background: rgba(2, 132, 199, 0.12);
+    border: 1px solid rgba(2, 132, 199, 0.3);
+  }
+
+  /* Shift floating Coach Padula guide button above mobile bottom nav so it never overlaps tabs */
+  .mini-guide-launcher {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 12px !important;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+
+  .sync-deck-controls-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px 10px 84px !important;
+  }
+
+  .glass-card {
+    padding: 14px !important;
+    border-radius: 12px;
   }
 }
 
@@ -2443,6 +2558,50 @@ select.form-input option {
     grid-template-columns: 1fr;
     gap: 20px;
     padding: 24px 16px;
+  }
+}
+
+/* Global Alignment & Zero-Overflow Safeguards */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.app-layout,
+.app-layout > *,
+.main-content,
+.dashboard-content,
+.glass-card,
+.scoreboard-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+img,
+canvas {
+  max-width: 100%;
+}
+
+.scoreboard-card {
+  padding: 18px 20px !important;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .scoreboard-card {
+    padding: 14px !important;
+  }
+
+  .glass-card {
+    overflow-wrap: anywhere;
   }
 }
 

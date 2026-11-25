@@ -130,7 +130,7 @@ export default function AIPredictionsPage() {
       {/* Page Header */}
       <PageHeader
         breadcrumbs={[
-          { label: 'Padula 2026', onClick: () => setActiveView('dashboard') },
+          { label: 'Padula 2026', onClick: () => setActiveView('admin') },
           { label: 'Predictions' },
         ]}
         title="Predictions"

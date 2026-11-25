@@ -291,6 +291,9 @@ export type TournamentFormat =
   | 'single_elimination'
   | 'double_elimination'
   | 'round_robin'
+  | 'group_stage'
+  | 'swiss'
+  | 'ladder'
   | 'point_system'
   | 'combined_rr_elim'
   | 'combined_pts_elim';
@@ -337,6 +340,11 @@ export interface Match {
   loserNextSlot?: 'A' | 'B' | null;
   bracketSide?: 'winners' | 'losers' | 'grand_final';
   stage?: 'group' | 'elimination';
+  groupName?: string;
+  swissRound?: number;
+  isBracketReset?: boolean;
+  votesA?: number;
+  votesB?: number;
   bestOf?: 1 | 3 | 5;
   seriesWinsA?: number;
   seriesWinsB?: number;
@@ -376,12 +384,59 @@ export interface Match {
   isMock?: boolean;
 }
 
-// ── Bracket node ──────────────────────────────────────────────────────────────
+// ── Bracket node & Flexible Bracket Engine Types ──────────────────────────────
 export interface BracketSlot {
   matchId: string | null;
   team?: string;
   score?: number;
   isWinner?: boolean;
+}
+
+export interface LadderEntry {
+  id: string;
+  eventId?: string;
+  sport: string;
+  teamId: string;
+  teamName: string;
+  rank: number;
+  wins: number;
+  losses: number;
+  updatedAt: string;
+}
+
+export interface LadderChallenge {
+  id: string;
+  eventId?: string;
+  sport: string;
+  challengerTeam: string;
+  defenderTeam: string;
+  challengerRank: number;
+  defenderRank: number;
+  winnerTeam?: string;
+  status: 'pending' | 'completed';
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface BracketPrediction {
+  id: string;
+  eventId?: string;
+  sport: string;
+  matchId: string;
+  predictorName: string;
+  predictorEmail?: string;
+  predictedWinner: string;
+  deviceId: string;
+  createdAt: string;
+}
+
+export interface BracketVote {
+  id: string;
+  matchId: string;
+  sport: string;
+  votedTeam: 'A' | 'B';
+  voterKey: string;
+  createdAt: string;
 }
 
 // ── Tournament Event ──────────────────────────────────────────────────────────
@@ -400,6 +455,7 @@ export interface TournamentEvent {
   startTime?: string;
   endTime?: string;
   venue: string;
+  referee?: string;
   rules?: string;
   status: 'draft' | 'published' | 'ongoing' | 'completed';
   bracket?: Match[];

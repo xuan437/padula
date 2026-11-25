@@ -86,8 +86,9 @@ const Sidebar: React.FC = () => {
         {
           heading: 'Competition',
           items: [
-            { id: 'event-setup', label: 'Event Setup', hint: 'Create tournaments, sports & venues', icon: CalendarIcon },
-            { id: 'bracket',     label: 'Brackets & Standings', hint: 'Manage matchups, seeding & standings', icon: TrophyIcon },
+            { id: 'event-setup',       label: 'Event Setup', hint: 'Create tournaments, sports & venues', icon: CalendarIcon },
+            { id: 'elimination-round', label: 'Elimination Round', hint: 'Team selection, game style & player lists', icon: TrophyIcon },
+            { id: 'bracket',           label: 'Brackets & Standings', hint: 'Manage matchups, seeding & standings', icon: TrophyIcon },
             { id: 'schedule',    label: 'Schedule & Results', hint: 'Filter fixtures by sport, date & venue', icon: CalendarIcon },
             { id: 'scorekeeper', label: 'Scorer Desk', hint: 'Enter live scores & finalize matches', icon: ClipboardIcon },
             { id: 'live',        label: 'Live Scoreboard', hint: 'Real-time arena scoreboard', icon: LiveIcon, badge: liveCount || undefined },
@@ -98,7 +99,8 @@ const Sidebar: React.FC = () => {
           items: [
             { id: 'registration', label: 'Registration', hint: 'Register teams, athletes & scorers', icon: UsersIcon },
             { id: 'player',       label: 'Player List', hint: 'Browse rosters & player cards', icon: UserIcon },
-            { id: 'officials',    label: 'Match Assignments', hint: 'Assign scorers, referees & courts', icon: ShieldIcon },
+            { id: 'officials',               label: 'Referees, Coaches & Managers', hint: 'Assign referees, coaches, managers & courts', icon: ShieldIcon },
+            { id: 'scorekeeper-assignments', label: 'Scorekeeper Assignments', hint: 'Assign official scorekeepers to matches', icon: ClipboardIcon },
           ],
         },
         {
@@ -133,8 +135,9 @@ const Sidebar: React.FC = () => {
         {
           heading: 'Competition',
           items: [
-            { id: 'event-setup', label: 'Event Setup', icon: CalendarIcon },
-            { id: 'bracket',     label: 'Brackets & Standings', icon: TrophyIcon },
+            { id: 'event-setup',       label: 'Event Setup', icon: CalendarIcon },
+            { id: 'elimination-round', label: 'Elimination Round', icon: TrophyIcon },
+            { id: 'bracket',           label: 'Brackets & Standings', icon: TrophyIcon },
             { id: 'schedule',    label: 'Schedule & Results', icon: CalendarIcon },
             { id: 'scorekeeper', label: 'Scorer Desk', icon: ClipboardIcon },
             { id: 'live',        label: 'Live Scoreboard', icon: LiveIcon, badge: liveCount || undefined },
@@ -145,7 +148,8 @@ const Sidebar: React.FC = () => {
           items: [
             { id: 'registration', label: 'Registration', icon: UsersIcon },
             { id: 'player',       label: 'Player List',  icon: UserIcon },
-            { id: 'officials',    label: 'Match Assignments', icon: ShieldIcon },
+            { id: 'officials',               label: 'Referees, Coaches & Managers', icon: ShieldIcon },
+            { id: 'scorekeeper-assignments', label: 'Scorekeeper Assignments', icon: ClipboardIcon },
           ],
         },
         {
@@ -187,7 +191,8 @@ const Sidebar: React.FC = () => {
       {
         heading: 'Competition',
         items: [
-          { id: 'bracket',     label: 'Brackets', icon: TrophyIcon },
+          { id: 'elimination-round', label: 'Elimination Round', icon: TrophyIcon },
+          { id: 'bracket',           label: 'Brackets', icon: TrophyIcon },
           { id: 'schedule',    label: 'Schedule & Results', icon: CalendarIcon },
           { id: 'live',        label: 'Live Scoreboard', icon: LiveIcon, badge: liveCount || undefined },
           { id: 'scorers',     label: 'Leaderboards', icon: BarChartIcon },

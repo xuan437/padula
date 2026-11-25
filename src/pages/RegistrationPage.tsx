@@ -568,7 +568,7 @@ export default function RegistrationPage() {
           <button
             type="button"
             className="btn btn-ghost"
-            onClick={() => setActiveView('event-setup')}
+            onClick={() => setActiveView('setup-wizard')}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 600 }}
           >
             <CalendarIcon size={15} /> Open Tournament Setup Wizard →

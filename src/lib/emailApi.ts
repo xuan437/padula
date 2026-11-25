@@ -24,6 +24,7 @@ export type EmailSendResult =
   | {
       ok: true;
       success: true;
+      reason?: undefined;
       transactionId: string;
       provider: string;
       recipient: string;

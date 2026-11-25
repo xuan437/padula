@@ -337,7 +337,7 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <PageHeader
         breadcrumbs={[
-          { label: 'Padula 2026', onClick: () => setActiveView('dashboard') },
+          { label: 'Padula 2026', onClick: () => setActiveView('admin') },
           { label: 'Analytics & Reports' },
         ]}
         title="Sports Analytics"
@@ -600,8 +600,8 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                       <span style={{ color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <MedalIcon size={12} color="#94a3b8" /> {m.silver}
                       </span>
-                      <span style={{ color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <MedalIcon size={12} color="#b45309" /> {m.bronze}
+                      <span style={{ color: 'var(--badge-warn-text)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <MedalIcon size={12} color="var(--badge-warn-text)" /> {m.bronze}
                       </span>
                       <span style={{ color: 'var(--accent)', fontWeight: 800, paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
                         {m.points} pts
@@ -943,7 +943,7 @@ export default function AnalyticsDashboard({ initialTab }: { initialTab?: Analyt
                     <td style={{ padding: '12px', textAlign: 'center', fontWeight: 800, color: '#94a3b8' }}>
                       {row.silver}
                     </td>
-                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: 800, color: '#b45309' }}>
+                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: 800, color: 'var(--badge-warn-text)' }}>
                       {row.bronze}
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right', fontWeight: 900, fontSize: 16, color: 'var(--accent)' }}>

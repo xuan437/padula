@@ -357,7 +357,7 @@ export default function TeamRegistrationPage() {
               <option value="all">All Teams</option>
               {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            <span style={{ alignSelf: 'center', fontSize: '13px', color: '#64748b' }}>{filteredPlayers.length} player{filteredPlayers.length !== 1 ? 's' : ''}</span>
+            <span style={{ alignSelf: 'center', fontSize: '13px', color: 'var(--text-muted)' }}>{filteredPlayers.length} player{filteredPlayers.length !== 1 ? 's' : ''}</span>
           </div>
 
           {filteredPlayers.length === 0 ? (

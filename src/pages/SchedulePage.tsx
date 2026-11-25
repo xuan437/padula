@@ -83,7 +83,11 @@ export default function SchedulePage() {
   const filteredMatches = useMemo(() => {
     return matches
       .filter(m => {
-        if (sportFilter !== 'all' && m.sport.toLowerCase() !== sportFilter.toLowerCase()) {
+        if (
+          sportFilter.toLowerCase() !== 'all' &&
+          m.sport.toLowerCase() !== sportFilter.toLowerCase() &&
+          getSportName(m.sport).toLowerCase() !== getSportName(sportFilter).toLowerCase()
+        ) {
           return false;
         }
         if (eventFilter !== 'all' && m.eventId !== eventFilter) {

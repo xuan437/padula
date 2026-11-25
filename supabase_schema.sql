@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS teams (
   department TEXT NOT NULL,
   division TEXT,
   coach TEXT,
+  trainer TEXT,
   seed INT,
   color TEXT DEFAULT '#3b82f6',
   players JSONB DEFAULT '[]'::jsonb,
@@ -103,6 +104,11 @@ CREATE TABLE IF NOT EXISTS players (
   position TEXT,
   gwa NUMERIC(4,2),
   medical_cleared BOOLEAN DEFAULT true,
+  roster_status TEXT DEFAULT 'in_play',
+  fouls INT DEFAULT 0,
+  foul_breakdown JSONB DEFAULT '{}'::jsonb,
+  foul_logs JSONB DEFAULT '[]'::jsonb,
+  sport_stats JSONB DEFAULT '{}'::jsonb,
   date_of_birth DATE,
   place_of_birth TEXT,
   manager TEXT,
@@ -124,6 +130,15 @@ CREATE TABLE IF NOT EXISTS matches (
   sport TEXT NOT NULL,
   division TEXT,
   format TEXT DEFAULT 'single_elimination',
+  stage TEXT DEFAULT 'elimination',
+  bracket_side TEXT,
+  loser_next_match_id TEXT,
+  loser_next_slot TEXT,
+  best_of INT DEFAULT 1,
+  series_wins_a INT DEFAULT 0,
+  series_wins_b INT DEFAULT 0,
+  advancing_teams_count INT,
+  seeding_mode TEXT,
   team_a TEXT NOT NULL,
   team_b TEXT NOT NULL,
   score_a INT DEFAULT 0,
@@ -148,6 +163,12 @@ CREATE TABLE IF NOT EXISTS matches (
   coach_b TEXT,
   manager TEXT,
   conflict_warning TEXT,
+  period_scores JSONB DEFAULT '[]'::jsonb,
+  timeline JSONB DEFAULT '[]'::jsonb,
+  player_match_fouls JSONB DEFAULT '{}'::jsonb,
+  player_lineup_status JSONB DEFAULT '{}'::jsonb,
+  player_of_the_match JSONB,
+  correction_history JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -158,6 +179,9 @@ CREATE TABLE IF NOT EXISTS tournament_events (
   sport TEXT NOT NULL,
   division TEXT,
   format TEXT DEFAULT 'single_elimination',
+  advancing_teams_count INT DEFAULT 4,
+  seeding_mode TEXT DEFAULT 'seeded',
+  season_year INT,
   category TEXT,
   dates TEXT,
   start_date DATE,
@@ -165,6 +189,7 @@ CREATE TABLE IF NOT EXISTS tournament_events (
   start_time TEXT,
   end_time TEXT,
   venue TEXT,
+  referee TEXT,
   rules TEXT,
   status TEXT DEFAULT 'published' CHECK (status IN ('draft', 'published', 'ongoing', 'completed')),
   bracket JSONB DEFAULT '[]'::jsonb,
@@ -303,6 +328,7 @@ CREATE TABLE IF NOT EXISTS email_send_logs (
 CREATE TABLE IF NOT EXISTS system_settings (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
+  updated_by TEXT,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -430,7 +456,16 @@ BEGIN
   DROP POLICY IF EXISTS "Public Read System Settings" ON system_settings;
   CREATE POLICY "Public Read System Settings" ON system_settings FOR SELECT USING (true);
   DROP POLICY IF EXISTS "Operational Write System Settings" ON system_settings;
-  CREATE POLICY "Operational Write System Settings" ON system_settings FOR ALL USING (true);
+  CREATE POLICY "Operational Write System Settings" ON system_settings FOR ALL USING (true) WITH CHECK (true);
+END $$;
+
+-- Enable Supabase Realtime for system_settings so changes broadcast live to all users
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE system_settings;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN undefined_object THEN NULL;
 END $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────

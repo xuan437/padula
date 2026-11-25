@@ -58,17 +58,19 @@ export default function SportsCompetitionSection({
   isCoordinator,
   coordinatorCompetitionId,
 }: Props) {
-  // Coordinators have full access to configure all sports (defaulting initial selection to their assigned sport if any)
-  const allowedSports = ALL_SPORTS;
-  const initialSport = useMemo<SportId>(() => {
-    if (!coordinatorCompetitionId) return ALL_SPORTS[0].id;
-    const matched = ALL_SPORTS.find(
-      s => s.id === coordinatorCompetitionId || (coordinatorCompetitionId === 's1' && s.id === 'basketball')
-    );
-    return matched ? matched.id : ALL_SPORTS[0].id;
-  }, [coordinatorCompetitionId]);
+  // Directors see all sports; Coordinators with an assigned competition see their assigned competition (or all if unassigned)
+  const allowedSports = useMemo(() => {
+    if (isCoordinator && coordinatorCompetitionId) {
+      const assigned = ALL_SPORTS.filter(
+        s => s.id === coordinatorCompetitionId || (coordinatorCompetitionId === 's1' && s.id === 'basketball')
+      );
+      if (assigned.length > 0) return assigned;
+    }
+    return ALL_SPORTS;
+  }, [isCoordinator, coordinatorCompetitionId]);
+  const initialSport = useMemo<SportId>(() => allowedSports[0].id, [allowedSports]);
 
-  const { matches } = useApp();
+  const { matches, addAuditLog } = useApp();
   const [selectedSportId, setSelectedSportId] = useState<SportId>(initialSport);
   const [showAdvancedLists, setShowAdvancedLists] = useState(false);
 
@@ -209,6 +211,8 @@ export default function SportsCompetitionSection({
   };
 
   const handleUpdateFormat = (format: TournamentFormat) => {
+    if (!confirmIfMatchesStarted()) return;
+    const prevFormat = effectiveFormat;
     const updated = {
       ...settings,
       competitionFormats: {
@@ -217,6 +221,15 @@ export default function SportsCompetitionSection({
       },
     };
     onChange(updated);
+    addAuditLog(
+      'settings_update',
+      `Changed ${currentSportRule.sportName} bracket format from "${prevFormat}" to "${format}"`,
+      selectedSportId,
+      'SportsCompetitionSettings',
+      undefined,
+      prevFormat,
+      format
+    );
   };
 
   const handleUpdateEvent = <K extends keyof typeof settings.eventSetup>(
@@ -231,6 +244,34 @@ export default function SportsCompetitionSection({
       },
     };
     onChange(updated);
+  };
+
+  const elimConfig = {
+    enabled: true,
+    defaultGameStyle: 'single_elimination' as TournamentFormat,
+    allowDirectorAndCoordinatorTeamSelect: true,
+    autoIncludeAddedTeams: true,
+    requireMedicalClearance: false,
+    allowScorerScoringAndLineups: true,
+    showInPublicView: true,
+    showPlayerListInPublicView: true,
+    defaultBestOf: 1 as 1 | 2 | 3,
+    defaultSeedingMode: 'seeded' as SeedingMode,
+    advancingTeamsCount: 4,
+    ...(settings.eliminationRound || {}),
+  };
+
+  const handleUpdateEliminationRound = <K extends keyof typeof elimConfig>(
+    field: K,
+    val: (typeof elimConfig)[K]
+  ) => {
+    onChange({
+      ...settings,
+      eliminationRound: {
+        ...elimConfig,
+        [field]: val,
+      },
+    });
   };
 
   return (
@@ -512,13 +553,167 @@ export default function SportsCompetitionSection({
               <option value="single_elimination">Single Elimination (Knockout Bracket)</option>
               <option value="double_elimination">Double Elimination (Winners &amp; Losers Brackets)</option>
               <option value="round_robin">Round Robin (Every team plays each other)</option>
+              <option value="group_stage">Group-Stage (Groups Round Robin → Knockout)</option>
+              <option value="swiss">Swiss System (Record-Based Pairings, No Elim)</option>
+              <option value="ladder">Ladder / Pyramid (Challenge Above to Swap)</option>
               <option value="point_system">Point System (Standings Based on Points)</option>
               <option value="combined_rr_elim">Combined: Round Robin → Elimination Round</option>
               <option value="combined_pts_elim">Combined: Point System → Elimination Round</option>
             </select>
             <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-              Determines bracket generation and progression flow for {currentSportRule.sportName}.
+              Determines bracket generation and progression flow for {currentSportRule.sportName}. Existing scores are never deleted on format change.
             </span>
+
+            {/* Progressive Disclosure: Group-Stage Settings */}
+            {effectiveFormat === 'group_stage' && (
+              <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 3 }}>
+                    NUMBER OF GROUPS
+                  </label>
+                  <input
+                    type="number"
+                    min={2}
+                    max={8}
+                    value={(isCoordinator ? activeOverride.groupCount : undefined) ?? currentSportRule.groupCount ?? 2}
+                    onChange={e => {
+                      const val = Math.max(2, parseInt(e.target.value, 10) || 2);
+                      if (isCoordinator) updateCoordinatorOverride({ groupCount: val });
+                      else handleUpdateSport('groupCount', val);
+                    }}
+                    className="form-input"
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: 6, fontSize: 12.5 }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 3 }}>
+                    ADVANCING PER GROUP
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={4}
+                    value={(isCoordinator ? activeOverride.advancingPerGroup : undefined) ?? currentSportRule.advancingPerGroup ?? 2}
+                    onChange={e => {
+                      const val = Math.max(1, parseInt(e.target.value, 10) || 2);
+                      if (isCoordinator) updateCoordinatorOverride({ advancingPerGroup: val });
+                      else handleUpdateSport('advancingPerGroup', val);
+                    }}
+                    className="form-input"
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: 6, fontSize: 12.5 }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Progressive Disclosure: Swiss System Settings */}
+            {effectiveFormat === 'swiss' && (
+              <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 3 }}>
+                    SWISS ROUNDS
+                  </label>
+                  <input
+                    type="number"
+                    min={2}
+                    max={12}
+                    value={(isCoordinator ? activeOverride.swissRounds : undefined) ?? currentSportRule.swissRounds ?? 3}
+                    onChange={e => {
+                      const val = Math.max(2, parseInt(e.target.value, 10) || 3);
+                      if (isCoordinator) updateCoordinatorOverride({ swissRounds: val });
+                      else handleUpdateSport('swissRounds', val);
+                    }}
+                    className="form-input"
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: 6, fontSize: 12.5 }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 3 }}>
+                    PAIRING RULE
+                  </label>
+                  <select
+                    value={(isCoordinator ? activeOverride.swissPairingRule : undefined) ?? currentSportRule.swissPairingRule ?? 'adjacent'}
+                    onChange={e => {
+                      const val = e.target.value as any;
+                      if (isCoordinator) updateCoordinatorOverride({ swissPairingRule: val });
+                      else handleUpdateSport('swissPairingRule', val);
+                    }}
+                    className="form-input"
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: 6, fontSize: 12 }}
+                  >
+                    <option value="adjacent">Adjacent (1v2, 3v4)</option>
+                    <option value="slide">Slide (Top Half vs Bottom Half)</option>
+                    <option value="top_bottom">Top vs Bottom</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Progressive Disclosure: Double-Elimination Bracket Reset */}
+            {effectiveFormat === 'double_elimination' && (
+              <label style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={((isCoordinator ? activeOverride.doubleElimBracketReset : undefined) ?? currentSportRule.doubleElimBracketReset ?? true)}
+                  onChange={e => {
+                    if (isCoordinator) updateCoordinatorOverride({ doubleElimBracketReset: e.target.checked });
+                    else handleUpdateSport('doubleElimBracketReset', e.target.checked);
+                  }}
+                />
+                <span>Enable Grand Final Bracket Reset (Losers Winner must win twice)</span>
+              </label>
+            )}
+
+            {/* Optional Bracket Modes & Post-Start Lock */}
+            <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                Bracket Safeguards &amp; Optional Modes
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={Boolean((isCoordinator ? activeOverride.allowBracketChangesAfterStart : undefined) ?? currentSportRule.allowBracketChangesAfterStart)}
+                  onChange={e => {
+                    if (isCoordinator) updateCoordinatorOverride({ allowBracketChangesAfterStart: e.target.checked });
+                    else handleUpdateSport('allowBracketChangesAfterStart', e.target.checked);
+                  }}
+                />
+                <span>Allow bracket changes after first match is scored</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={Boolean((isCoordinator ? activeOverride.enablePredictionBracket : undefined) ?? currentSportRule.enablePredictionBracket)}
+                  onChange={e => {
+                    if (isCoordinator) updateCoordinatorOverride({ enablePredictionBracket: e.target.checked });
+                    else handleUpdateSport('enablePredictionBracket', e.target.checked);
+                  }}
+                />
+                <span>Enable Prediction Bracket (Spectator/Coach predictions + leaderboard)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={Boolean((isCoordinator ? activeOverride.enableVotingBracket : undefined) ?? currentSportRule.enableVotingBracket)}
+                  onChange={e => {
+                    if (isCoordinator) updateCoordinatorOverride({ enableVotingBracket: e.target.checked });
+                    else handleUpdateSport('enableVotingBracket', e.target.checked);
+                  }}
+                />
+                <span>Enable Voting Bracket (1 vote per device/account decides winner)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={Boolean((isCoordinator ? activeOverride.enableCustomBracketMedia : undefined) ?? currentSportRule.enableCustomBracketMedia)}
+                  onChange={e => {
+                    if (isCoordinator) updateCoordinatorOverride({ enableCustomBracketMedia: e.target.checked });
+                    else handleUpdateSport('enableCustomBracketMedia', e.target.checked);
+                  }}
+                />
+                <span>Enable Custom Bracket (Team logos &amp; player photos on cards)</span>
+              </label>
+            </div>
 
             {/* Progressive Disclosure: Advancing Teams for Combined Formats */}
             {(effectiveFormat === 'combined_rr_elim' || effectiveFormat === 'combined_pts_elim') && (
@@ -736,6 +931,136 @@ export default function SportsCompetitionSection({
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ── Elimination Round Governance & Settings ── */}
+      <div className="glass-card" style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+          <div>
+            <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <TrophyIcon size={18} color="var(--accent)" />
+              Elimination Round Configuration
+            </h3>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              Control game style, participating team selection (Director &amp; Coordinator), scorer access, and public player list visibility.
+            </span>
+          </div>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12.5, fontWeight: 700, color: elimConfig.enabled ? '#10b981' : 'var(--text-muted)' }}>
+            <input
+              type="checkbox"
+              checked={elimConfig.enabled}
+              onChange={e => handleUpdateEliminationRound('enabled', e.target.checked)}
+            />
+            <span>{elimConfig.enabled ? 'Module Enabled' : 'Module Disabled'}</span>
+          </label>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5 }}>
+              DEFAULT ELIMINATION GAME STYLE
+            </label>
+            <select
+              value={elimConfig.defaultGameStyle}
+              onChange={e => handleUpdateEliminationRound('defaultGameStyle', e.target.value as TournamentFormat)}
+              className="form-input"
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13 }}
+            >
+              <option value="single_elimination">Single Elimination (Knockout)</option>
+              <option value="double_elimination">Double Elimination (Winners &amp; Losers)</option>
+              <option value="round_robin">Round Robin (All vs All)</option>
+              <option value="point_system">Point System (Standings)</option>
+              <option value="combined_rr_elim">Combined: Round Robin → Elimination</option>
+              <option value="combined_pts_elim">Combined: Point System → Elimination</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5 }}>
+              ELIMINATION SERIES LENGTH (BEST OF)
+            </label>
+            <select
+              value={elimConfig.defaultBestOf}
+              onChange={e => handleUpdateEliminationRound('defaultBestOf', (parseInt(e.target.value, 10) as 1 | 2 | 3) || 1)}
+              className="form-input"
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13 }}
+            >
+              <option value={1}>Best of 1 (Single Game)</option>
+              <option value={2}>Best of 2 (2-Game Series)</option>
+              <option value={3}>Best of 3 (First to 2 Wins)</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5 }}>
+              SEEDING MODE
+            </label>
+            <select
+              value={elimConfig.defaultSeedingMode}
+              onChange={e => handleUpdateEliminationRound('defaultSeedingMode', e.target.value as SeedingMode)}
+              className="form-input"
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13 }}
+            >
+              <option value="seeded">Seeded Auto-Bracket</option>
+              <option value="random">Random Draw</option>
+              <option value="manual">Manual Placement / Swap</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5 }}>
+              ADVANCING TEAMS (COMBINED)
+            </label>
+            <select
+              value={elimConfig.advancingTeamsCount}
+              onChange={e => handleUpdateEliminationRound('advancingTeamsCount', parseInt(e.target.value, 10) || 4)}
+              className="form-input"
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13 }}
+            >
+              <option value={2}>Top 2 Teams (Finals)</option>
+              <option value={4}>Top 4 Teams (Semi-Finals)</option>
+              <option value={8}>Top 8 Teams (Quarter-Finals)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
+          {(
+            [
+              { key: 'allowDirectorAndCoordinatorTeamSelect', label: 'Allow Director & Coordinator Team Selection', desc: 'Both Sports Director and Coordinators can add & pick participating teams.' },
+              { key: 'autoIncludeAddedTeams', label: 'Auto-Include Newly Added Teams', desc: 'Automatically select active teams registered for the sport.' },
+              { key: 'requireMedicalClearance', label: 'Require Medical Clearance for Player List', desc: 'Highlight/require medically cleared athletes in Elimination Round rosters.' },
+              { key: 'allowScorerScoringAndLineups', label: 'Scorer Live Scoring & Lineup Control', desc: 'Allow Scorers to score Elimination Round matches & manage In Play / Reserved lists.' },
+              { key: 'showInPublicView', label: 'Show Elimination Round in Public View', desc: 'Display the Elimination Round tab, matchups, and brackets to spectators.' },
+              { key: 'showPlayerListInPublicView', label: 'Show Participating Player Lists in Public View', desc: 'Display each participating team’s player list & fouls in the public Elimination Round tab.' },
+            ] as const
+          ).map(item => (
+            <label
+              key={item.key}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 8,
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={Boolean(elimConfig[item.key])}
+                onChange={e => handleUpdateEliminationRound(item.key, e.target.checked)}
+                style={{ marginTop: 3 }}
+              />
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)' }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{item.desc}</div>
+              </div>
+            </label>
+          ))}
         </div>
       </div>
 

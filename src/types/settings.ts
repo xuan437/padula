@@ -29,6 +29,9 @@ export type TournamentFormat =
   | 'single_elimination'
   | 'double_elimination'
   | 'round_robin'
+  | 'group_stage'
+  | 'swiss'
+  | 'ladder'
   | 'point_system'
   | 'combined_rr_elim'
   | 'combined_pts_elim'
@@ -51,6 +54,8 @@ export interface PointSystemConfig {
 
 export type SeedingMode = 'seeded' | 'random' | 'manual';
 
+export type SwissPairingRule = 'slide' | 'adjacent' | 'top_bottom';
+
 export type CoordinatorLockableField =
   | 'format'
   | 'seriesByRound'
@@ -58,7 +63,9 @@ export type CoordinatorLockableField =
   | 'tiebreakerOrder'
   | 'advancingTeamsCount'
   | 'seedingMode'
-  | 'scheduleRules';
+  | 'scheduleRules'
+  | 'groupStageConfig'
+  | 'swissConfig';
 
 export interface CompetitionOverride {
   format?: TournamentFormat;
@@ -66,6 +73,16 @@ export interface CompetitionOverride {
   pointSystem?: PointSystemConfig;
   tiebreakerOrder?: TiebreakerRule[];
   advancingTeamsCount?: number;
+  groupCount?: number;
+  advancingPerGroup?: number;
+  swissRounds?: number;
+  swissPairingRule?: SwissPairingRule;
+  doubleElimBracketReset?: boolean;
+  allowBracketChangesAfterStart?: boolean;
+  enablePredictionBracket?: boolean;
+  enableVotingBracket?: boolean;
+  votingClosesAt?: string;
+  enableCustomBracketMedia?: boolean;
   seedingMode?: SeedingMode;
   allowByes?: boolean;
   periodDurationMinutes?: number;
@@ -96,6 +113,16 @@ export interface SportScoringRule {
   seriesByRound?: SeriesByRound;
   pointSystem?: PointSystemConfig;
   advancingTeamsCount?: number;
+  groupCount?: number;
+  advancingPerGroup?: number;
+  swissRounds?: number;
+  swissPairingRule?: SwissPairingRule;
+  doubleElimBracketReset?: boolean;
+  allowBracketChangesAfterStart?: boolean;
+  enablePredictionBracket?: boolean;
+  enableVotingBracket?: boolean;
+  votingClosesAt?: string;
+  enableCustomBracketMedia?: boolean;
   seedingMode?: SeedingMode;
   maxPointsPossiblePerPeriod: number;
   allowedDivisions: string[];
@@ -114,6 +141,20 @@ export interface CompetitionEventSetup {
   venues: string[];
 }
 
+export interface EliminationRoundSettings {
+  enabled: boolean;
+  defaultGameStyle: TournamentFormat;
+  allowDirectorAndCoordinatorTeamSelect: boolean;
+  autoIncludeAddedTeams: boolean;
+  requireMedicalClearance: boolean;
+  allowScorerScoringAndLineups: boolean;
+  showInPublicView: boolean;
+  showPlayerListInPublicView: boolean;
+  defaultBestOf: 1 | 2 | 3;
+  defaultSeedingMode: SeedingMode;
+  advancingTeamsCount: number;
+}
+
 export interface SportsCompetitionSettings {
   /** Master list of rules for all accredited sports */
   sports: Record<SportId, SportScoringRule>;
@@ -121,6 +162,8 @@ export interface SportsCompetitionSettings {
   eventSetup: CompetitionEventSetup;
   /** Format assignments per competition ID */
   competitionFormats: Record<string, TournamentFormat>;
+  /** Elimination Round governance, team selection, scorer & public display rules */
+  eliminationRound?: EliminationRoundSettings;
   /** Fields locked by the Sports Director that Coordinators cannot modify */
   coordinatorLockedFields?: CoordinatorLockableField[];
   /** Per-competition overrides configured by assigned Sports Coordinators */

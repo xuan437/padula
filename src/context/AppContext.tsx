@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { isPlaceholder, getRoundName, getSeedOrder } from '../lib/bracket';
+import {
+  generateGroupStageMatches,
+  generateSwissRoundMatches,
+  generateInitialLadder,
+  resolveLadderChallenge,
+} from '../lib/bracketEngine';
 import { getSportName } from '../lib/sports';
 import { sendEmailViaOfficialApi, getStoredEmailSendLogs, type EmailDispatchResult } from '../lib/emailApi';
 import { isMockModeActive, generateOneTimeSetupToken, sha256Sync } from '../lib/config';
@@ -33,6 +39,7 @@ import type {
   StaffMember, StaffRole, StaffStatus,
   StaffInvitation, InvitationStatus,
   AccessRequest, EmailSendLog,
+  LadderEntry, LadderChallenge, BracketPrediction, BracketVote,
 } from '../types';
 import { getPlayerFoulBreakdown, getPlayerRosterStatus } from '../lib/fouls';
 
@@ -210,6 +217,8 @@ interface AppContextType {
   assignMatchOfficials: (matchId: string, assignments: {
     venue?: string; referee?: string; scorekeeper?: string; coachA?: string; coachB?: string; manager?: string;
   }) => void;
+  assignTeamCoach: (teamId: string, coachName: string) => void;
+  assignEventReferee: (eventId: string, refereeName: string) => void;
 
   // Scoring & Match Workflow
   updateMatchScore: (matchId: string, scoreA: number, scoreB: number, details?: any) => void;
@@ -252,6 +261,14 @@ interface AppContextType {
   advanceGroupToElimination: (eventIdOrSport: string) => { success: boolean; message?: string };
   swapBracketTeams: (matchIdA: string, slotA: 'A' | 'B', matchIdB: string, slotB: 'A' | 'B') => { success: boolean; message?: string };
   toggleMatchBye: (matchId: string) => void;
+  ladderEntries: LadderEntry[];
+  ladderChallenges: LadderChallenge[];
+  bracketPredictions: BracketPrediction[];
+  bracketVotes: BracketVote[];
+  challengeLadderTeam: (sport: string, challengerTeam: string, defenderTeam: string, winnerTeam: string) => void;
+  generateNextSwissRound: (sport: string) => { success: boolean; message: string };
+  submitBracketPrediction: (pred: Omit<BracketPrediction, 'id' | 'createdAt'>) => void;
+  castBracketVote: (matchId: string, sport: string, side: 'A' | 'B', voterKey: string) => { success: boolean; message: string };
 
   // Teams & Players
   registerTeam: (team: Omit<Team, 'id'>) => string;
@@ -407,11 +424,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const persistSettingsToSupabase = (nextSettings: AppSettings) => {
+    supabase
+      .from('system_settings')
+      .upsert(
+        [
+          {
+            id: 'default',
+            data: nextSettings,
+            updated_by: currentUser?.name || 'Staff User',
+            updated_at: new Date().toISOString(),
+          },
+        ],
+        { onConflict: 'id' }
+      )
+      .then(({ error }) => {
+        if (error) {
+          console.warn('Could not persist settings to Supabase:', error.message);
+        }
+      });
+  };
+
   const handleUpdateSettings = (partial: Partial<AppSettings>): AppSettings => {
     const updated = updateStoredSettings(partial, currentUser?.name || 'Staff User');
     setSettingsState(updated);
     syncEntitiesFromSettings(updated);
-    supabase.from('system_settings').upsert([{ id: 'default', data: updated, updated_at: new Date().toISOString() }]).then();
+    persistSettingsToSupabase(updated);
     return updated;
   };
 
@@ -419,7 +457,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const reset = resetStoredSettings(currentUser?.name || 'Staff User');
     setSettingsState(reset);
     syncEntitiesFromSettings(reset);
-    supabase.from('system_settings').upsert([{ id: 'default', data: reset, updated_at: new Date().toISOString() }]).then();
+    persistSettingsToSupabase(reset);
     return reset;
   };
 
@@ -427,7 +465,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const reset = resetStoredSection(sectionKey, currentUser?.name || 'Staff User');
     setSettingsState(reset);
     syncEntitiesFromSettings(reset);
-    supabase.from('system_settings').upsert([{ id: 'default', data: reset, updated_at: new Date().toISOString() }]).then();
+    persistSettingsToSupabase(reset);
     return reset;
   };
 
@@ -591,13 +629,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   });
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT);
   const [staffInvitations, setStaffInvitations] = useState<StaffInvitation[]>(() => {
+    let deletedIds: string[] = [];
+    try {
+      const rawDel = localStorage.getItem('padula_deleted_invitation_ids');
+      if (rawDel) deletedIds = JSON.parse(rawDel);
+    } catch {}
+    const deletedSet = new Set(Array.isArray(deletedIds) ? deletedIds.map(x => String(x).toLowerCase()) : []);
+    const isDeleted = (inv: StaffInvitation) =>
+      deletedSet.has(inv.id.toLowerCase()) ||
+      deletedSet.has((inv.recipientEmail || '').toLowerCase());
+
     try {
       const stored = localStorage.getItem('padula_staff_invitations');
-      if (stored) {
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const merged = [...parsed];
+        if (Array.isArray(parsed)) {
+          const merged = parsed.filter((i: StaffInvitation) => !isDeleted(i));
           INITIAL_STAFF_INVITATIONS.forEach(init => {
+            if (isDeleted(init)) return;
             const idx = merged.findIndex(i => i.recipientEmail.toLowerCase() === init.recipientEmail.toLowerCase());
             if (idx === -1) {
               merged.push(init);
@@ -614,11 +663,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     } catch { }
-    return INITIAL_STAFF_INVITATIONS;
+    return INITIAL_STAFF_INVITATIONS.filter(init => !isDeleted(init));
   });
   const [latestInvitation, setLatestInvitation] = useState<StaffInvitation | null>(null);
   const clearLatestInvitation = useCallback(() => setLatestInvitation(null), []);
   const [emailSendLogs, setEmailSendLogs] = useState<EmailSendLog[]>(() => getStoredEmailSendLogs());
+  const [ladderEntries, setLadderEntries] = useState<LadderEntry[]>(() => {
+    try { const s = localStorage.getItem('padula_ladder_entries'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const [ladderChallenges, setLadderChallenges] = useState<LadderChallenge[]>(() => {
+    try { const s = localStorage.getItem('padula_ladder_challenges'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const [bracketPredictions, setBracketPredictions] = useState<BracketPrediction[]>(() => {
+    try { const s = localStorage.getItem('padula_bracket_predictions'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const [bracketVotes, setBracketVotes] = useState<BracketVote[]>(() => {
+    try { const s = localStorage.getItem('padula_bracket_votes'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
 
   useEffect(() => {
     const syncLogs = () => setEmailSendLogs(getStoredEmailSendLogs());
@@ -761,7 +822,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           const validTeams = teamRes.data.filter(t => !t.id?.startsWith('mock-'));
           setTeams(validTeams.map(t => ({
             id: t.id, name: t.name, sport: t.sport, department: t.department,
-            division: t.division, coach: t.coach, seed: t.seed ?? undefined, color: t.color, players: t.players || [],
+            division: t.division, coach: t.coach, trainer: t.trainer, seed: t.seed ?? undefined, color: t.color, players: t.players || [],
           })));
         }
         if (playRes.data && playRes.data.length > 0) {
@@ -770,6 +831,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             id: p.id, name: p.name, studentId: p.student_id, email: p.email, department: p.department,
             sport: p.sport, teamId: p.team_id, jerseyNumber: p.jersey_number,
             position: p.position, gwa: p.gwa ? Number(p.gwa) : undefined, medicalCleared: p.medical_cleared,
+            rosterStatus: p.roster_status === 'reserved' ? 'reserved' : 'in_play',
+            fouls: p.fouls ?? 0,
+            foulBreakdown: p.foul_breakdown || {},
+            foulLogs: p.foul_logs || [],
+            sportStats: p.sport_stats || {},
             currentSeasonGoals: p.current_season_goals ?? 0,
             currentSeasonAssists: p.current_season_assists ?? 0,
             performanceTrend: p.performance_trend || [],
@@ -781,6 +847,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           const validMatches = matchRes.data.filter(m => !m.id?.startsWith('mock-'));
           setMatches(validMatches.map(m => ({
             id: m.id, eventId: m.event_id, sport: m.sport, division: m.division, format: m.format || 'single_elimination',
+            stage: m.stage || undefined,
+            bracketSide: m.bracket_side || undefined,
+            loserNextMatchId: m.loser_next_match_id || undefined,
+            loserNextSlot: m.loser_next_slot || undefined,
+            bestOf: m.best_of ?? undefined,
+            seriesWinsA: m.series_wins_a ?? undefined,
+            seriesWinsB: m.series_wins_b ?? undefined,
+            advancingTeamsCount: m.advancing_teams_count ?? undefined,
+            seedingMode: m.seeding_mode || undefined,
             teamA: m.team_a, teamB: m.team_b,
             scoreA: m.score_a, scoreB: m.score_b, status: m.status, venue: m.venue, round: m.round,
             roundNumber: m.round_number, slot: m.slot, matchNumber: m.match_number, scheduledTime: m.scheduled_time,
@@ -788,6 +863,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             winner: m.winner, referee: m.referee, scorekeeper: m.scorekeeper,
             coachA: m.coach_a, coachB: m.coach_b, manager: m.manager,
             finalizedBy: m.finalized_by, finalizedAt: m.finalized_at, isBye: m.is_bye ?? false, scorerId: m.scorer_id,
+            periodScores: m.period_scores || undefined,
+            timeline: m.timeline || undefined,
+            playerMatchFouls: m.player_match_fouls || undefined,
+            playerLineupStatus: m.player_lineup_status || undefined,
+            playerOfTheMatch: m.player_of_the_match || undefined,
+            correctionHistory: m.correction_history || undefined,
             conflictWarning: m.status === 'finished' ? undefined : m.conflict_warning,
           })));
         }
@@ -810,7 +891,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             id: e.id, name: e.name, sport: e.sport, division: e.division,
             format: e.format || 'single_elimination', category: e.category,
             dates: e.dates, startDate: e.start_date, endDate: e.end_date,
-            startTime: e.start_time, endTime: e.end_time, venue: e.venue, rules: e.rules,
+            startTime: e.start_time, endTime: e.end_time, venue: e.venue, referee: e.referee || undefined, rules: e.rules,
             status: e.status, archived: e.archived, archivedAt: e.archived_at, bracket: [],
           })));
         }
@@ -888,10 +969,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             apiDeliveryStatus: inv.delivery_status || undefined,
             apiFailureReason: inv.delivery_error || undefined,
           }));
+          let deletedInvSet = new Set<string>();
+          try {
+            const rawDel = localStorage.getItem('padula_deleted_invitation_ids');
+            const parsedDel = rawDel ? JSON.parse(rawDel) : [];
+            if (Array.isArray(parsedDel)) {
+              deletedInvSet = new Set(parsedDel.map(x => String(x).toLowerCase()));
+            }
+          } catch {}
+          const visibleFromDb = fromDb.filter(
+            d => !deletedInvSet.has(d.id.toLowerCase()) && !deletedInvSet.has((d.recipientEmail || '').toLowerCase())
+          );
           setStaffInvitations(prev => {
-            const merged = [...fromDb];
+            const merged = [...visibleFromDb];
             prev.forEach(localInv => {
               const localEmail = (localInv.recipientEmail || '').toLowerCase();
+              if (deletedInvSet.has(localInv.id.toLowerCase()) || deletedInvSet.has(localEmail)) return;
               if (!merged.some(d => d.id === localInv.id || (d.recipientEmail || '').toLowerCase() === localEmail)) {
                 merged.push(localInv);
               }
@@ -902,21 +995,33 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         try {
           const logsRes = await supabase.from('email_send_logs').select('*').order('timestamp', { ascending: false }).limit(150);
           if (logsRes.data && logsRes.data.length > 0) {
-            const dbLogs: EmailSendLog[] = logsRes.data.map((r: any) => ({
-              id: r.id,
-              invitationId: r.invitation_id || undefined,
-              recipientEmail: r.recipient_email,
-              recipientName: r.recipient_name || undefined,
-              roleTitle: r.role_title || undefined,
-              timestamp: r.timestamp,
-              result: r.result === 'sent' ? 'sent' : 'failed',
-              failureReason: r.failure_reason || undefined,
-              provider: r.provider || undefined,
-            }));
+            let deletedLogSet = new Set<string>();
+            let clearedBeforeTs = 0;
+            try {
+              const rawDelLogs = localStorage.getItem('padula_deleted_email_log_ids');
+              const parsedDelLogs = rawDelLogs ? JSON.parse(rawDelLogs) : [];
+              if (Array.isArray(parsedDelLogs)) {
+                deletedLogSet = new Set(parsedDelLogs.map(x => String(x)));
+              }
+              clearedBeforeTs = Number(localStorage.getItem('padula_cleared_email_logs_at') || '0') || 0;
+            } catch {}
+            const dbLogs: EmailSendLog[] = logsRes.data
+              .filter((r: any) => !deletedLogSet.has(r.id) && new Date(r.timestamp).getTime() > clearedBeforeTs)
+              .map((r: any) => ({
+                id: r.id,
+                invitationId: r.invitation_id || undefined,
+                recipientEmail: r.recipient_email,
+                recipientName: r.recipient_name || undefined,
+                roleTitle: r.role_title || undefined,
+                timestamp: r.timestamp,
+                result: r.result === 'sent' ? 'sent' : 'failed',
+                failureReason: r.failure_reason || undefined,
+                provider: r.provider || undefined,
+              }));
             setEmailSendLogs(prev => {
               const combined = [...dbLogs];
               prev.forEach(l => {
-                if (!combined.some(c => c.id === l.id)) combined.push(l);
+                if (!deletedLogSet.has(l.id) && !combined.some(c => c.id === l.id)) combined.push(l);
               });
               return combined.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
             });
@@ -982,9 +1087,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       })
       .subscribe();
 
+    // ── 3. Realtime subscription for System Settings (live sync across all users) ──
+    const settingsChannel = supabase
+      .channel('public:system_settings')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'system_settings', filter: 'id=eq.default' },
+        payload => {
+          if (!isMounted) return;
+          const row = payload.new as Record<string, any>;
+          if (row && row.data) {
+            const synced = updateStoredSettings(row.data, row.updated_by || 'Supabase Realtime');
+            setSettingsState(synced);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       isMounted = false;
       supabase.removeChannel(matchChannel);
+      supabase.removeChannel(settingsChannel);
     };
   }, []);
 
@@ -1443,6 +1566,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const removeStaffInvitation = useCallback((invitationId: string) => {
     const target = staffInvitations.find(i => i.id === invitationId);
+    try {
+      const rawDel = localStorage.getItem('padula_deleted_invitation_ids');
+      const prevDel: string[] = rawDel ? JSON.parse(rawDel) : [];
+      const nextDel = new Set(Array.isArray(prevDel) ? prevDel : []);
+      nextDel.add(invitationId);
+      if (target?.recipientEmail) nextDel.add(target.recipientEmail.toLowerCase());
+      localStorage.setItem('padula_deleted_invitation_ids', JSON.stringify(Array.from(nextDel)));
+    } catch {}
     setStaffInvitations(prev => {
       const updated = prev.filter(i => i.id !== invitationId);
       try { localStorage.setItem('padula_staff_invitations', JSON.stringify(updated)); } catch {}
@@ -1463,10 +1594,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [staffInvitations, latestInvitation, addAuditLog]);
 
   const clearUndeliveredInvitations = useCallback(() => {
-    const undeliveredIds = staffInvitations
-      .filter(i => i.apiDeliveryStatus !== 'sent')
-      .map(i => i.id);
+    const undelivered = staffInvitations.filter(i => i.apiDeliveryStatus !== 'sent');
+    const undeliveredIds = undelivered.map(i => i.id);
     if (undeliveredIds.length === 0) return;
+
+    try {
+      const rawDel = localStorage.getItem('padula_deleted_invitation_ids');
+      const prevDel: string[] = rawDel ? JSON.parse(rawDel) : [];
+      const nextDel = new Set(Array.isArray(prevDel) ? prevDel : []);
+      undelivered.forEach(i => {
+        nextDel.add(i.id);
+        if (i.recipientEmail) nextDel.add(i.recipientEmail.toLowerCase());
+      });
+      localStorage.setItem('padula_deleted_invitation_ids', JSON.stringify(Array.from(nextDel)));
+    } catch {}
 
     setStaffInvitations(prev => {
       const updated = prev.filter(i => i.apiDeliveryStatus === 'sent');
@@ -1488,6 +1629,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [staffInvitations, latestInvitation, addAuditLog]);
 
   const removeEmailSendLog = useCallback((logId: string) => {
+    try {
+      const rawDel = localStorage.getItem('padula_deleted_email_log_ids');
+      const prevDel: string[] = rawDel ? JSON.parse(rawDel) : [];
+      const nextDel = new Set(Array.isArray(prevDel) ? prevDel : []);
+      nextDel.add(logId);
+      localStorage.setItem('padula_deleted_email_log_ids', JSON.stringify(Array.from(nextDel)));
+    } catch {}
     setEmailSendLogs(prev => {
       const updated = prev.filter(l => l.id !== logId);
       try { localStorage.setItem('padula_email_send_logs', JSON.stringify(updated)); } catch {}
@@ -1497,6 +1645,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const clearEmailSendLogs = useCallback(() => {
+    try {
+      localStorage.setItem('padula_cleared_email_logs_at', String(Date.now()));
+    } catch {}
     setEmailSendLogs([]);
     try { localStorage.setItem('padula_email_send_logs', JSON.stringify([])); } catch {}
     supabase.from('email_send_logs').delete().neq('id', 'keep_none').then();
@@ -2777,6 +2928,54 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     supabase.from('matches').update(dbPayload).eq('id', matchId).then();
   }, [currentUser, matches, addAuditLog]);
 
+  const assignTeamCoach = useCallback((teamId: string, coachName: string) => {
+    if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator')) return;
+    const targetTeam = teams.find(t => t.id === teamId);
+    if (!targetTeam) return;
+    setTeams(prev => {
+      const next = prev.map(t => (t.id === teamId ? { ...t, coach: coachName || undefined } : t));
+      try { localStorage.setItem('padula_teams', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    supabase.from('teams').update({ coach: coachName || null }).eq('id', teamId).then();
+    // Sync coach onto scheduled matches for this team
+    setMatches(prev => prev.map(m => {
+      if (m.status === 'finished') return m;
+      if (m.teamA === targetTeam.name) {
+        supabase.from('matches').update({ coach_a: coachName || null }).eq('id', m.id).then();
+        return { ...m, coachA: coachName || undefined };
+      }
+      if (m.teamB === targetTeam.name) {
+        supabase.from('matches').update({ coach_b: coachName || null }).eq('id', m.id).then();
+        return { ...m, coachB: coachName || undefined };
+      }
+      return m;
+    }));
+    addAuditLog('official_assign', `Assigned Coach "${coachName || 'Unassigned'}" to team ${targetTeam.name}`, teamId, 'Team');
+  }, [currentUser, teams, addAuditLog]);
+
+  const assignEventReferee = useCallback((eventId: string, refereeName: string) => {
+    if (!currentUser || (currentUser.role !== 'director' && currentUser.role !== 'coordinator')) return;
+    const targetEvent = events.find(e => e.id === eventId);
+    if (!targetEvent) return;
+    setEvents(prev => {
+      const next = prev.map(e => (e.id === eventId ? { ...e, referee: refereeName || undefined } : e));
+      try { localStorage.setItem('padula_events', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    supabase.from('tournament_events').update({ referee: refereeName || null }).eq('id', eventId).then();
+    // Sync lead referee onto scheduled matches belonging to this event
+    setMatches(prev => prev.map(m => {
+      if (m.status === 'finished') return m;
+      if (m.eventId === eventId || m.sport === targetEvent.sport) {
+        supabase.from('matches').update({ referee: refereeName || null }).eq('id', m.id).then();
+        return { ...m, referee: refereeName || undefined };
+      }
+      return m;
+    }));
+    addAuditLog('official_assign', `Assigned Lead Referee "${refereeName || 'Unassigned'}" to event ${targetEvent.name}`, eventId, 'TournamentEvent');
+  }, [currentUser, events, addAuditLog]);
+
   // ── Scoring ─────────────────────────────────────────────────────────────
   const updateMatchScore = useCallback((matchId: string, scoreA: number, scoreB: number, details?: any) => {
     // 1. Role permission check: guests are strictly read-only
@@ -3567,6 +3766,61 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
 
       matchesByRound.push(...winnersRounds, ...losersRounds, [grandFinal]);
+    } else if (activeFormat === 'group_stage') {
+      // ── GROUP STAGE -> KNOCKOUT ──
+      const sportRule = getSettings().sportsCompetition.sports[event.sport as keyof typeof settings.sportsCompetition.sports];
+      const override = getSettings().sportsCompetition.competitionOverrides?.[event.sport];
+      const groupCount = override?.groupCount ?? sportRule?.groupCount ?? 2;
+      const advancingPerGroup = override?.advancingPerGroup ?? sportRule?.advancingPerGroup ?? 2;
+      const gsMatches = generateGroupStageMatches({
+        eventId: event.id,
+        sport: event.sport,
+        division: event.division,
+        venue: event.venue || venues[0]?.name || 'Main Arena Court 1',
+        teams: sportTeams,
+        groupCount,
+        advancingPerGroup,
+      });
+      matchesByRound.push(gsMatches);
+    } else if (activeFormat === 'swiss') {
+      // ── SWISS SYSTEM (Round 1 Initial Pairing) ──
+      const sportRule = getSettings().sportsCompetition.sports[event.sport as keyof typeof settings.sportsCompetition.sports];
+      const override = getSettings().sportsCompetition.competitionOverrides?.[event.sport];
+      const pairingRule = override?.swissPairingRule ?? sportRule?.swissPairingRule ?? 'adjacent';
+      const swMatches = generateSwissRoundMatches({
+        eventId: event.id,
+        sport: event.sport,
+        division: event.division,
+        venue: event.venue || venues[0]?.name || 'Main Arena Court 1',
+        teams: sportTeams,
+        existingMatches: [],
+        roundNumber: 1,
+        pairingRule,
+      });
+      matchesByRound.push(swMatches);
+    } else if (activeFormat === 'ladder') {
+      // ── LADDER / PYRAMID ──
+      const initialLadder = generateInitialLadder(event.sport, sportTeams, event.id);
+      setLadderEntries(prev => {
+        const next = [...prev.filter(e => e.sport !== event!.sport), ...initialLadder];
+        try { localStorage.setItem('padula_ladder_entries', JSON.stringify(next)); } catch {}
+        return next;
+      });
+      if (initialLadder.length > 0) {
+        supabase.from('ladder_entries').upsert(
+          initialLadder.map(e => ({
+            id: e.id,
+            event_id: e.eventId || null,
+            sport: e.sport,
+            team_id: e.teamId,
+            team_name: e.teamName,
+            rank: e.rank,
+            wins: e.wins,
+            losses: e.losses,
+            updated_at: e.updatedAt,
+          }))
+        ).then();
+      }
     } else {
       // ── SINGLE ELIMINATION BRACKET (Quarter-Finals -> Semi-Finals -> Final) ──
       for (let r = 1; r <= totalRounds; r++) {
@@ -3949,6 +4203,107 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setMatches(prev => prev.map(m => m.id === matchId ? { ...m, isBye: nextBye } : m));
     addAuditLog('bracket_generate', `${nextBye ? 'Set' : 'Cleared'} BYE status on Match #${target.matchNumber ?? target.slot ?? ''} (${target.teamA} vs ${target.teamB})`, matchId, 'Match');
   }, [matches, addAuditLog]);
+
+  const challengeLadderTeam = useCallback((sport: string, challengerTeam: string, defenderTeam: string, winnerTeam: string) => {
+    const sportEntries = ladderEntries.filter(e => e.sport === sport).sort((a, b) => a.rank - b.rank);
+    const { updatedEntries, challenge } = resolveLadderChallenge(sportEntries, challengerTeam, defenderTeam, winnerTeam);
+    setLadderEntries(prev => {
+      const next = [...prev.filter(e => e.sport !== sport), ...updatedEntries];
+      try { localStorage.setItem('padula_ladder_entries', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setLadderChallenges(prev => {
+      const next = [challenge, ...prev];
+      try { localStorage.setItem('padula_ladder_challenges', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    addAuditLog('score_finalize', `Ladder challenge: ${challengerTeam} vs ${defenderTeam} — Winner: ${winnerTeam}`, challenge.id, 'LadderChallenge');
+  }, [ladderEntries, addAuditLog]);
+
+  const generateNextSwissRound = useCallback((sport: string): { success: boolean; message: string } => {
+    const sportMatches = matches.filter(m => m.sport === sport && m.format === 'swiss');
+    const maxRound = sportMatches.reduce((max, m) => Math.max(max, m.roundNumber || 1), 0);
+    const ev = events.find(e => e.sport === sport && !e.archived);
+    const sportTeams = teams.filter(t => t.isActive !== false && t.sport === sport);
+    if (sportTeams.length < 2) return { success: false, message: 'At least 2 teams are required.' };
+    const nextRoundNum = maxRound + 1;
+    const newMatches = generateSwissRoundMatches({
+      eventId: ev?.id || sport,
+      sport,
+      division: ev?.division,
+      venue: ev?.venue || venues[0]?.name || 'Main Arena Court 1',
+      teams: sportTeams,
+      existingMatches: sportMatches,
+      roundNumber: nextRoundNum,
+    });
+    setMatches(prev => [...prev, ...newMatches]);
+    addAuditLog('bracket_generate', `Generated Swiss Round ${nextRoundNum} for ${getSportName(sport)}`, ev?.id || sport, 'TournamentEvent');
+    return { success: true, message: `Generated Swiss Round ${nextRoundNum} (${newMatches.length} pairings).` };
+  }, [matches, events, teams, venues, addAuditLog]);
+
+  const submitBracketPrediction = useCallback((pred: Omit<BracketPrediction, 'id' | 'createdAt'>) => {
+    const entry: BracketPrediction = {
+      ...pred,
+      id: uid('pred'),
+      createdAt: new Date().toISOString(),
+    };
+    setBracketPredictions(prev => {
+      const next = [
+        entry,
+        ...prev.filter(p => !(p.matchId === pred.matchId && p.deviceId === pred.deviceId)),
+      ];
+      try { localStorage.setItem('padula_bracket_predictions', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    supabase.from('bracket_predictions').upsert([{
+      id: entry.id,
+      event_id: entry.eventId || null,
+      sport: entry.sport,
+      match_id: entry.matchId,
+      predictor_name: entry.predictorName,
+      predictor_email: entry.predictorEmail || null,
+      predicted_winner: entry.predictedWinner,
+      device_id: entry.deviceId,
+      created_at: entry.createdAt,
+    }]).then();
+  }, []);
+
+  const castBracketVote = useCallback((matchId: string, sport: string, side: 'A' | 'B', voterKey: string): { success: boolean; message: string } => {
+    const alreadyVoted = bracketVotes.some(v => v.matchId === matchId && v.voterKey === voterKey);
+    if (alreadyVoted) {
+      return { success: false, message: 'You have already voted for this match on this device/account.' };
+    }
+    const vote: BracketVote = {
+      id: uid('vote'),
+      matchId,
+      sport,
+      votedTeam: side,
+      voterKey,
+      createdAt: new Date().toISOString(),
+    };
+    setBracketVotes(prev => {
+      const next = [vote, ...prev];
+      try { localStorage.setItem('padula_bracket_votes', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setMatches(prev => prev.map(m => {
+      if (m.id !== matchId) return m;
+      return {
+        ...m,
+        votesA: (m.votesA || 0) + (side === 'A' ? 1 : 0),
+        votesB: (m.votesB || 0) + (side === 'B' ? 1 : 0),
+      };
+    }));
+    supabase.from('bracket_votes').insert([{
+      id: vote.id,
+      match_id: vote.matchId,
+      sport: vote.sport,
+      voted_team: vote.votedTeam,
+      voter_key: vote.voterKey,
+      created_at: vote.createdAt,
+    }]).then();
+    return { success: true, message: 'Vote recorded!' };
+  }, [bracketVotes]);
 
   // ── Event management (fused with automatic bracket generation & announcements) ──
   const createEvent = useCallback((eventData: Omit<TournamentEvent, 'id' | 'bracket'>) => {
@@ -4494,43 +4849,71 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         };
       });
       try { localStorage.setItem('padula_players', JSON.stringify(updated)); } catch {}
+      const updatedPlayer = updated.find(p => p.id === playerId);
+      if (updatedPlayer) {
+        supabase
+          .from('players')
+          .update({
+            fouls: updatedPlayer.fouls ?? 0,
+            foul_breakdown: updatedPlayer.foulBreakdown || {},
+            foul_logs: updatedPlayer.foulLogs || [],
+            sport_stats: updatedPlayer.sportStats || {},
+            match_stats: updatedPlayer.matchStats || [],
+          })
+          .eq('id', playerId)
+          .then();
+      }
       return updated;
     });
 
     if (matchId) {
-      setMatches(prev => prev.map(m => {
-        if (m.id !== matchId) return m;
-        const existingMap = { ...(m.playerMatchFouls || {}) };
-        const entry = existingMap[playerId] || { total: 0, breakdown: {} };
-        const prevCount = entry.breakdown[foulType] || 0;
-        const nextCount = Math.max(0, prevCount + delta);
-        const nextBreakdown = { ...entry.breakdown, [foulType]: nextCount };
-        const nextTotal = Math.max(0, Object.values(nextBreakdown).reduce((a, b) => a + b, 0));
-        existingMap[playerId] = { total: nextTotal, breakdown: nextBreakdown };
+      setMatches(prev => {
+        const nextMatches = prev.map(m => {
+          if (m.id !== matchId) return m;
+          const existingMap = { ...(m.playerMatchFouls || {}) };
+          const entry = existingMap[playerId] || { total: 0, breakdown: {} };
+          const prevCount = entry.breakdown[foulType] || 0;
+          const nextCount = Math.max(0, prevCount + delta);
+          const nextBreakdown = { ...entry.breakdown, [foulType]: nextCount };
+          const nextTotal = Math.max(0, Object.values(nextBreakdown).reduce((a, b) => a + b, 0));
+          existingMap[playerId] = { total: nextTotal, breakdown: nextBreakdown };
 
-        const teamObj = targetPlayer ? teams.find(t => t.id === targetPlayer.teamId) : undefined;
-        const teamSide: 'A' | 'B' = teamObj?.name === m.teamB ? 'B' : 'A';
-        const nextTimeline = delta > 0 && targetPlayer
-          ? [
-              ...(m.timeline || []),
-              {
-                id: `tl-foul-${Date.now()}`,
-                time: period || m.round || 'LIVE',
-                team: teamSide,
-                player: targetPlayer.name,
-                type: 'foul' as const,
-                description: `${foulType} recorded on #${targetPlayer.jerseyNumber} ${targetPlayer.name} (${nextTotal} match foul${nextTotal === 1 ? '' : 's'})`,
-                scoreSnapshot: `${m.scoreA} - ${m.scoreB}`,
-              },
-            ]
-          : m.timeline;
+          const teamObj = targetPlayer ? teams.find(t => t.id === targetPlayer.teamId) : undefined;
+          const teamSide: 'A' | 'B' = teamObj?.name === m.teamB ? 'B' : 'A';
+          const nextTimeline = delta > 0 && targetPlayer
+            ? [
+                ...(m.timeline || []),
+                {
+                  id: `tl-foul-${Date.now()}`,
+                  time: period || m.round || 'LIVE',
+                  team: teamSide,
+                  player: targetPlayer.name,
+                  type: 'foul' as const,
+                  description: `${foulType} recorded on #${targetPlayer.jerseyNumber} ${targetPlayer.name} (${nextTotal} match foul${nextTotal === 1 ? '' : 's'})`,
+                  scoreSnapshot: `${m.scoreA} - ${m.scoreB}`,
+                },
+              ]
+            : m.timeline;
 
-        return {
-          ...m,
-          playerMatchFouls: existingMap,
-          timeline: nextTimeline,
-        };
-      }));
+          return {
+            ...m,
+            playerMatchFouls: existingMap,
+            timeline: nextTimeline,
+          };
+        });
+        const updatedMatch = nextMatches.find(m => m.id === matchId);
+        if (updatedMatch) {
+          supabase
+            .from('matches')
+            .update({
+              player_match_fouls: updatedMatch.playerMatchFouls || {},
+              timeline: updatedMatch.timeline || [],
+            })
+            .eq('id', matchId)
+            .then();
+        }
+        return nextMatches;
+      });
     }
 
     if (targetPlayer && delta > 0) {
@@ -4559,32 +4942,47 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setPlayers(prev => {
       const updated = prev.map(p => (p.id === playerId ? { ...p, rosterStatus: resolvedStatus } : p));
       try { localStorage.setItem('padula_players', JSON.stringify(updated)); } catch {}
+      supabase.from('players').update({ roster_status: resolvedStatus }).eq('id', playerId).then();
       return updated;
     });
 
     if (matchId) {
-      setMatches(prev => prev.map(m => {
-        if (m.id !== matchId) return m;
-        const nextLineup = { ...(m.playerLineupStatus || {}), [playerId]: resolvedStatus };
-        const teamObj = teams.find(t => t.id === targetPlayer.teamId);
-        const teamSide: 'A' | 'B' = teamObj?.name === m.teamB ? 'B' : 'A';
-        return {
-          ...m,
-          playerLineupStatus: nextLineup,
-          timeline: [
-            ...(m.timeline || []),
-            {
-              id: `tl-sub-${Date.now()}`,
-              time: m.round || 'LIVE',
-              team: teamSide,
-              player: targetPlayer.name,
-              type: 'substitution' as const,
-              description: `#${targetPlayer.jerseyNumber} ${targetPlayer.name} moved to ${resolvedStatus === 'in_play' ? 'IN PLAY (Active Lineup)' : 'RESERVED (Bench)'}`,
-              scoreSnapshot: `${m.scoreA} - ${m.scoreB}`,
-            },
-          ],
-        };
-      }));
+      setMatches(prev => {
+        const nextMatches = prev.map(m => {
+          if (m.id !== matchId) return m;
+          const nextLineup = { ...(m.playerLineupStatus || {}), [playerId]: resolvedStatus };
+          const teamObj = teams.find(t => t.id === targetPlayer.teamId);
+          const teamSide: 'A' | 'B' = teamObj?.name === m.teamB ? 'B' : 'A';
+          return {
+            ...m,
+            playerLineupStatus: nextLineup,
+            timeline: [
+              ...(m.timeline || []),
+              {
+                id: `tl-sub-${Date.now()}`,
+                time: m.round || 'LIVE',
+                team: teamSide,
+                player: targetPlayer.name,
+                type: 'substitution' as const,
+                description: `#${targetPlayer.jerseyNumber} ${targetPlayer.name} moved to ${resolvedStatus === 'in_play' ? 'IN PLAY (Active Lineup)' : 'RESERVED (Bench)'}`,
+                scoreSnapshot: `${m.scoreA} - ${m.scoreB}`,
+              },
+            ],
+          };
+        });
+        const updatedMatch = nextMatches.find(m => m.id === matchId);
+        if (updatedMatch) {
+          supabase
+            .from('matches')
+            .update({
+              player_lineup_status: updatedMatch.playerLineupStatus || {},
+              timeline: updatedMatch.timeline || [],
+            })
+            .eq('id', matchId)
+            .then();
+        }
+        return nextMatches;
+      });
     }
 
     addAuditLog(
@@ -4789,11 +5187,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       events, setEvents,
       matches, officials, players, teams, departments, divisions, venues,
       announcements, auditLogs,
-      registerOfficial, assignMatchOfficials,
+      registerOfficial, assignMatchOfficials, assignTeamCoach, assignEventReferee,
       updateMatchScore, submitMatchScore, finalizeMatchScore, correctMatchScore,
       startMatch, finishMatch, advanceTeamToBracketSlot, reopenMatch,
       createEvent, updateEvent, publishEvent, startEvent, archiveEvent, deleteEvent, deleteBracket, generateBracket,
       advanceGroupToElimination, swapBracketTeams, toggleMatchBye,
+      ladderEntries, ladderChallenges, bracketPredictions, bracketVotes,
+      challengeLadderTeam, generateNextSwissRound, submitBracketPrediction, castBracketVote,
       registerTeam, registerPlayer, updatePlayer, removePlayer,
       recordPlayerFoul, togglePlayerRosterStatus,
       addDepartment, removeDepartment,

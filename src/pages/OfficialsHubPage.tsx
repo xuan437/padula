@@ -29,11 +29,11 @@ function SectionDivider({ label }: { label: string }) {
 
 export default function OfficialsHubPage() {
   const {
-    matches, officials, registeredUsers, venues,
-    assignMatchOfficials, removeOfficial, removeUser, setActiveView,
+    matches, officials, registeredUsers, venues, teams, events, departments,
+    assignMatchOfficials, assignTeamCoach, assignEventReferee, removeOfficial, removeUser, setActiveView,
   } = useApp();
 
-  const [officialFilter, setOfficialFilter] = useState<'all' | 'referee' | 'scorekeeper' | 'coach' | 'manager'>('all');
+  const [officialFilter, setOfficialFilter] = useState<'all' | 'referee' | 'coach' | 'manager'>('all');
   const [matchSportFilter, setMatchSportFilter] = useState<string>('all');
   const [pendingAssignment, setPendingAssignment] = useState<{
     matchId: string;
@@ -95,14 +95,20 @@ export default function OfficialsHubPage() {
     return list;
   }, [officials, registeredUsers]);
 
+  const nonScorerOfficials = useMemo(() => officials.filter(o => o.role !== 'scorekeeper'), [officials]);
+
   const filteredOfficials = useMemo(() => {
-    if (officialFilter === 'all') return officials;
-    return officials.filter(o => o.role === officialFilter);
-  }, [officials, officialFilter]);
+    if (officialFilter === 'all') return nonScorerOfficials;
+    return nonScorerOfficials.filter(o => o.role === officialFilter);
+  }, [nonScorerOfficials, officialFilter]);
 
   const filteredMatches = useMemo(() => {
-    if (matchSportFilter === 'all') return matches;
-    return matches.filter(m => m.sport?.toLowerCase() === matchSportFilter.toLowerCase());
+    if (!matchSportFilter || matchSportFilter.toLowerCase() === 'all') return matches;
+    return matches.filter(
+      m =>
+        m.sport?.toLowerCase() === matchSportFilter.toLowerCase() ||
+        getSportName(m.sport).toLowerCase() === getSportName(matchSportFilter).toLowerCase()
+    );
   }, [matches, matchSportFilter]);
 
   return (
@@ -183,6 +189,92 @@ export default function OfficialsHubPage() {
           <div className="glass-card" style={{ padding: '16px 20px', borderLeft: '3px solid #f59e0b' }}>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Athletic Managers</div>
             <div style={{ fontSize: '26px', fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>{managersList.length}</div>
+          </div>
+        </div>
+
+        <SectionDivider label="Event Referee & Team Coach Assignments" />
+
+        {/* EVENT REFEREE & TEAM COACH ASSIGNMENTS */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
+          {/* Lead Referee per Event */}
+          <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ShieldIcon size={17} color="#f97316" /> Referee Assignments (Per Event)
+              </h3>
+              <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                Assign a Lead Referee to each tournament event (syncs to its scheduled matches).
+              </p>
+            </div>
+            {events.filter(e => !e.archived).length === 0 ? (
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>No active events yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {events.filter(e => !e.archived).map(ev => (
+                  <div key={ev.id} style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <strong style={{ fontSize: 13 }}>{ev.name}</strong>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: ev.referee ? '#10b981' : '#f59e0b' }}>
+                        {ev.referee ? 'Assigned ✓' : 'Pending'}
+                      </span>
+                    </div>
+                    <select
+                      className="form-input"
+                      value={ev.referee || ''}
+                      onChange={e => assignEventReferee(ev.id, e.target.value)}
+                      style={{ width: '100%', padding: '7px 10px', fontSize: 12.5, fontWeight: 600 }}
+                    >
+                      <option value="">Select Lead Event Referee…</option>
+                      {refereesList.map(r => (
+                        <option key={r.id} value={r.name}>{r.name} ({r.sport})</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Head Coach per Team */}
+          <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <UsersIcon size={17} color="#3b82f6" /> Coach Assignments (Per Team)
+              </h3>
+              <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                Assign a Head Coach directly to each registered team (syncs to team matches).
+              </p>
+            </div>
+            {teams.filter(t => t.isActive !== false).length === 0 ? (
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>No active teams registered yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 360, overflowY: 'auto' }}>
+                {teams.filter(t => t.isActive !== false).map(team => {
+                  const dept = departments.find(d => d.id === team.department);
+                  return (
+                    <div key={team.id} style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                        <strong style={{ fontSize: 13 }}>{team.name} <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>({dept?.shortName || team.department} · {getSportName(team.sport)})</span></strong>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: team.coach ? '#10b981' : '#f59e0b' }}>
+                          {team.coach ? 'Assigned ✓' : 'Pending'}
+                        </span>
+                      </div>
+                      <select
+                        className="form-input"
+                        value={team.coach || ''}
+                        onChange={e => assignTeamCoach(team.id, e.target.value)}
+                        style={{ width: '100%', padding: '7px 10px', fontSize: 12.5, fontWeight: 600 }}
+                      >
+                        <option value="">Select Team Coach…</option>
+                        {coachesList.map(c => (
+                          <option key={c.id} value={c.name}>{c.name} ({c.sport})</option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -453,61 +545,6 @@ export default function OfficialsHubPage() {
                         </select>
                       </div>
 
-                      {/* Scorekeeper */}
-                      <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        background: 'var(--bg-surface)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '10px',
-                        padding: '10px 12px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          letterSpacing: '0.04em',
-                          color: 'var(--text-secondary)',
-                        }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            <ClipboardIcon size={13} color="#10b981" />
-                            <span>SCOREKEEPER</span>
-                          </span>
-                          {m.scorekeeper ? (
-                            <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                              <CheckIcon size={10} color="#10b981" /> Set
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 700 }}>Pending</span>
-                          )}
-                        </div>
-                        <select
-                          className="form-input"
-                          style={{
-                            padding: '7px 10px',
-                            fontSize: '12.5px',
-                            fontWeight: 600,
-                            borderRadius: '8px',
-                            background: 'var(--bg-elevated)',
-                            border: '1px solid var(--border)',
-                            color: 'var(--text-primary)',
-                            cursor: 'pointer',
-                            width: '100%',
-                          }}
-                          value={m.scorekeeper || ''}
-                          onChange={e => requestAssignment(m.id, `${m.teamA} vs ${m.teamB}`, 'Scorekeeper', 'scorekeeper', e.target.value, m.scorekeeper || '')}
-                        >
-                          <option value="">Select Scorekeeper...</option>
-                          {scorekeepersList.map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                          ))}
-                        </select>
-                      </div>
-
                       {/* Coach A */}
                       <div style={{
                         display: 'flex',
@@ -692,14 +729,14 @@ export default function OfficialsHubPage() {
               <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '4px 0 0 0' }}>All certified Referees, Scorekeepers, Coaches, and Managers on record.</p>
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {(['all', 'referee', 'scorekeeper', 'coach', 'manager'] as const).map(r => (
+              {(['all', 'referee', 'coach', 'manager'] as const).map(r => (
                 <button
                   key={r}
                   className={`btn btn-sm ${officialFilter === r ? 'btn-primary' : 'btn-ghost'}`}
                   onClick={() => setOfficialFilter(r)}
                   style={{ textTransform: 'capitalize' }}
                 >
-                  {r === 'all' ? `All (${officials.length})` : `${r}s (${officials.filter(o => o.role === r).length})`}
+                  {r === 'all' ? `All (${nonScorerOfficials.length})` : `${r}s (${nonScorerOfficials.filter(o => o.role === r).length})`}
                 </button>
               ))}
             </div>

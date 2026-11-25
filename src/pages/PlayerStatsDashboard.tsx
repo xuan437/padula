@@ -177,6 +177,41 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
   const [selectedId, setSelectedId] = useState(playerId || defaultPlayer?.id || '');
   const activePlayer: Player | undefined = players.find(p => p.id === selectedId) || defaultPlayer;
 
+  const teamOrSportRoster = useMemo(() => {
+    if (!activePlayer) return [];
+    const teamPlayers = activePlayer.teamId
+      ? players.filter(p => p.teamId === activePlayer.teamId)
+      : [];
+    if (teamPlayers.length > 0) return teamPlayers;
+    return players.filter(p => p.sport === activePlayer.sport);
+  }, [players, activePlayer]);
+
+  const inPlayRoster = useMemo(
+    () => teamOrSportRoster.filter(p => getPlayerRosterStatus(p) === 'in_play'),
+    [teamOrSportRoster]
+  );
+  const reservedRoster = useMemo(
+    () => teamOrSportRoster.filter(p => getPlayerRosterStatus(p) === 'reserved'),
+    [teamOrSportRoster]
+  );
+
+  const topScorers = useMemo(() => {
+    if (!activePlayer) return [];
+    return players
+      .filter(p => p.sport === activePlayer.sport)
+      .map(p => {
+        const pDept = departments.find(d => d.id === p.department);
+        return {
+          name: p.name,
+          dept: pDept?.shortName || pDept?.name || 'Padula',
+          pts: p.currentSeasonGoals ?? p.intGoals ?? 0,
+        };
+      })
+      .sort((a, b) => b.pts - a.pts)
+      .slice(0, 6)
+      .map((p, idx) => ({ rank: idx + 1, ...p }));
+  }, [players, departments, activePlayer]);
+
   if (!activePlayer) {
     return (
       <div style={{ color: C.textP, padding: '40px', textAlign: 'center' }}>
@@ -199,39 +234,6 @@ export default function PlayerStatsDashboard({ playerId }: { playerId?: string }
   const foulBreakdown = getPlayerFoulBreakdown(activePlayer);
   const foulRules = getSportFoulRules(activePlayer.sport);
   const activeRosterStatus = getPlayerRosterStatus(activePlayer);
-
-  const teamOrSportRoster = useMemo(() => {
-    const teamPlayers = activePlayer.teamId
-      ? players.filter(p => p.teamId === activePlayer.teamId)
-      : [];
-    if (teamPlayers.length > 0) return teamPlayers;
-    return players.filter(p => p.sport === activePlayer.sport);
-  }, [players, activePlayer.teamId, activePlayer.sport]);
-
-  const inPlayRoster = useMemo(
-    () => teamOrSportRoster.filter(p => getPlayerRosterStatus(p) === 'in_play'),
-    [teamOrSportRoster]
-  );
-  const reservedRoster = useMemo(
-    () => teamOrSportRoster.filter(p => getPlayerRosterStatus(p) === 'reserved'),
-    [teamOrSportRoster]
-  );
-
-  const topScorers = useMemo(() => {
-    return players
-      .filter(p => p.sport === activePlayer.sport)
-      .map(p => {
-        const pDept = departments.find(d => d.id === p.department);
-        return {
-          name: p.name,
-          dept: pDept?.shortName || pDept?.name || 'Padula',
-          pts: p.currentSeasonGoals ?? p.intGoals ?? 0,
-        };
-      })
-      .sort((a, b) => b.pts - a.pts)
-      .slice(0, 6)
-      .map((p, idx) => ({ rank: idx + 1, ...p }));
-  }, [players, departments, activePlayer.sport]);
 
   const initials = activePlayer.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const isMe = (name: string) => name === activePlayer.name;

@@ -7,11 +7,25 @@
   <link rel="apple-touch-icon" href="/School logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asian College Padula</title>
-  <meta name="description" content="Modern athletic tournament management, live brackets, and analytics platform." />
+  <meta name="description" content="Asian College Dumaguete athletic tournament management, live brackets, and analytics portal." />
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('padula_theme');
+        if (saved === 'light' || saved === 'dark') {
+          document.documentElement.setAttribute('data-theme', saved);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;0,800;1,700;1,800;1,900&family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Russo+One&family=Teko:wght@600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Source+Sans+3:wght@400;500;600;700&display=swap"
     rel="stylesheet">
 </head>
 

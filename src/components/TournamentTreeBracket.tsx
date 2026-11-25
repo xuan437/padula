@@ -204,7 +204,7 @@ function MatchNodeBox({
             fontSize: '11px',
             fontWeight: 800,
             fontVariantNumeric: 'tabular-nums',
-            color: isWinner ? 'var(--accent, #0284c7)' : 'var(--text-secondary, #64748b)',
+            color: isWinner ? 'var(--accent, #0284c7)' : 'var(--text-primary, #0f172a)',
             background: 'var(--bg-elevated, #f1f5f9)',
             padding: '1px 5px',
             borderRadius: '4px',

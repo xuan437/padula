@@ -1704,8 +1704,9 @@ export default function ScorekeeperDashboard() {
   const { matches, officials, currentUser, assignMatchOfficials, registeredUsers, updateMatchScore, staff, setActiveView, settings } = useApp();
   const isOnline = useOnlineStatus();
   const [selectedSportFilter, setSelectedSportFilter] = useState('all');
+  const [selectedStageFilter, setSelectedStageFilter] = useState<'all' | 'elimination' | 'group'>('all');
 
-  const canAssign = currentUser?.role === 'scorer';
+  const canAssign = currentUser?.role === 'scorer' || currentUser?.role === 'director' || currentUser?.role === 'coordinator';
 
   const [assignmentModalMatch, setAssignmentModalMatch] = useState<Match | null>(null);
   const [selectedScorerName, setSelectedScorerName] = useState('');
@@ -1760,7 +1761,16 @@ export default function ScorekeeperDashboard() {
     return matches;
   }, [matches, settings.security.oneSportPerScorer, currentUser, assignedScorerSport]);
 
-  const filteredMatches = visibleMatches.filter(m => selectedSportFilter === 'all' || m.sport === selectedSportFilter);
+  const filteredMatches = visibleMatches.filter(m => {
+    if (selectedSportFilter !== 'all' && m.sport !== selectedSportFilter) return false;
+    if (selectedStageFilter === 'elimination') {
+      return m.stage === 'elimination' || m.format === 'single_elimination' || m.format === 'double_elimination' || !m.format;
+    }
+    if (selectedStageFilter === 'group') {
+      return m.stage === 'group' || m.format === 'round_robin' || m.format === 'point_system';
+    }
+    return true;
+  });
 
   const activeMatches = filteredMatches
     .filter(m => m.status !== 'finished')
@@ -1928,6 +1938,38 @@ export default function ScorekeeperDashboard() {
             </button>
           );
         })}
+      </div>
+
+      {/* ── Game Style / Stage Filter Pills ── */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: '0.06em',
+          color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          marginRight: 2,
+          userSelect: 'none',
+        }}>
+          GAME STYLE:
+        </span>
+        {(
+          [
+            { id: 'all', label: 'All Matchups' },
+            { id: 'elimination', label: 'Elimination Round' },
+            { id: 'group', label: 'Round Robin / Points' },
+          ] as const
+        ).map(st => (
+          <button
+            key={st.id}
+            type="button"
+            className={`btn btn-sm ${selectedStageFilter === st.id ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setSelectedStageFilter(st.id)}
+            style={{ borderRadius: 8, height: 32, padding: '4px 12px', fontSize: 12, fontWeight: selectedStageFilter === st.id ? 700 : 600 }}
+          >
+            {st.label}
+          </button>
+        ))}
       </div>
 
       {/* ── Active / Live Matches (Categorized Per Game) ── */}
