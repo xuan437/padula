@@ -600,20 +600,24 @@ export default function TournamentTreeBracket({
     const sfNums = [1, 2].map(s => allocNum(sfBaseOffset + s, sfSlots[s]));
     const finalNum = allocNum(hasR16 ? 15 : 7, finalMatch);
 
-    // Build ordered list of bracket matches from Match #1 to Final
+    // Build ordered list of bracket matches from Match #1 onward
     const stageList: { num: number; round: string; match?: Match }[] = [];
+    let roundIdx = 1;
     if (hasR16) {
       for (let s = 1; s <= 8; s++) {
-        stageList.push({ num: r16Nums[s - 1], round: 'Round of 16', match: r16Slots[s] });
+        stageList.push({ num: r16Nums[s - 1], round: `Round ${roundIdx}`, match: r16Slots[s] });
       }
+      roundIdx++;
     }
     for (let s = 1; s <= 4; s++) {
-      stageList.push({ num: qfNums[s - 1], round: 'Quarter-Finals', match: qfSlots[s] });
+      stageList.push({ num: qfNums[s - 1], round: `Round ${roundIdx}`, match: qfSlots[s] });
     }
+    roundIdx++;
     for (let s = 1; s <= 2; s++) {
-      stageList.push({ num: sfNums[s - 1], round: 'Semi-Finals', match: sfSlots[s] });
+      stageList.push({ num: sfNums[s - 1], round: `Round ${roundIdx}`, match: sfSlots[s] });
     }
-    stageList.push({ num: finalNum, round: 'Championship Final', match: finalMatch });
+    roundIdx++;
+    stageList.push({ num: finalNum, round: `Round ${roundIdx}`, match: finalMatch });
 
     stageList.sort((a, b) => a.num - b.num);
 
@@ -791,7 +795,7 @@ export default function TournamentTreeBracket({
             {sportMeta.name} — Championship Bracket Tree
           </h2>
           <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0 }}>
-            Single Elimination Structure · {treeData.totalTeams ?? 16} Teams ({treeData.hasR16 ? 'Round of 16 to Championship Gold' : 'Quarter-Finals to Championship Gold'})
+            Single Elimination Structure · {treeData.totalTeams ?? 16} Teams
           </p>
 
           {activeView !== 'public' && !isPublicView && showSportSelector && (currentUser?.role === 'director' || currentUser?.role === 'coordinator') && (
@@ -841,24 +845,6 @@ export default function TournamentTreeBracket({
             const xOffset = hasR16 ? 0 : 170;
             const canvasWidth = hasR16 ? 1260 : 920;
             const x = (val: number) => val - xOffset;
-            const roundLabelStyle = (leftPx: number, widthPx: number, isFinal = false): React.CSSProperties => ({
-              position: 'absolute',
-              top: 0,
-              left: `${leftPx}px`,
-              width: `${widthPx}px`,
-              height: '22px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              fontSize: isFinal ? '10.5px' : '10px',
-              fontWeight: 800,
-              lineHeight: 1,
-              whiteSpace: 'nowrap',
-              color: isFinal ? 'var(--accent)' : 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: isFinal ? '0.08em' : '0.06em',
-            });
 
             return (
               /* ── Mathematical Symmetrical Canvas (920px for 8-Team / 1260px for 16-Team) ── */
@@ -911,27 +897,6 @@ export default function TournamentTreeBracket({
                     </>
                   )}
                 </svg>
-
-                {/* ── ROUND LABELS BAR (Mathematically aligned to each column's exact horizontal position) ── */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '0px',
-                    left: 0,
-                    width: '100%',
-                    height: '22px',
-                    zIndex: 3,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  {hasR16 && <span style={roundLabelStyle(x(20), 136)}>Round of 16</span>}
-                  <span style={roundLabelStyle(x(190), 136)}>Quarter-Finals</span>
-                  <span style={roundLabelStyle(x(365), 136)}>Semi-Finals</span>
-                  <span style={roundLabelStyle(x(540), 180, true)}>Championship Final</span>
-                  <span style={roundLabelStyle(x(759), 136)}>Semi-Finals</span>
-                  <span style={roundLabelStyle(x(934), 136)}>Quarter-Finals</span>
-                  {hasR16 && <span style={roundLabelStyle(x(1104), 136)}>Round of 16</span>}
-                </div>
 
                 {/* ── LEFT COLUMN 1: ROUND OF 16 (Rendered only if R16 exists) ── */}
                 {hasR16 && (
@@ -991,7 +956,7 @@ export default function TournamentTreeBracket({
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
                     <TrophyIcon size={16} color="#eab308" />
                     <span style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      Gold Medal Final
+                      Champion
                     </span>
                   </div>
 

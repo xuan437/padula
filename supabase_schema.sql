@@ -696,17 +696,17 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- 5. TEAMS
 INSERT INTO teams (id, name, sport, department, division, coach, seed, color, players, is_active) VALUES
-  ('t1', 'Padula Eagles',  's1', 'd1', 'div1', 'Coach Rivera',    1, '#f59e0b', '["p1", "p2", "p3", "p4", "p5"]'::jsonb, true),
-  ('t2', 'Red Lions',      's1', 'd2', 'div1', 'Coach Henderson', 2, '#3b82f6', '["p6", "p7", "p8", "p9", "p10"]'::jsonb, true),
-  ('t3', 'Blue Sharks',    's1', 'd3', 'div1', 'Coach Alvarez',   3, '#f97316', '["p11", "p12", "p13", "p14", "p15"]'::jsonb, true),
-  ('t4', 'Padula Tigers',  's1', 'd4', 'div1', 'Coach Morales',   4, '#ef4444', '["p16", "p17", "p18", "p19", "p20"]'::jsonb, true),
-  ('t5', 'Panthers',       's1', 'd5', 'div1', 'Coach Henderson', 5, '#8b5cf6', '["p21", "p22", "p23", "p24", "p25"]'::jsonb, true),
-  ('t6', 'Silver Wolves',  's1', 'd1', 'div1', 'Coach Alvarez',   6, '#d97706', '["p26", "p27", "p28", "p29", "p30"]'::jsonb, true),
-  ('t7', 'CSE CyberHawks', 's2', 'd2', 'div3', 'Coach Alvarez',   1, '#0284c7', '["p7", "p8"]'::jsonb, true),
-  ('t8', 'HTM Spikers',    's2', 'd3', 'div3', 'Coach Morales',   2, '#0ea5e9', '["p9"]'::jsonb, true),
-  ('t9', 'BAA Golden Eagles','s_futsal','d1','div7','Coach Rivera',1, '#eab308', '["p10"]'::jsonb, true),
-  ('t10','CSE Phoenix',    's5', 'd2', 'div8', 'Coach Henderson', 1, '#38bdf8', '["p11"]'::jsonb, true),
-  ('t11','SHS Royals',     's_futsal','d5','div7','Coach Morales',2, '#0f2d5c', '["p12"]'::jsonb, true)
+  ('t1', 'BAA', 's1', 'd1', 'div1', 'Coach Rivera',    1, '#f59e0b', '["p1", "p2", "p3", "p4", "p5"]'::jsonb, true),
+  ('t2', 'HTM', 's1', 'd2', 'div1', 'Coach Henderson', 2, '#3b82f6', '["p6", "p7", "p8", "p9", "p10"]'::jsonb, true),
+  ('t3', 'CSE', 's1', 'd3', 'div1', 'Coach Alvarez',   3, '#f97316', '["p11", "p12", "p13", "p14", "p15"]'::jsonb, true),
+  ('t4', 'DPD', 's1', 'd4', 'div1', 'Coach Morales',   4, '#ef4444', '["p16", "p17", "p18", "p19", "p20"]'::jsonb, true),
+  ('t5', 'SHS', 's1', 'd5', 'div1', 'Coach Henderson', 5, '#8b5cf6', '["p21", "p22", "p23", "p24", "p25"]'::jsonb, true),
+  ('t6', 'BAA', 's1', 'd1', 'div1', 'Coach Alvarez',   6, '#d97706', '["p26", "p27", "p28", "p29", "p30"]'::jsonb, true),
+  ('t7', 'HTM', 's2', 'd2', 'div3', 'Coach Alvarez',   1, '#0284c7', '["p7", "p8"]'::jsonb, true),
+  ('t8', 'CSE', 's2', 'd3', 'div3', 'Coach Morales',   2, '#0ea5e9', '["p9"]'::jsonb, true),
+  ('t9', 'BAA', 's_futsal','d1','div7','Coach Rivera', 1, '#eab308', '["p10"]'::jsonb, true),
+  ('t10','HTM', 's5', 'd2', 'div8', 'Coach Henderson', 1, '#38bdf8', '["p11"]'::jsonb, true),
+  ('t11','SHS', 's_futsal','d5','div7','Coach Morales',2, '#0f2d5c', '["p12"]'::jsonb, true)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, sport = EXCLUDED.sport, department = EXCLUDED.department,
   coach = EXCLUDED.coach, seed = EXCLUDED.seed, color = EXCLUDED.color, players = EXCLUDED.players;

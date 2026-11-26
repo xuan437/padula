@@ -276,16 +276,16 @@ export const INITIAL_OFFICIALS: GameOfficial[] = [
 ];
 
 export const INITIAL_TEAMS: Team[] = [
-  { id: 't1', name: 'BAA Falcons', sport: 's1', department: 'd1', division: 'div1', coach: 'Coach Rivera', seed: 1, color: '#eab308', players: ['p1', 'p2', 'p13'], isActive: true },
-  { id: 't2', name: 'CSE Titans', sport: 's1', department: 'd3', division: 'div1', coach: 'Coach Henderson', seed: 2, color: '#9333ea', players: ['p3', 'p4', 'p14'], isActive: true },
-  { id: 't3', name: 'HTM Chefs', sport: 's1', department: 'd2', division: 'div1', coach: 'Coach Alvarez', seed: 3, color: '#dc2626', players: ['p5', 'p15'], isActive: true },
-  { id: 't4', name: 'SHS Royals', sport: 's1', department: 'd5', division: 'div1', coach: 'Coach Morales', seed: 4, color: '#0284c7', players: ['p6', 'p16'], isActive: true },
-  { id: 't5', name: 'CSE CyberHawks', sport: 's2', department: 'd3', division: 'div3', coach: 'Coach Alvarez', seed: 1, color: '#9333ea', players: ['p7', 'p17'], isActive: true },
-  { id: 't6', name: 'HTM Spikers', sport: 's2', department: 'd2', division: 'div3', coach: 'Coach Morales', seed: 2, color: '#dc2626', players: ['p8', 'p18'], isActive: true },
-  { id: 't7', name: 'DPD Volleys', sport: 's2', department: 'd4', division: 'div3', coach: 'Coach Rivera', seed: 3, color: '#059669', players: ['p9'], isActive: true },
-  { id: 't8', name: 'BAA Lady Falcons', sport: 's2', department: 'd1', division: 'div3', coach: 'Coach Henderson', seed: 4, color: '#eab308', players: ['p10'], isActive: true },
-  { id: 't9', name: 'BAA Golden Eagles', sport: 's_futsal', department: 'd1', division: 'div15', coach: 'Coach Rivera', seed: 1, color: '#eab308', players: ['p11', 'p19'], isActive: true },
-  { id: 't10', name: 'SHS Strikers', sport: 's_futsal', department: 'd5', division: 'div15', coach: 'Coach Morales', seed: 2, color: '#0284c7', players: ['p12', 'p20'], isActive: true },
+  { id: 't1', name: 'BAA', sport: 's1', department: 'd1', division: 'div1', coach: 'Coach Rivera', seed: 1, color: '#eab308', players: ['p1', 'p2', 'p13'], isActive: true },
+  { id: 't2', name: 'CSE', sport: 's1', department: 'd3', division: 'div1', coach: 'Coach Henderson', seed: 2, color: '#9333ea', players: ['p3', 'p4', 'p14'], isActive: true },
+  { id: 't3', name: 'HTM', sport: 's1', department: 'd2', division: 'div1', coach: 'Coach Alvarez', seed: 3, color: '#dc2626', players: ['p5', 'p15'], isActive: true },
+  { id: 't4', name: 'SHS', sport: 's1', department: 'd5', division: 'div1', coach: 'Coach Morales', seed: 4, color: '#0284c7', players: ['p6', 'p16'], isActive: true },
+  { id: 't5', name: 'CSE', sport: 's2', department: 'd3', division: 'div3', coach: 'Coach Alvarez', seed: 1, color: '#9333ea', players: ['p7', 'p17'], isActive: true },
+  { id: 't6', name: 'HTM', sport: 's2', department: 'd2', division: 'div3', coach: 'Coach Morales', seed: 2, color: '#dc2626', players: ['p8', 'p18'], isActive: true },
+  { id: 't7', name: 'DPD', sport: 's2', department: 'd4', division: 'div3', coach: 'Coach Rivera', seed: 3, color: '#059669', players: ['p9'], isActive: true },
+  { id: 't8', name: 'BAA', sport: 's2', department: 'd1', division: 'div3', coach: 'Coach Henderson', seed: 4, color: '#eab308', players: ['p10'], isActive: true },
+  { id: 't9', name: 'BAA', sport: 's_futsal', department: 'd1', division: 'div15', coach: 'Coach Rivera', seed: 1, color: '#eab308', players: ['p11', 'p19'], isActive: true },
+  { id: 't10', name: 'SHS', sport: 's_futsal', department: 'd5', division: 'div15', coach: 'Coach Morales', seed: 2, color: '#0284c7', players: ['p12', 'p20'], isActive: true },
 ];
 
 export const INITIAL_PLAYERS: Player[] = [
@@ -321,21 +321,21 @@ export const INITIAL_MATCHES: Match[] = [
   // Basketball Bracket (Semi-Finals -> Championship Final)
   {
     id: 'm1', eventId: 'ev-1', sport: 's1', division: 'div1', format: 'single_elimination', stage: 'elimination',
-    teamA: 'BAA Falcons', teamB: 'HTM Chefs', scoreA: 74, scoreB: 66, status: 'finished', winner: 'BAA Falcons',
+    teamA: 'BAA', teamB: 'HTM', scoreA: 74, scoreB: 66, status: 'finished', winner: 'BAA',
     venue: 'Main Arena Court 1', round: 'Semi-Finals', roundNumber: 1, slot: 1, matchNumber: 1,
     nextMatchId: 'm3', nextSlot: 'A', scheduledTime: '2026-11-18T09:00:00',
     referee: 'Prof. Marcus Aurelio', scorekeeper: 'Sam Chen',
   },
   {
     id: 'm2', eventId: 'ev-1', sport: 's1', division: 'div1', format: 'single_elimination', stage: 'elimination',
-    teamA: 'CSE Titans', teamB: 'SHS Royals', scoreA: 68, scoreB: 61, status: 'finished', winner: 'CSE Titans',
+    teamA: 'CSE', teamB: 'SHS', scoreA: 68, scoreB: 61, status: 'finished', winner: 'CSE',
     venue: 'Main Arena Court 1', round: 'Semi-Finals', roundNumber: 1, slot: 2, matchNumber: 2,
     nextMatchId: 'm3', nextSlot: 'B', scheduledTime: '2026-11-18T11:00:00',
     referee: 'Prof. Marcus Aurelio', scorekeeper: 'Sam Chen',
   },
   {
     id: 'm3', eventId: 'ev-1', sport: 's1', division: 'div1', format: 'single_elimination', stage: 'elimination',
-    teamA: 'BAA Falcons', teamB: 'CSE Titans', scoreA: 54, scoreB: 51, status: 'live',
+    teamA: 'BAA', teamB: 'CSE', scoreA: 54, scoreB: 51, status: 'live',
     venue: 'Main Arena Court 1', round: 'Championship Final', roundNumber: 2, slot: 1, matchNumber: 3,
     nextMatchId: null, nextSlot: null, scheduledTime: '2026-11-19T15:00:00',
     referee: 'Prof. Marcus Aurelio', scorekeeper: 'Sam Chen',
@@ -343,21 +343,21 @@ export const INITIAL_MATCHES: Match[] = [
   // Volleyball Bracket (Finished Semi-Final + Live Match + Championship Final)
   {
     id: 'm4', eventId: 'ev-2', sport: 's2', division: 'div3', format: 'single_elimination', stage: 'elimination',
-    teamA: 'CSE CyberHawks', teamB: 'DPD Volleys', scoreA: 3, scoreB: 1, status: 'finished', winner: 'CSE CyberHawks',
+    teamA: 'CSE', teamB: 'DPD', scoreA: 3, scoreB: 1, status: 'finished', winner: 'CSE',
     venue: 'Main Arena Court 2', round: 'Semi-Finals', roundNumber: 1, slot: 1, matchNumber: 4,
     nextMatchId: 'm6', nextSlot: 'A', scheduledTime: '2026-11-18T13:00:00',
     referee: 'Elena Rostova', scorekeeper: 'Maria Santos',
   },
   {
     id: 'm5', eventId: 'ev-2', sport: 's2', division: 'div3', format: 'single_elimination', stage: 'elimination',
-    teamA: 'HTM Spikers', teamB: 'BAA Lady Falcons', scoreA: 2, scoreB: 1, status: 'live',
+    teamA: 'HTM', teamB: 'BAA', scoreA: 2, scoreB: 1, status: 'live',
     venue: 'Main Arena Court 2', round: 'Semi-Finals', roundNumber: 1, slot: 2, matchNumber: 5,
     nextMatchId: 'm6', nextSlot: 'B', scheduledTime: '2026-11-19T14:00:00',
     referee: 'Elena Rostova', scorekeeper: 'Maria Santos',
   },
   {
     id: 'm6', eventId: 'ev-2', sport: 's2', division: 'div3', format: 'single_elimination', stage: 'elimination',
-    teamA: 'CSE CyberHawks', teamB: 'Winner of M5', scoreA: 0, scoreB: 0, status: 'scheduled',
+    teamA: 'CSE', teamB: 'Winner of M5', scoreA: 0, scoreB: 0, status: 'scheduled',
     venue: 'Main Arena Court 2', round: 'Championship Final', roundNumber: 2, slot: 1, matchNumber: 6,
     nextMatchId: null, nextSlot: null, scheduledTime: '2026-11-20T16:00:00',
     referee: 'Elena Rostova', scorekeeper: 'Maria Santos',
@@ -365,14 +365,14 @@ export const INITIAL_MATCHES: Match[] = [
   // Futsal (Finished Gold Final for Medal Tally + Upcoming Match)
   {
     id: 'm7', eventId: 'ev-3', sport: 's_futsal', division: 'div15', format: 'single_elimination', stage: 'elimination',
-    teamA: 'BAA Golden Eagles', teamB: 'SHS Strikers', scoreA: 4, scoreB: 2, status: 'finished', winner: 'BAA Golden Eagles',
+    teamA: 'BAA', teamB: 'SHS', scoreA: 4, scoreB: 2, status: 'finished', winner: 'BAA',
     venue: 'Main Arena Court 1', round: 'Championship Final', roundNumber: 1, slot: 1, matchNumber: 7,
     nextMatchId: null, nextSlot: null, scheduledTime: '2026-11-18T16:30:00',
     referee: 'Prof. Marcus Aurelio', scorekeeper: 'Lee Park',
   },
   {
     id: 'm8', eventId: 'ev-1', sport: 's1', division: 'div1', format: 'single_elimination', stage: 'elimination',
-    teamA: 'HTM Chefs', teamB: 'SHS Royals', scoreA: 0, scoreB: 0, status: 'scheduled',
+    teamA: 'HTM', teamB: 'SHS', scoreA: 0, scoreB: 0, status: 'scheduled',
     venue: 'Main Arena Court 2', round: '3rd Place Match', roundNumber: 2, slot: 2, matchNumber: 8,
     nextMatchId: null, nextSlot: null, scheduledTime: '2026-11-19T17:30:00',
     referee: 'Prof. Marcus Aurelio', scorekeeper: 'Sam Chen',
@@ -383,7 +383,7 @@ export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   {
     id: 'ann-1',
     title: 'Basketball Championship Final Live Now',
-    body: 'BAA Falcons vs CSE Titans is currently live at Main Arena Court 1. Spectators can follow play-by-play updates or share the livestream.',
+    body: 'BAA vs CSE is currently live at Main Arena Court 1. Spectators can follow play-by-play updates or share the livestream.',
     priority: 'urgent',
     createdBy: 'Sports Director',
     createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
@@ -391,8 +391,8 @@ export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   },
   {
     id: 'ann-2',
-    title: 'BAA Golden Eagles Claim Futsal Championship Gold',
-    body: 'Congratulations to BAA Golden Eagles for defeating SHS Strikers 4–2 in the Padula 2026 Futsal Final.',
+    title: 'BAA Claims Futsal Championship Gold',
+    body: 'Congratulations to BAA for defeating SHS 4–2 in the Padula 2026 Futsal Final.',
     priority: 'normal',
     createdBy: 'Sports Director',
     createdAt: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
@@ -411,8 +411,8 @@ export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
 
 export const INITIAL_AUDIT: AuditLog[] = [
   { id: 'al-1', action: 'event_create', userId: 'u1', userName: 'Mr. John Eric Samane', userRole: 'director', details: 'Published Padula 2026 Basketball Championship', timestamp: new Date(Date.now() - 5 * 3600 * 1000).toISOString(), entityId: 'ev-1', entityType: 'TournamentEvent' },
-  { id: 'al-2', action: 'score_finalize', userId: 'u3', userName: 'Sam Chen', userRole: 'scorer', details: 'Finalized Basketball Semi-Final: BAA Falcons 74 – HTM Chefs 66', timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(), entityId: 'm1', entityType: 'Match' },
-  { id: 'al-3', action: 'score_finalize', userId: 'u3', userName: 'Lee Park', userRole: 'scorer', details: 'Finalized Futsal Championship Final: BAA Golden Eagles 4 – SHS Strikers 2', timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString(), entityId: 'm7', entityType: 'Match' },
+  { id: 'al-2', action: 'score_finalize', userId: 'u3', userName: 'Sam Chen', userRole: 'scorer', details: 'Finalized Basketball Semi-Final: BAA 74 – HTM 66', timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(), entityId: 'm1', entityType: 'Match' },
+  { id: 'al-3', action: 'score_finalize', userId: 'u3', userName: 'Lee Park', userRole: 'scorer', details: 'Finalized Futsal Championship Final: BAA 4 – SHS 2', timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString(), entityId: 'm7', entityType: 'Match' },
 ];
 
 export const MOCK_VENUE: Venue = INITIAL_VENUES[0];

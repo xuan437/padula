@@ -139,14 +139,14 @@ export default function RegistrationPage() {
     if (kind === 'teams') {
       const ws = XLSX.utils.aoa_to_sheet([
         ['Team Name', 'Department', 'Sport', 'Division'],
-        ['BAA Falcons', 'BAA', 'Basketball', 'Men\'s Collegiate'],
+        ['BAA', 'BAA', 'Basketball', 'Men\'s Collegiate'],
       ]);
       XLSX.utils.book_append_sheet(wb, ws, 'Teams');
       XLSX.writeFile(wb, 'padula_teams_template.xlsx');
     } else {
       const ws = XLSX.utils.aoa_to_sheet([
         ['Last Name', 'First Name', 'Middle Initial', 'Student ID', 'Department', 'Sport', 'Team', 'Jersey Number', 'Position', 'Medical Cleared'],
-        ['Santos', 'Maria', 'C', '2026-0001', 'BAA', 'Basketball', 'BAA Falcons', '10', 'Point Guard', 'Yes'],
+        ['Santos', 'Maria', 'C', '2026-0001', 'BAA', 'Basketball', 'BAA', '10', 'Point Guard', 'Yes'],
       ]);
       XLSX.utils.book_append_sheet(wb, ws, 'Players');
       XLSX.writeFile(wb, 'padula_players_template.xlsx');

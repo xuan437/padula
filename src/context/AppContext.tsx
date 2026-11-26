@@ -4485,10 +4485,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return '';
     }
     const id = uid('t');
-    const newTeam: Team = { ...teamData, id };
+    const deptObj = departments.find(
+      d => d.id === teamData.department ||
+        d.shortName?.toLowerCase() === teamData.department?.toLowerCase() ||
+        d.name?.toLowerCase() === teamData.department?.toLowerCase()
+    );
+    const normalizedName = deptObj?.shortName || teamData.name;
+    const newTeam: Team = { ...teamData, id, name: normalizedName };
     teamsRef.current = [...teamsRef.current, newTeam];
     setTeams(prev => [...prev, newTeam]);
-    addAuditLog('team_register', `Registered team: ${teamData.name}`, id, 'Team');
+    addAuditLog('team_register', `Registered team: ${normalizedName}`, id, 'Team');
 
     supabase.from('teams').insert([{
       id,
